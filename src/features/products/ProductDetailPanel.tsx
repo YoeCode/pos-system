@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/store';
-import { selectProduct, updateProduct } from './productsSlice';
+import { selectProduct, updateProduct, CATEGORIES } from './productsSlice';
 import type { Product } from '../../types';
 import Toggle from '../../components/ui/Toggle';
 import Button from '../../components/ui/Button';
-
-const CATEGORIES = ['Electronics', 'Food', 'Drinks', 'Apparel', 'Bakery', 'Merchandise'];
 
 interface FormState {
   id: string;

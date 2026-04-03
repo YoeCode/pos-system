@@ -2,6 +2,32 @@ import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
 import type { Product } from '../../types';
 
+export const CATEGORIES = ['Electronics', 'Food', 'Drinks', 'Apparel', 'Bakery', 'Merchandise'];
+
+export interface ProductFormState {
+  name: string;
+  sku: string;
+  category: string;
+  price: number;
+  costPrice: number;
+  stock: number;
+  description: string;
+  publishedOnline: boolean;
+  status: Product['status'];
+}
+
+export const createEmptyForm = (): ProductFormState => ({
+  name: '',
+  sku: '',
+  category: CATEGORIES[0],
+  price: 0,
+  costPrice: 0,
+  stock: 0,
+  description: '',
+  publishedOnline: false,
+  status: 'draft',
+});
+
 const mockProducts: Product[] = [
   {
     id: '1',

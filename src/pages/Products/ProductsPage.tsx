@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/store';
 import { setSearchQuery, setSelectedCategory } from '../../features/products/productsSlice';
 import ProductsTable from '../../features/products/ProductsTable';
 import ProductDetailPanel from '../../features/products/ProductDetailPanel';
+import ProductCreateModal from '../../features/products/ProductCreateModal';
 import Button from '../../components/ui/Button';
 
 const CATEGORIES = ['All', 'Electronics', 'Food', 'Drinks', 'Apparel', 'Bakery', 'Merchandise'];
@@ -10,6 +11,7 @@ const CATEGORIES = ['All', 'Electronics', 'Food', 'Drinks', 'Apparel', 'Bakery',
 const ProductsPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const { searchQuery, selectedCategory, selectedProduct } = useAppSelector(state => state.products);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   return (
     <div className="flex h-[calc(100vh-57px)] flex-col">
@@ -20,7 +22,7 @@ const ProductsPage: React.FC = () => {
             <h1 className="text-xl font-bold text-text-primary">Product Catalog</h1>
             <p className="text-sm text-text-muted mt-0.5">Manage your inventory and product listings</p>
           </div>
-          <Button variant="primary" size="sm">
+          <Button variant="primary" size="sm" onClick={() => setIsCreateModalOpen(true)}>
             <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
@@ -77,6 +79,9 @@ const ProductsPage: React.FC = () => {
           <ProductDetailPanel />
         )}
       </div>
+
+      {/* Create Modal */}
+      <ProductCreateModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} />
     </div>
   );
 };
