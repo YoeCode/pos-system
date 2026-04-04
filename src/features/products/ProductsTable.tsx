@@ -1,11 +1,14 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/store';
 import { selectProduct } from './productsSlice';
 import Badge from '../../components/ui/Badge';
 
+const PAGE_SIZE = 5;
+
 const ProductsTable: React.FC = () => {
   const dispatch = useAppDispatch();
   const { items, selectedProduct, searchQuery, selectedCategory } = useAppSelector(state => state.products);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const filtered = items.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -13,6 +16,14 @@ const ProductsTable: React.FC = () => {
     const matchesCategory = selectedCategory === 'All' || p.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const startIndex = (currentPage - 1) * PAGE_SIZE;
+  const paginatedItems = filtered.slice(startIndex, startIndex + PAGE_SIZE);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedCategory]);
 
   const categoryBadgeVariant = (cat: string): 'info' | 'success' | 'warning' | 'neutral' => {
     switch (cat) {
@@ -38,7 +49,7 @@ const ProductsTable: React.FC = () => {
           </tr>
         </thead>
         <tbody className="divide-y divide-border">
-          {filtered.map(product => (
+          {paginatedItems.map(product => (
             <tr
               key={product.id}
               onClick={() => dispatch(selectProduct(selectedProduct?.id === product.id ? null : product))}
@@ -107,29 +118,40 @@ const ProductsTable: React.FC = () => {
       )}
 
       {/* Pagination bar */}
-      <div className="px-4 py-3 border-t border-border flex items-center justify-between">
-        <p className="text-xs text-text-muted">
-          Showing 1–{filtered.length} of {items.length} products
-        </p>
-        <div className="flex items-center gap-1">
-          <button className="w-7 h-7 flex items-center justify-center rounded text-text-muted hover:bg-gray-100 transition-colors text-xs">
-            ‹
-          </button>
-          {[1, 2, 3].map(page => (
+      {filtered.length > 0 && (
+        <div className="px-4 py-3 border-t border-border flex items-center justify-between">
+          <p className="text-xs text-text-muted">
+            Showing {startIndex + 1}–{Math.min(startIndex + PAGE_SIZE, filtered.length)} of {filtered.length} products
+          </p>
+          <div className="flex items-center gap-1">
             <button
-              key={page}
-              className={`w-7 h-7 flex items-center justify-center rounded text-xs font-semibold transition-colors ${
-                page === 1 ? 'bg-primary text-white' : 'text-text-muted hover:bg-gray-100'
-              }`}
+              onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
+              disabled={currentPage === 1}
+              className="w-7 h-7 flex items-center justify-center rounded text-text-muted hover:bg-gray-100 transition-colors text-xs disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {page}
+              ‹
             </button>
-          ))}
-          <button className="w-7 h-7 flex items-center justify-center rounded text-text-muted hover:bg-gray-100 transition-colors text-xs">
-            ›
-          </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+              <button
+                key={page}
+                onClick={() => setCurrentPage(page)}
+                className={`w-7 h-7 flex items-center justify-center rounded text-xs font-semibold transition-colors ${
+                  page === currentPage ? 'bg-primary text-white' : 'text-text-muted hover:bg-gray-100'
+                }`}
+              >
+                {page}
+              </button>
+            ))}
+            <button
+              onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="w-7 h-7 flex items-center justify-center rounded text-text-muted hover:bg-gray-100 transition-colors text-xs disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              ›
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
