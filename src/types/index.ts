@@ -37,3 +37,28 @@ export interface Employee {
 }
 
 export type PaymentMethod = 'cash' | 'card' | 'qr';
+
+export interface OrderItem {
+  product: Product;
+  quantity: number;
+  lineTotal: number;
+}
+
+export interface Order {
+  id: string;
+  orderNumber: string;
+  items: OrderItem[];
+  subtotal: number;
+  tax: number;
+  total: number;
+  createdAt: string;
+}
+
+export interface Sale {
+  id: string;
+  order: Order;
+  paymentMethod: PaymentMethod;
+  amountReceived: number | null;
+  change: number | null;
+  completedAt: string;
+}
