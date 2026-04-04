@@ -32,6 +32,7 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
       price: form.price,
       costPrice: form.costPrice,
       stock: form.stock,
+      minStock: form.minStock,
       description: form.description.trim() || undefined,
       status: form.status,
       publishedOnline: form.publishedOnline,
@@ -124,15 +125,27 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
           </div>
         </div>
 
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Stock Level</label>
-          <input
-            type="number"
-            min="0"
-            value={form.stock}
-            onChange={e => setForm(prev => ({ ...prev, stock: parseInt(e.target.value) || 0 }))}
-            className="w-full px-3 py-2.5 text-sm border border-border rounded-lg text-text-primary font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
-          />
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Stock Level</label>
+            <input
+              type="number"
+              min="0"
+              value={form.stock}
+              onChange={e => setForm(prev => ({ ...prev, stock: parseInt(e.target.value) || 0 }))}
+              className="w-full px-3 py-2.5 text-sm border border-border rounded-lg text-text-primary font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Min. Stock</label>
+            <input
+              type="number"
+              min="0"
+              value={form.minStock}
+              onChange={e => setForm(prev => ({ ...prev, minStock: parseInt(e.target.value) || 0 }))}
+              className="w-full px-3 py-2.5 text-sm border border-border rounded-lg text-text-primary font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+            />
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3">

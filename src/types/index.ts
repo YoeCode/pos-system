@@ -1,3 +1,22 @@
+export type UserRole = 'cashier' | 'supervisor' | 'manager' | 'admin';
+
+export interface AuthUser {
+  id: string;
+  name: string;
+  email: string;
+  password: string;
+  role: UserRole;
+  terminal?: string;
+  avatar?: string;
+}
+
+export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
+  cashier: ['pos'],
+  supervisor: ['pos', 'products', 'reports'],
+  manager: ['pos', 'products', 'reports', 'employees', 'dashboard'],
+  admin: ['pos', 'products', 'reports', 'employees', 'dashboard', 'settings'],
+};
+
 export interface Product {
   id: string;
   name: string;
@@ -6,6 +25,7 @@ export interface Product {
   price: number;
   costPrice: number;
   stock: number;
+  minStock: number;
   image?: string;
   description?: string;
   status: 'active' | 'inactive' | 'draft';

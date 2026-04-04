@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAppDispatch } from '../../app/store';
-import { login } from '../../features/auth/authSlice';
+import { useAppDispatch, useAppSelector } from '../../app/store';
+import { login, loginSuccess, loginFailure, clearError } from '../../features/auth/authSlice';
+import { authenticateUser } from '../../features/auth/authSlice';
 
 const LoginPage: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -9,11 +10,21 @@ const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
+  const { error, isLoading } = useAppSelector(state => state.auth);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    dispatch(login({ name: 'Admin Terminal', role: 'Administrator', terminal: '01' }));
-    navigate('/pos');
+    dispatch(login());
+
+    const trimmedEmail = email.trim().toLowerCase();
+    const user = authenticateUser(trimmedEmail, password);
+
+    if (user) {
+      dispatch(loginSuccess(user));
+      navigate('/pos');
+    } else {
+      dispatch(loginFailure('Invalid email or password'));
+    }
   };
 
   return (
@@ -33,6 +44,19 @@ const LoginPage: React.FC = () => {
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="px-8 py-6 flex flex-col gap-5">
+        {/* Error message */}
+        {error && (
+          <div className="px-4 py-3 bg-error/10 border border-error/20 rounded-lg flex items-start gap-3">
+            <svg className="w-4 h-4 text-error flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div>
+              <p className="text-sm text-error font-medium">Authentication failed</p>
+              <p className="text-xs text-error/80 mt-0.5">{error}</p>
+            </div>
+          </div>
+        )}
+
         {/* Email */}
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-semibold text-dark-muted uppercase tracking-widest">
@@ -42,9 +66,11 @@ const LoginPage: React.FC = () => {
             <input
               type="email"
               value={email}
-              onChange={e => setEmail(e.target.value)}
+              onChange={e => { setEmail(e.target.value); if (error) dispatch(clearError()); }}
               placeholder="name@company.com"
-              className="w-full px-4 py-3 pr-11 text-sm bg-dark-surface-2 border border-dark-border rounded-lg text-dark-text placeholder-dark-muted focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-colors"
+              className={`w-full px-4 py-3 pr-11 text-sm bg-dark-surface-2 border rounded-lg text-dark-text placeholder-dark-muted focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors ${
+                error ? 'border-error focus:border-error' : 'border-dark-border focus:border-primary'
+              }`}
             />
             <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-dark-muted">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -63,9 +89,11 @@ const LoginPage: React.FC = () => {
             <input
               type="password"
               value={password}
-              onChange={e => setPassword(e.target.value)}
+              onChange={e => { setPassword(e.target.value); if (error) dispatch(clearError()); }}
               placeholder="••••••••"
-              className="w-full px-4 py-3 pr-11 text-sm bg-dark-surface-2 border border-dark-border rounded-lg text-dark-text placeholder-dark-muted focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-colors"
+              className={`w-full px-4 py-3 pr-11 text-sm bg-dark-surface-2 border rounded-lg text-dark-text placeholder-dark-muted focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors ${
+                error ? 'border-error focus:border-error' : 'border-dark-border focus:border-primary'
+              }`}
             />
             <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-dark-muted">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -94,12 +122,25 @@ const LoginPage: React.FC = () => {
         {/* Submit */}
         <button
           type="submit"
-          className="w-full py-3 bg-primary hover:bg-primary-dark text-white font-semibold rounded-lg text-sm transition-all duration-150 active:scale-[0.98] flex items-center justify-center gap-2 mt-1"
+          disabled={isLoading || !email.trim() || !password.trim()}
+          className="w-full py-3 bg-primary hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold rounded-lg text-sm transition-all duration-150 active:scale-[0.98] flex items-center justify-center gap-2 mt-1"
         >
-          Sign In
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-          </svg>
+          {isLoading ? (
+            <>
+              <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              Signing in...
+            </>
+          ) : (
+            <>
+              Sign In
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+              </svg>
+            </>
+          )}
         </button>
       </form>
 

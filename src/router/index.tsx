@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { useAppSelector } from '../app/store';
 import type { ReactNode } from 'react';
+import { ROLE_PERMISSIONS } from '../types';
 
 import AuthLayout from '../layouts/AuthLayout';
 import DashboardLayout from '../layouts/DashboardLayout';
@@ -13,9 +14,30 @@ import DashboardPage from '../pages/Dashboard/DashboardPage';
 import ReportsPage from '../pages/Reports/ReportsPage';
 import SettingsPage from '../pages/Settings/SettingsPage';
 
+const PAGE_ROUTES: Record<string, string> = {
+  '/pos': 'pos',
+  '/products': 'products',
+  '/employees': 'employees',
+  '/dashboard': 'dashboard',
+  '/reports': 'reports',
+  '/settings': 'settings',
+};
+
 const ProtectedRoute = ({ children }: { children: ReactNode }) => {
-  const isAuthenticated = useAppSelector(state => state.auth.isAuthenticated);
-  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  const { isAuthenticated, user } = useAppSelector(state => state.auth);
+  if (!isAuthenticated || !user) return <Navigate to="/login" replace />;
+
+  const currentPath = window.location.pathname;
+  const requiredPermission = PAGE_ROUTES[currentPath];
+
+  if (requiredPermission) {
+    const userPermissions = ROLE_PERMISSIONS[user.role] || [];
+    if (!userPermissions.includes(requiredPermission)) {
+      const fallback = user.role === 'cashier' ? '/pos' : '/dashboard';
+      return <Navigate to={fallback} replace />;
+    }
+  }
+
   return <>{children}</>;
 };
 
