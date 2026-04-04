@@ -52,9 +52,26 @@ interface AuthState {
   isLoading: boolean;
 }
 
+const loadStoredSession = (): { isAuthenticated: boolean; user: AuthUser | null } => {
+  try {
+    const stored = localStorage.getItem('nexopos_session');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (parsed.user && parsed.isAuthenticated) {
+        return { isAuthenticated: true, user: parsed.user };
+      }
+    }
+  } catch {
+    localStorage.removeItem('nexopos_session');
+  }
+  return { isAuthenticated: false, user: null };
+};
+
+const storedSession = loadStoredSession();
+
 const initialState: AuthState = {
-  isAuthenticated: false,
-  user: null,
+  isAuthenticated: storedSession.isAuthenticated,
+  user: storedSession.user,
   error: null,
   isLoading: false,
 };
@@ -72,6 +89,10 @@ const authSlice = createSlice({
       state.isAuthenticated = true;
       state.user = action.payload;
       state.error = null;
+      localStorage.setItem('nexopos_session', JSON.stringify({
+        isAuthenticated: true,
+        user: action.payload,
+      }));
     },
     loginFailure: (state, action: PayloadAction<string>) => {
       state.isLoading = false;
@@ -83,6 +104,7 @@ const authSlice = createSlice({
       state.isAuthenticated = false;
       state.user = null;
       state.error = null;
+      localStorage.removeItem('nexopos_session');
     },
     clearError: (state) => {
       state.error = null;
