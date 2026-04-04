@@ -7,14 +7,22 @@ const PAGE_SIZE = 5;
 
 const ProductsTable: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { items, selectedProduct, searchQuery, selectedCategory } = useAppSelector(state => state.products);
+  const { items, selectedProduct, searchQuery, selectedCategory, statusFilter, stockFilter, publishedFilter } = useAppSelector(state => state.products);
   const [currentPage, setCurrentPage] = useState(1);
 
   const filtered = items.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.sku.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === 'All' || p.category === selectedCategory;
-    return matchesSearch && matchesCategory;
+    const matchesStatus = statusFilter === 'all' || p.status === statusFilter;
+    const matchesPublished = publishedFilter === 'all' ||
+      (publishedFilter === 'published' && p.publishedOnline) ||
+      (publishedFilter === 'not-published' && !p.publishedOnline);
+    const matchesStock = stockFilter === 'all' ||
+      (stockFilter === 'low' && p.stock > 0 && p.stock <= p.minStock) ||
+      (stockFilter === 'out' && p.stock === 0) ||
+      (stockFilter === 'in' && p.stock > p.minStock);
+    return matchesSearch && matchesCategory && matchesStatus && matchesPublished && matchesStock;
   });
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
@@ -23,7 +31,7 @@ const ProductsTable: React.FC = () => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedCategory]);
+  }, [searchQuery, selectedCategory, statusFilter, stockFilter, publishedFilter]);
 
   const categoryBadgeVariant = (cat: string): 'info' | 'success' | 'warning' | 'neutral' => {
     switch (cat) {
