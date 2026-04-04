@@ -5,6 +5,7 @@ import authReducer from '../features/auth/authSlice';
 import posReducer from '../features/pos/posSlice';
 import productsReducer from '../features/products/productsSlice';
 import employeesReducer from '../features/employees/employeesSlice';
+import salesReducer from '../features/sales/salesSlice';
 
 export const store = configureStore({
   reducer: {
@@ -12,6 +13,7 @@ export const store = configureStore({
     pos: posReducer,
     products: productsReducer,
     employees: employeesReducer,
+    sales: salesReducer,
   },
 });
 

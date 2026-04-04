@@ -1,13 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/store';
 import { clearCart, removeFromCart, setPaymentMethod, updateQuantity } from './posSlice';
+import { selectFormattedOrderNumber } from '../sales/salesSlice';
+import CheckoutModal from './checkout/CheckoutModal';
+import { TAX_RATE } from '../../constants/tax';
 import type { PaymentMethod } from '../../types';
-
-const TAX_RATE = 0.21;
 
 const Cart: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { cart, paymentMethod, orderNumber } = useAppSelector(state => state.pos);
+  const { cart, paymentMethod } = useAppSelector(state => state.pos);
+  const orderNumber = useAppSelector(selectFormattedOrderNumber);
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
 
   const subtotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
   const tax = subtotal * TAX_RATE;
@@ -142,11 +145,23 @@ const Cart: React.FC = () => {
         {/* Charge button */}
         <button
           disabled={cart.length === 0}
+          onClick={() => cart.length > 0 && setIsCheckoutOpen(true)}
           className="w-full py-3.5 bg-primary hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold rounded-xl text-sm transition-all duration-150 active:scale-[0.98]"
         >
           CHARGE ${total.toFixed(2)}
         </button>
       </div>
+
+      <CheckoutModal
+        isOpen={isCheckoutOpen}
+        onClose={() => setIsCheckoutOpen(false)}
+        cart={cart}
+        subtotal={subtotal}
+        tax={tax}
+        total={total}
+        paymentMethod={paymentMethod}
+        orderNumber={orderNumber}
+      />
     </div>
   );
 };

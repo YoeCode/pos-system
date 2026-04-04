@@ -6,14 +6,12 @@ interface PosState {
   cart: CartItem[];
   paymentMethod: PaymentMethod;
   selectedCategory: string;
-  orderNumber: number;
 }
 
 const initialState: PosState = {
   cart: [],
   paymentMethod: 'cash',
   selectedCategory: 'All Items',
-  orderNumber: 1042,
 };
 
 const posSlice = createSlice({

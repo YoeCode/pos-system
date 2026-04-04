@@ -1,0 +1,158 @@
+import React, { useState } from 'react';
+import { useAppSelector } from '../../../app/store';
+import { selectSaleById } from '../../sales/salesSlice';
+
+interface ReceiptStepProps {
+  saleId: string;
+  onDone: () => void;
+}
+
+const paymentMethodLabel: Record<string, string> = {
+  cash: 'Cash',
+  card: 'Card',
+  qr: 'QR Code',
+};
+
+const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, onDone }) => {
+  const sale = useAppSelector(state => selectSaleById(state, saleId));
+  const [showGiftTicket, setShowGiftTicket] = useState(false);
+
+  if (!sale) return null;
+
+  const { order, paymentMethod, amountReceived, change, completedAt } = sale;
+
+  const date = new Date(completedAt);
+  const formattedDate = date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+  const formattedTime = date.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  return (
+    <div className="flex flex-col gap-5">
+      {/* Normal ticket */}
+      <div className="mx-auto w-full max-w-xs bg-white border border-dashed border-gray-300 rounded-lg p-5 font-mono text-xs">
+        <div className="text-center mb-4">
+          <p className="font-bold text-sm text-text-primary">CASA LIS POS</p>
+          <p className="text-text-muted mt-0.5">{formattedDate} — {formattedTime}</p>
+          <p className="text-text-muted mt-0.5">{order.orderNumber}</p>
+        </div>
+
+        <div className="border-t border-dashed border-gray-300 my-3" />
+
+        <div className="flex flex-col gap-1.5">
+          {order.items.map(item => (
+            <div key={item.product.id} className="flex justify-between gap-2">
+              <span className="text-text-primary truncate">
+                {item.product.name}
+                <span className="text-text-muted ml-1">×{item.quantity}</span>
+              </span>
+              <span className="flex-shrink-0 text-text-primary">
+                ${item.lineTotal.toFixed(2)}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        <div className="border-t border-dashed border-gray-300 my-3" />
+
+        <div className="flex flex-col gap-1">
+          <div className="flex justify-between">
+            <span className="text-text-muted">Subtotal</span>
+            <span className="text-text-primary">${order.subtotal.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-text-muted">Tax (21%)</span>
+            <span className="text-text-muted">${order.tax.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between font-bold text-sm mt-0.5">
+            <span className="text-text-primary">TOTAL</span>
+            <span className="text-primary">${order.total.toFixed(2)}</span>
+          </div>
+        </div>
+
+        <div className="border-t border-dashed border-gray-300 my-3" />
+
+        <div className="flex flex-col gap-1">
+          <div className="flex justify-between">
+            <span className="text-text-muted">Payment</span>
+            <span className="text-text-primary">{paymentMethodLabel[paymentMethod]}</span>
+          </div>
+          {paymentMethod === 'cash' && amountReceived !== null && change !== null && (
+            <>
+              <div className="flex justify-between">
+                <span className="text-text-muted">Received</span>
+                <span className="text-text-primary">${amountReceived.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-text-muted">Change</span>
+                <span className="text-text-primary">${change.toFixed(2)}</span>
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="border-t border-dashed border-gray-300 my-3" />
+
+        <p className="text-center text-text-muted">Thank you!</p>
+      </div>
+
+      {/* Gift ticket toggle button */}
+      <button
+        onClick={() => setShowGiftTicket(prev => !prev)}
+        className="flex items-center justify-between w-full px-4 py-3 rounded-lg border transition-all duration-150 text-sm bg-white border-border text-text-primary hover:border-text-primary"
+      >
+        <span className="font-medium">
+          {showGiftTicket ? 'Ocultar Ticket Regalo' : '🎁 Imprimir Ticket Regalo'}
+        </span>
+        <span className="text-xs font-semibold uppercase tracking-wider opacity-75">
+          {showGiftTicket ? 'ON' : 'OFF'}
+        </span>
+      </button>
+
+      {/* Gift ticket */}
+      {showGiftTicket && (
+        <div className="mx-auto w-full max-w-xs bg-white border border-dashed border-gray-300 rounded-lg p-5 font-mono text-xs">
+          <div className="text-center mb-4">
+            <p className="font-bold text-sm text-text-primary">TICKET REGALO</p>
+            <p className="text-text-muted mt-0.5">GIFT RECEIPT</p>
+            <p className="text-text-muted mt-0.5">{formattedDate} — {formattedTime}</p>
+            <p className="text-text-muted mt-0.5">{order.orderNumber}</p>
+          </div>
+
+          <div className="border-t border-dashed border-gray-300 my-3" />
+
+          <div className="flex flex-col gap-1.5">
+            {order.items.map(item => (
+              <div key={item.product.id} className="flex justify-between gap-2">
+                <span className="text-text-primary truncate">
+                  {item.product.name}
+                  <span className="text-text-muted ml-1">×{item.quantity}</span>
+                </span>
+                <span className="flex-shrink-0 text-text-muted">---</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="border-t border-dashed border-gray-300 my-3" />
+
+          <p className="text-center text-text-muted">Thank you!</p>
+        </div>
+      )}
+
+      {/* Done button */}
+      <button
+        onClick={onDone}
+        className="w-full py-3.5 bg-primary hover:bg-primary-dark text-white font-bold rounded-xl text-sm transition-all duration-150 active:scale-[0.98]"
+      >
+        DONE
+      </button>
+    </div>
+  );
+};
+
+export default ReceiptStep;
