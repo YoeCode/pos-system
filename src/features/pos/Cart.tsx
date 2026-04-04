@@ -32,8 +32,9 @@ const Cart: React.FC = () => {
             <p className="text-xs text-text-muted uppercase tracking-wider mt-0.5">Walk-In Customer</p>
           </div>
           <button
+            disabled={cart.length === 0}
             onClick={() => dispatch(clearCart())}
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-text-muted hover:text-error hover:bg-error/5 transition-colors"
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-text-muted hover:text-error hover:bg-error/5 transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-text-muted disabled:hover:bg-transparent"
             title="Clear cart"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

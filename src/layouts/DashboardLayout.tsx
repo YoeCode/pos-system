@@ -2,6 +2,7 @@ import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../app/store';
 import { logout } from '../features/auth/authSlice';
+import { ROLE_PERMISSIONS } from '../types';
 
 interface NavItemProps {
   to: string;
@@ -73,6 +74,17 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     navigate('/login');
   };
 
+  const userPermissions = user ? ROLE_PERMISSIONS[user.role] || [] : [];
+
+  const navItems = [
+    { to: '/dashboard', icon: <DashboardIcon />, label: 'Dashboard', permission: 'dashboard' },
+    { to: '/pos', icon: <SalesIcon />, label: 'Sales', permission: 'pos' },
+    { to: '/products', icon: <ProductsIcon />, label: 'Products', permission: 'products' },
+    { to: '/employees', icon: <TeamIcon />, label: 'Team', permission: 'employees' },
+    { to: '/reports', icon: <ReportsIcon />, label: 'Reports', permission: 'reports' },
+    { to: '/settings', icon: <SettingsIcon />, label: 'Settings', permission: 'settings' },
+  ].filter(item => userPermissions.includes(item.permission));
+
   return (
     <div className="flex min-h-screen bg-background">
       {/* Sidebar */}
@@ -91,12 +103,9 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
 
         {/* Nav */}
         <nav className="flex-1 py-4 flex flex-col gap-1">
-          <NavItem to="/dashboard" icon={<DashboardIcon />} label="Dashboard" />
-          <NavItem to="/pos" icon={<SalesIcon />} label="Sales" />
-          <NavItem to="/products" icon={<ProductsIcon />} label="Products" />
-          <NavItem to="/employees" icon={<TeamIcon />} label="Team" />
-          <NavItem to="/reports" icon={<ReportsIcon />} label="Reports" />
-          <NavItem to="/settings" icon={<SettingsIcon />} label="Settings" />
+          {navItems.map(item => (
+            <NavItem key={item.to} to={item.to} icon={item.icon} label={item.label} />
+          ))}
         </nav>
 
         {/* Logout */}
@@ -150,7 +159,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           <div className="flex items-center gap-3">
             <div className="text-right">
               <p className="text-sm font-semibold text-text-primary leading-tight">{user?.name || 'Admin'}</p>
-              <p className="text-xs text-text-muted leading-tight">{user?.role} · Terminal {user?.terminal || '01'}</p>
+              <p className="text-xs text-text-muted leading-tight capitalize">{user?.role} · Terminal {user?.terminal || '01'}</p>
             </div>
             <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm">
               {user?.name?.charAt(0) || 'A'}

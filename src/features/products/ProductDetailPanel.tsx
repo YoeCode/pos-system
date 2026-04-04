@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/store';
 import { selectProduct, updateProduct, CATEGORIES } from './productsSlice';
 import type { Product } from '../../types';
@@ -13,15 +13,20 @@ interface FormState {
   price: number;
   costPrice: number;
   stock: number;
+  minStock: number;
   description: string;
   publishedOnline: boolean;
   status: Product['status'];
   version: string;
+  image: string;
 }
 
 const ProductDetailPanel: React.FC = () => {
   const dispatch = useAppDispatch();
   const product = useAppSelector(state => state.products.selectedProduct);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const [form, setForm] = useState<FormState>({
     id: '',
@@ -31,10 +36,12 @@ const ProductDetailPanel: React.FC = () => {
     price: 0,
     costPrice: 0,
     stock: 0,
+    minStock: 0,
     description: '',
     publishedOnline: false,
     status: 'active',
     version: '',
+    image: '',
   });
 
   useEffect(() => {
@@ -47,13 +54,42 @@ const ProductDetailPanel: React.FC = () => {
         price: product.price,
         costPrice: product.costPrice,
         stock: product.stock,
+        minStock: product.minStock,
         description: product.description ?? '',
         publishedOnline: product.publishedOnline,
         status: product.status,
         version: product.version ?? '',
+        image: product.image ?? '',
       });
     }
   }, [product]);
+
+  const processFile = useCallback((file: File) => {
+    if (!file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as string;
+      if (result) setForm(prev => ({ ...prev, image: result }));
+    };
+    reader.readAsDataURL(file);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) processFile(file);
+  }, [processFile]);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  }, []);
 
   if (!product) return null;
 
@@ -66,10 +102,12 @@ const ProductDetailPanel: React.FC = () => {
       price: form.price,
       costPrice: form.costPrice,
       stock: form.stock,
+      minStock: form.minStock,
       description: form.description,
       publishedOnline: form.publishedOnline,
       status: form.status,
       version: form.version,
+      image: form.image || undefined,
     };
     dispatch(updateProduct(updated));
   };
@@ -94,12 +132,50 @@ const ProductDetailPanel: React.FC = () => {
         {/* Image upload */}
         <div>
           <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Product Image</p>
-          <div className="border-2 border-dashed border-border rounded-xl h-32 flex flex-col items-center justify-center gap-2 text-text-muted hover:border-primary hover:text-primary transition-colors cursor-pointer">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            <p className="text-xs">Click or drag to upload</p>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={e => {
+              const file = e.target.files?.[0];
+              if (file) processFile(file);
+            }}
+          />
+          <div
+            onClick={() => fileInputRef.current?.click()}
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            className={`border-2 border-dashed rounded-xl h-32 flex flex-col items-center justify-center gap-2 transition-colors cursor-pointer ${
+              isDragging
+                ? 'border-primary bg-primary/5 text-primary'
+                : 'border-border text-text-muted hover:border-primary hover:text-primary'
+            }`}
+          >
+            {form.image ? (
+              <div className="relative w-full h-full">
+                <img src={form.image} alt="Product" className="w-full h-full object-contain rounded-xl" />
+                <button
+                  type="button"
+                  onClick={e => {
+                    e.stopPropagation();
+                    setForm(prev => ({ ...prev, image: '' }));
+                  }}
+                  className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+            ) : (
+              <>
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <p className="text-xs">Click or drag to upload</p>
+              </>
+            )}
           </div>
         </div>
 
@@ -179,14 +255,26 @@ const ProductDetailPanel: React.FC = () => {
         </div>
 
         {/* Stock */}
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Stock Level</label>
-          <input
-            type="number"
-            value={form.stock}
-            onChange={e => setForm(prev => ({ ...prev, stock: parseInt(e.target.value) || 0 }))}
-            className="w-full px-3 py-2.5 text-sm border border-border rounded-lg text-text-primary font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
-          />
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Stock Level</label>
+            <input
+              type="number"
+              value={form.stock}
+              onChange={e => setForm(prev => ({ ...prev, stock: parseInt(e.target.value) || 0 }))}
+              className="w-full px-3 py-2.5 text-sm border border-border rounded-lg text-text-primary font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Min. Stock</label>
+            <input
+              type="number"
+              min="0"
+              value={form.minStock}
+              onChange={e => setForm(prev => ({ ...prev, minStock: parseInt(e.target.value) || 0 }))}
+              className="w-full px-3 py-2.5 text-sm border border-border rounded-lg text-text-primary font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+            />
+          </div>
         </div>
 
         {/* Toggle */}

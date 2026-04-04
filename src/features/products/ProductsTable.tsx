@@ -34,6 +34,7 @@ const ProductsTable: React.FC = () => {
             <th className="text-left py-3 px-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Category</th>
             <th className="text-right py-3 px-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Price</th>
             <th className="text-right py-3 px-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Stock</th>
+            <th className="text-right py-3 px-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Min. Stock</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-border">
@@ -85,9 +86,14 @@ const ProductsTable: React.FC = () => {
 
               {/* Stock */}
               <td className="py-3 px-4 text-right">
-                <span className={`font-mono text-sm font-semibold ${product.stock < 10 ? 'text-error' : 'text-text-primary'}`}>
+                <span className={`font-mono text-sm font-semibold ${product.stock <= product.minStock ? 'text-error' : 'text-text-primary'}`}>
                   {product.stock}
                 </span>
+              </td>
+
+              {/* Min. Stock */}
+              <td className="py-3 px-4 text-right">
+                <span className="font-mono text-sm text-text-muted">{product.minStock}</span>
               </td>
             </tr>
           ))}

@@ -11,6 +11,7 @@ export interface ProductFormState {
   price: number;
   costPrice: number;
   stock: number;
+  minStock: number;
   description: string;
   publishedOnline: boolean;
   status: Product['status'];
@@ -23,6 +24,7 @@ export const createEmptyForm = (): ProductFormState => ({
   price: 0,
   costPrice: 0,
   stock: 0,
+  minStock: 0,
   description: '',
   publishedOnline: false,
   status: 'draft',
@@ -37,6 +39,7 @@ const mockProducts: Product[] = [
     price: 299,
     costPrice: 180,
     stock: 142,
+    minStock: 20,
     status: 'active',
     publishedOnline: true,
     version: 'v2.1',
@@ -50,6 +53,7 @@ const mockProducts: Product[] = [
     price: 189,
     costPrice: 95,
     stock: 8,
+    minStock: 10,
     status: 'active',
     publishedOnline: true,
     version: 'v1.4',
@@ -63,6 +67,7 @@ const mockProducts: Product[] = [
     price: 125,
     costPrice: 60,
     stock: 56,
+    minStock: 10,
     status: 'active',
     publishedOnline: true,
     version: 'v3.0',
@@ -76,6 +81,7 @@ const mockProducts: Product[] = [
     price: 4.50,
     costPrice: 1.20,
     stock: 200,
+    minStock: 30,
     status: 'active',
     publishedOnline: false,
     description: 'Classic chocolate glazed donut, freshly baked daily.',
@@ -88,6 +94,7 @@ const mockProducts: Product[] = [
     price: 5.25,
     costPrice: 1.80,
     stock: 150,
+    minStock: 20,
     status: 'active',
     publishedOnline: false,
     description: 'Creamy caramel iced latte with oat milk option.',
@@ -100,6 +107,7 @@ const mockProducts: Product[] = [
     price: 12.00,
     costPrice: 4.50,
     stock: 80,
+    minStock: 15,
     status: 'active',
     publishedOnline: false,
     description: 'Juicy beef patty with cheddar cheese, lettuce, and tomato.',
@@ -112,6 +120,7 @@ const mockProducts: Product[] = [
     price: 3.75,
     costPrice: 0.90,
     stock: 120,
+    minStock: 15,
     status: 'active',
     publishedOnline: false,
     description: 'Refreshing artisan sparkling soda with natural lime flavor.',
@@ -124,6 +133,7 @@ const mockProducts: Product[] = [
     price: 14.50,
     costPrice: 6.00,
     stock: 45,
+    minStock: 10,
     status: 'active',
     publishedOnline: false,
     description: 'Toasted sourdough with smashed avocado, poached eggs, and chili flakes.',
