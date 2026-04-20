@@ -1,19 +1,26 @@
 import React, { useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/store';
 import { clearCart, removeFromCart, setPaymentMethod, updateQuantity } from './posSlice';
-import { selectFormattedOrderNumber } from '../sales/salesSlice';
+import {
+  selectTaxRate,
+  selectTaxLabel,
+  selectWalkInCustomerLabel,
+  selectFormattedOrderNumber,
+} from '../settings/settingsSlice';
 import CheckoutModal from './checkout/CheckoutModal';
-import { TAX_RATE } from '../../constants/tax';
 import type { PaymentMethod } from '../../types';
 
 const Cart: React.FC = () => {
   const dispatch = useAppDispatch();
   const { cart, paymentMethod } = useAppSelector(state => state.pos);
   const orderNumber = useAppSelector(selectFormattedOrderNumber);
+  const taxRate = useAppSelector(selectTaxRate);
+  const taxLabel = useAppSelector(selectTaxLabel);
+  const walkInLabel = useAppSelector(selectWalkInCustomerLabel);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
 
   const subtotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-  const tax = subtotal * TAX_RATE;
+  const tax = subtotal * taxRate;
   const total = subtotal + tax;
 
   const paymentMethods: { id: PaymentMethod; label: string }[] = [
@@ -29,7 +36,7 @@ const Cart: React.FC = () => {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="font-bold text-text-primary text-base">Order #{orderNumber}</h2>
-            <p className="text-xs text-text-muted uppercase tracking-wider mt-0.5">Walk-In Customer</p>
+            <p className="text-xs text-text-muted uppercase tracking-wider mt-0.5">{walkInLabel}</p>
           </div>
           <button
             disabled={cart.length === 0}
@@ -113,7 +120,7 @@ const Cart: React.FC = () => {
             <span className="font-mono text-text-primary">${subtotal.toFixed(2)}</span>
           </div>
           <div className="flex items-center justify-between text-sm">
-            <span className="text-text-muted">Tax (21%)</span>
+            <span className="text-text-muted">{taxLabel}</span>
             <span className="font-mono text-text-muted">${tax.toFixed(2)}</span>
           </div>
           <div className="h-px bg-border" />

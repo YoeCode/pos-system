@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../app/store';
 import { logout } from '../features/auth/authSlice';
 import { ROLE_PERMISSIONS } from '../types';
+import { selectStoreName } from '../features/settings/settingsSlice';
 
 interface NavItemProps {
   to: string;
@@ -68,6 +69,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const user = useAppSelector(state => state.auth.user);
+  const storeName = useAppSelector(selectStoreName);
 
   const handleLogout = () => {
     dispatch(logout());
@@ -97,7 +99,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                 <path d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 3h2v-2h-2v2zm0 3h2v-2h-2v2zm-2-3h2v-2h-2v2zm3-5h2v-2h-2v2zm2 2h2v-2h-2v2zm-2 2h2v-2h-2v2zm-3 0h2v-2h-2v2z" />
               </svg>
             </div>
-            <span className="font-bold text-lg text-text-primary tracking-tight">NexoPOS</span>
+            <span className="font-bold text-lg text-text-primary tracking-tight">{storeName}</span>
           </div>
         </div>
 

@@ -1,6 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
 import type { Sale, Product, PaymentMethod, OrderItem } from '../../types';
+import { TAX_RATE } from '../../constants/tax';
 
 const mockProducts: Product[] = [
   { id: '1', name: 'Summit Pro Watch', sku: 'WT-992-SMT', category: 'Electronics', price: 299, costPrice: 180, stock: 142, minStock: 20, status: 'active', publishedOnline: true, version: 'v2.1', description: 'Premium smartwatch' },
@@ -19,7 +20,7 @@ function makeSale(id: string, orderNum: number, hoursAgo: number, items: { produ
     return { product: p, quantity: i.qty, lineTotal: p.price * i.qty };
   });
   const subtotal = orderItems.reduce((s, i) => s + i.lineTotal, 0);
-  const tax = subtotal * 0.21;
+  const tax = subtotal * TAX_RATE;
   const total = subtotal + tax;
   const date = new Date();
   date.setHours(date.getHours() - hoursAgo);

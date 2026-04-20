@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { useAppDispatch } from '../../../app/store';
+import { useAppDispatch, useAppSelector } from '../../../app/store';
 import { completeSale } from '../../sales/salesSlice';
+import { selectTaxLabel } from '../../settings/settingsSlice';
 import { clearCart } from '../posSlice';
 import type { CartItem, Order, PaymentMethod, Sale } from '../../../types';
 
@@ -30,6 +31,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
   onComplete,
 }) => {
   const dispatch = useAppDispatch();
+  const taxLabel = useAppSelector(selectTaxLabel);
   const [amountReceived, setAmountReceived] = useState<string>('');
 
   const isCash = paymentMethod === 'cash';
@@ -98,7 +100,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
           <span className="font-mono text-text-primary">${subtotal.toFixed(2)}</span>
         </div>
         <div className="flex items-center justify-between text-sm">
-          <span className="text-text-muted">Tax (21%)</span>
+          <span className="text-text-muted">{taxLabel}</span>
           <span className="font-mono text-text-muted">${tax.toFixed(2)}</span>
         </div>
         <div className="h-px bg-border" />
