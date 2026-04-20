@@ -7,6 +7,7 @@ import productsReducer from '../features/products/productsSlice';
 import employeesReducer from '../features/employees/employeesSlice';
 import salesReducer from '../features/sales/salesSlice';
 import dashboardReducer from '../features/dashboard/dashboardSlice';
+import settingsReducer from '../features/settings/settingsSlice';
 
 export const store = configureStore({
   reducer: {
@@ -16,6 +17,7 @@ export const store = configureStore({
     employees: employeesReducer,
     sales: salesReducer,
     dashboard: dashboardReducer,
+    settings: settingsReducer,
   },
 });
 

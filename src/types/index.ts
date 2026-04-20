@@ -82,3 +82,32 @@ export interface Sale {
   change: number | null;
   completedAt: string;
 }
+
+export interface TaxSettings {
+  taxRate: number;
+  taxName: string;
+  taxIncludedInPrice: boolean;
+  taxRegistrationNumber: string;
+}
+
+export interface StoreSettings {
+  storeName: string;
+  storeAddress: string;
+  storePhone: string;
+  storeEmail: string;
+  receiptFooterMessage: string;
+}
+
+export interface PosSettings {
+  defaultPaymentMethod: PaymentMethod;
+  defaultCategory: string;
+  walkInCustomerLabel: string;
+  orderNumberPrefix: string;
+  orderNumberSeed: number;
+}
+
+export interface SettingsState {
+  tax: TaxSettings;
+  store: StoreSettings;
+  pos: PosSettings;
+}
