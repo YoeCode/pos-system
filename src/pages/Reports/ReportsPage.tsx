@@ -17,6 +17,7 @@ const ReportsPage: React.FC = () => {
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
+  const [selectedProductCategory, setSelectedProductCategory] = useState<string>('all');
 
   const tabs: { id: ReportTab; label: string }[] = [
     { id: 'sales', label: t.reports.salesReport },
@@ -111,6 +112,15 @@ const ReportsPage: React.FC = () => {
     return { topProducts, categorySales };
   }, [filteredSales]);
 
+  const productCategories = useMemo(() => {
+    return ['all', ...Object.keys(productStats.categorySales).sort()];
+  }, [productStats.categorySales]);
+
+  const filteredTopProducts = useMemo(() => {
+    if (selectedProductCategory === 'all') return productStats.topProducts;
+    return productStats.topProducts.filter(p => p.category === selectedProductCategory);
+  }, [productStats.topProducts, selectedProductCategory]);
+
   const formatCurrency = (value: number) => `$${value.toFixed(2)}`;
   const formatDate = (iso: string) => new Date(iso).toLocaleDateString();
 
@@ -147,7 +157,7 @@ const ReportsPage: React.FC = () => {
   };
 
   const handleExportProducts = () => {
-    const data = productStats.topProducts.map(p => ({
+    const data = filteredTopProducts.map(p => ({
       name: p.name,
       category: p.category,
       quantity: p.qty,
@@ -330,9 +340,30 @@ const ReportsPage: React.FC = () => {
 
           {activeTab === 'products' && (
             <div className="flex flex-col gap-6">
+              <div className="bg-white rounded-xl border border-border p-4">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <span className="text-sm font-medium text-text-primary">{t.products.category}:</span>
+                  <div className="flex gap-2 flex-wrap">
+                    {productCategories.map(cat => (
+                      <button
+                        key={cat}
+                        onClick={() => setSelectedProductCategory(cat)}
+                        className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                          selectedProductCategory === cat
+                            ? 'bg-primary text-white'
+                            : 'bg-gray-100 text-text-primary hover:bg-gray-200'
+                        }`}
+                      >
+                        {cat === 'all' ? t.common.all : cat}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
               <div className="bg-white rounded-xl border border-border p-5">
                 <h3 className="text-sm font-semibold text-text-primary mb-4">{t.reports.bestSellers}</h3>
-                {productStats.topProducts.length === 0 ? (
+                {filteredTopProducts.length === 0 ? (
                   <p className="text-sm text-text-muted">{t.reports.noData}</p>
                 ) : (
                   <div className="overflow-x-auto">
@@ -347,7 +378,7 @@ const ReportsPage: React.FC = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {productStats.topProducts.map((product, idx) => (
+                        {filteredTopProducts.map((product, idx) => (
                           <tr key={idx} className="border-b border-border">
                             <td className="py-3 text-sm font-mono text-text-muted">{idx + 1}</td>
                             <td className="py-3 text-sm font-medium text-text-primary">{product.name}</td>
