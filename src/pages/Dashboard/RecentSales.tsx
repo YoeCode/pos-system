@@ -1,10 +1,12 @@
 import type { Sale } from '../../types';
+import { useI18n } from '../../i18n/I18nProvider';
 
 interface RecentSalesProps {
   sales: Sale[];
 }
 
 const RecentSales: React.FC<RecentSalesProps> = ({ sales }) => {
+  const t = useI18n();
   const methodColors: Record<string, string> = {
     cash: 'bg-emerald-100 text-emerald-700',
     card: 'bg-blue-100 text-blue-700',
@@ -18,9 +20,9 @@ const RecentSales: React.FC<RecentSalesProps> = ({ sales }) => {
 
   return (
     <div>
-      <h3 className="text-sm font-semibold text-text-primary mb-4">Recent Sales</h3>
+      <h3 className="text-sm font-semibold text-text-primary mb-4">{t.dashboard.recentSales}</h3>
       {sales.length === 0 ? (
-        <p className="text-sm text-text-muted text-center py-8">No sales yet</p>
+        <p className="text-sm text-text-muted text-center py-8">{t.dashboard.noData}</p>
       ) : (
         <div className="flex flex-col divide-y divide-border">
           {sales.map(sale => (

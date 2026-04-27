@@ -4,16 +4,17 @@ import {
   selectTaxSettings,
   updateTaxSettings,
   resetTaxSettings,
-  DEFAULT_TAX_RATE,
   DEFAULT_TAX_NAME,
 } from '../settingsSlice';
 import Input from '../../../components/ui/Input';
 import Toggle from '../../../components/ui/Toggle';
 import Button from '../../../components/ui/Button';
+import { useI18n } from '../../../i18n/I18nProvider';
 
 const TaxSettingsSection: React.FC = () => {
   const dispatch = useAppDispatch();
   const reduxTax = useAppSelector(selectTaxSettings);
+  const t = useI18n();
 
   // Local form state — display taxRate as percentage string
   const [taxRateDisplay, setTaxRateDisplay] = useState(
@@ -36,9 +37,9 @@ const TaxSettingsSection: React.FC = () => {
   const parsedRate = parseFloat(taxRateDisplay);
   const taxRateError =
     isNaN(parsedRate) || parsedRate < 0 || parsedRate > 100
-      ? 'Tax rate must be between 0 and 100'
+      ? `${t.settings.taxRate} must be between 0 and 100`
       : undefined;
-  const taxNameError = taxName.trim() === '' ? 'Tax name is required' : undefined;
+  const taxNameError = taxName.trim() === '' ? t.settings.taxName + ' is required' : undefined;
 
   const hasErrors = !!taxRateError || !!taxNameError;
 
@@ -78,15 +79,15 @@ const TaxSettingsSection: React.FC = () => {
   return (
     <div className="bg-white rounded-xl border border-border p-5 flex flex-col gap-5">
       <div>
-        <h2 className="text-base font-semibold text-text-primary">Tax Configuration</h2>
+        <h2 className="text-base font-semibold text-text-primary">{t.settings.tax}</h2>
         <p className="text-xs text-text-muted mt-0.5">
-          Configure how taxes are calculated and displayed on receipts.
+          {t.settings.tax}
         </p>
       </div>
 
       <div className="flex flex-col gap-4">
         <Input
-          label="Tax Rate (%)"
+          label={t.settings.taxRate + ' (%)'}
           type="number"
           min={0}
           max={100}
@@ -98,7 +99,7 @@ const TaxSettingsSection: React.FC = () => {
         />
 
         <Input
-          label="Tax Name"
+          label={t.settings.taxName}
           type="text"
           maxLength={20}
           value={taxName}
@@ -108,19 +109,19 @@ const TaxSettingsSection: React.FC = () => {
         />
 
         <Toggle
-          label="Tax Included in Price"
-          description="When enabled, product prices already include tax"
+          label={t.settings.taxIncludedInPrice}
+          description={t.settings.taxIncludedInPrice}
           checked={taxIncludedInPrice}
           onChange={setTaxIncludedInPrice}
         />
 
         <Input
-          label="Tax Registration Number"
+          label={t.settings.taxRegistrationNumber}
           type="text"
           maxLength={30}
           value={taxRegistrationNumber}
           onChange={e => setTaxRegistrationNumber(e.target.value)}
-          placeholder="Optional — shown on receipt"
+          placeholder={t.settings.taxRegistrationNumber}
         />
       </div>
 
@@ -130,12 +131,12 @@ const TaxSettingsSection: React.FC = () => {
           onClick={handleReset}
           className="text-xs text-text-muted hover:text-error underline"
         >
-          Reset to defaults
+          {t.settings.resetSettings}
         </button>
 
         <div className="flex items-center gap-3">
           {savedFeedback && (
-            <span className="text-xs text-green-600 font-medium">Changes saved</span>
+            <span className="text-xs text-green-600 font-medium">{t.common.save}</span>
           )}
           <Button
             variant="primary"
@@ -143,7 +144,7 @@ const TaxSettingsSection: React.FC = () => {
             onClick={handleSave}
             disabled={hasErrors || !isDirty}
           >
-            Save Changes
+            {t.common.save}
           </Button>
         </div>
       </div>

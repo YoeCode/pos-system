@@ -1,12 +1,18 @@
 import type { Sale } from '../../types';
+import { useI18n } from '../../i18n/I18nProvider';
 
 interface PaymentMethodChartProps {
   sales: Sale[];
 }
 
 const PaymentMethodChart: React.FC<PaymentMethodChartProps> = ({ sales }) => {
+  const t = useI18n();
   const methods: Record<string, number> = { cash: 0, card: 0, qr: 0 };
-  const labels: Record<string, string> = { cash: 'Cash', card: 'Card', qr: 'QR Code' };
+  const labels: Record<string, string> = { 
+    cash: t.pos.cash, 
+    card: t.pos.card, 
+    qr: t.pos.qr 
+  };
   const colors: Record<string, string> = { cash: 'bg-emerald-500', card: 'bg-blue-500', qr: 'bg-violet-500' };
 
   sales.forEach(sale => {
@@ -17,9 +23,9 @@ const PaymentMethodChart: React.FC<PaymentMethodChartProps> = ({ sales }) => {
 
   return (
     <div>
-      <h3 className="text-sm font-semibold text-text-primary mb-4">Payment Methods</h3>
+      <h3 className="text-sm font-semibold text-text-primary mb-4">{t.pos.paymentMethod}</h3>
       {total === 0 ? (
-        <p className="text-sm text-text-muted text-center py-8">No sales data</p>
+        <p className="text-sm text-text-muted text-center py-8">{t.dashboard.noData}</p>
       ) : (
         <div className="flex flex-col gap-4">
           {Object.entries(methods).map(([key, value]) => {

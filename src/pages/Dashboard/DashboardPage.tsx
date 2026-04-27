@@ -5,10 +5,12 @@ import SalesChart from './SalesChart';
 import PaymentMethodChart from './PaymentMethodChart';
 import RecentSales from './RecentSales';
 import LowStockAlerts from './LowStockAlerts';
+import { useI18n } from '../../i18n/I18nProvider';
 
 const DashboardPage = () => {
   const sales = useAppSelector(selectFilteredSales);
   const products = useAppSelector(state => state.products.items);
+  const t = useI18n();
 
   const totalRevenue = sales.reduce((sum, s) => sum + s.order.total, 0);
   const totalTickets = sales.length;
@@ -33,14 +35,14 @@ const DashboardPage = () => {
     <div className="p-6 flex flex-col gap-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-text-primary">Dashboard</h1>
-        <p className="text-text-muted mt-1">Overview of your business performance</p>
+        <h1 className="text-2xl font-bold text-text-primary">{t.dashboard.title}</h1>
+        <p className="text-text-muted mt-1">{t.dashboard.title}</p>
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-4 gap-4">
         <KpiCard
-          title="Today's Revenue"
+          title={t.dashboard.todaySales}
           value={`$${totalRevenue.toFixed(2)}`}
           trend="+12.5%"
           trendUp={true}
@@ -51,7 +53,7 @@ const DashboardPage = () => {
           }
         />
         <KpiCard
-          title="Tickets"
+          title={t.dashboard.totalOrders}
           value={totalTickets.toString()}
           trend="+3"
           trendUp={true}
@@ -62,7 +64,7 @@ const DashboardPage = () => {
           }
         />
         <KpiCard
-          title="Avg Ticket"
+          title={t.dashboard.averageTicket}
           value={`$${avgTicket.toFixed(2)}`}
           trend="-2.1%"
           trendUp={false}
@@ -73,7 +75,7 @@ const DashboardPage = () => {
           }
         />
         <KpiCard
-          title="Top Product"
+          title={t.dashboard.topProducts}
           value={topProduct?.name || '—'}
           subtitle={topProduct ? `${topProduct.qty} sold · $${topProduct.revenue.toFixed(2)}` : ''}
           icon={

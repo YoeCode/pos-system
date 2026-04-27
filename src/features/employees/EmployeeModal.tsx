@@ -5,6 +5,7 @@ import type { Employee } from '../../types';
 import Modal from '../../components/ui/Modal';
 import Toggle from '../../components/ui/Toggle';
 import Button from '../../components/ui/Button';
+import { useI18n } from '../../i18n/I18nProvider';
 
 const ROLES: Employee['role'][] = ['Cashier', 'Supervisor', 'Admin'];
 const SHIFTS = [
@@ -34,6 +35,7 @@ const EmployeeModal: React.FC = () => {
   const dispatch = useAppDispatch();
   const isOpen = useAppSelector(state => state.employees.isModalOpen);
   const [form, setForm] = useState(defaultForm);
+  const t = useI18n();
 
   const handleClose = () => {
     dispatch(toggleModal());
@@ -59,18 +61,18 @@ const EmployeeModal: React.FC = () => {
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="New Employee"
-      subtitle="Fill in the professional profile details."
+      title={t.employees.addEmployee}
+      subtitle={t.employees.addEmployee}
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
         {/* Identity & Contact */}
         <div>
           <p className="text-xs font-semibold text-text-muted uppercase tracking-widest mb-3">
-            Identity & Contact
+            {t.employees.name} & {t.employees.email}
           </p>
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Full Name</label>
+              <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">{t.employees.name}</label>
               <input
                 required
                 value={form.name}
@@ -80,7 +82,7 @@ const EmployeeModal: React.FC = () => {
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Email</label>
+              <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">{t.employees.email}</label>
               <input
                 type="email"
                 required
@@ -91,7 +93,7 @@ const EmployeeModal: React.FC = () => {
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Phone</label>
+              <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">{t.employees.phone}</label>
               <input
                 value={form.phone}
                 onChange={e => setForm(prev => ({ ...prev, phone: e.target.value }))}
@@ -100,7 +102,7 @@ const EmployeeModal: React.FC = () => {
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">POS PIN</label>
+              <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">{t.employees.pin}</label>
               <input
                 type="password"
                 maxLength={6}
@@ -116,11 +118,11 @@ const EmployeeModal: React.FC = () => {
         {/* Operational Settings */}
         <div>
           <p className="text-xs font-semibold text-text-muted uppercase tracking-widest mb-3">
-            Operational Settings
+            {t.employees.role}
           </p>
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Role Type</label>
+              <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">{t.employees.role}</label>
               <select
                 value={form.role}
                 onChange={e => setForm(prev => ({ ...prev, role: e.target.value as Employee['role'] }))}
@@ -130,7 +132,7 @@ const EmployeeModal: React.FC = () => {
               </select>
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Shift Schedule</label>
+              <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">{t.employees.shift}</label>
               <select
                 value={form.shift}
                 onChange={e => setForm(prev => ({ ...prev, shift: e.target.value }))}
@@ -147,23 +149,23 @@ const EmployeeModal: React.FC = () => {
           <Toggle
             checked={form.active}
             onChange={val => setForm(prev => ({ ...prev, active: val }))}
-            label="Active Status"
-            description="Enable this employee to log in and use the POS system"
+            label={t.employees.active}
+            description={t.employees.active}
           />
         </div>
 
         {/* Permissions */}
         <div>
           <p className="text-xs font-semibold text-text-muted uppercase tracking-widest mb-3">
-            Module Permissions
+            {t.employees.permissions}
           </p>
           <div className="grid grid-cols-2 gap-3">
             {(
               [
-                { key: 'processSales', label: 'Process Sales' },
-                { key: 'applyDiscounts', label: 'Apply Discounts' },
-                { key: 'manageInventory', label: 'Manage Inventory' },
-                { key: 'accessReports', label: 'Access Reports' },
+                { key: 'processSales', label: t.employees.processSales },
+                { key: 'applyDiscounts', label: t.employees.applyDiscounts },
+                { key: 'manageInventory', label: t.employees.manageInventory },
+                { key: 'accessReports', label: t.employees.accessReports },
               ] as const
             ).map(({ key, label }) => (
               <label key={key} className="flex items-center gap-2.5 cursor-pointer p-3 rounded-lg border border-border hover:border-primary/30 hover:bg-primary/5 transition-colors">
@@ -182,10 +184,10 @@ const EmployeeModal: React.FC = () => {
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 pt-2 border-t border-border">
           <Button type="button" variant="secondary" onClick={handleClose}>
-            Cancel
+            {t.common.cancel}
           </Button>
           <Button type="submit" variant="primary">
-            Create Profile
+            {t.common.add}
           </Button>
         </div>
       </form>

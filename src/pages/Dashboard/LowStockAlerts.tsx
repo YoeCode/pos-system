@@ -1,14 +1,17 @@
 import type { Product } from '../../types';
+import { useI18n } from '../../i18n/I18nProvider';
 
 interface LowStockAlertsProps {
   products: Product[];
 }
 
-const LowStockAlerts: React.FC<LowStockAlertsProps> = ({ products }) => (
+const LowStockAlerts: React.FC<LowStockAlertsProps> = ({ products }) => {
+  const t = useI18n();
+  return (
   <div>
-    <h3 className="text-sm font-semibold text-text-primary mb-4">Low Stock Alerts</h3>
+    <h3 className="text-sm font-semibold text-text-primary mb-4">{t.products.lowStock}</h3>
     {products.length === 0 ? (
-      <p className="text-sm text-text-muted text-center py-8">All products well stocked</p>
+      <p className="text-sm text-text-muted text-center py-8">{t.dashboard.noData}</p>
     ) : (
       <div className="flex flex-col gap-3">
         {products.map(product => {
@@ -39,6 +42,6 @@ const LowStockAlerts: React.FC<LowStockAlertsProps> = ({ products }) => (
       </div>
     )}
   </div>
-);
+);};
 
 export default LowStockAlerts;

@@ -32,6 +32,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
 }) => {
   const dispatch = useAppDispatch();
   const taxLabel = useAppSelector(selectTaxLabel);
+  const currentUser = useAppSelector(state => state.auth.user);
   const [amountReceived, setAmountReceived] = useState<string>('');
 
   const isCash = paymentMethod === 'cash';
@@ -63,6 +64,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
       amountReceived: isCash ? parsedAmount : null,
       change: isCash ? parsedAmount - total : null,
       completedAt: new Date().toISOString(),
+      employeeId: currentUser?.id,
     };
 
     dispatch(completeSale(sale));

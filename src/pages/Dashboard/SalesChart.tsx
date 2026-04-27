@@ -1,10 +1,12 @@
 import type { Sale } from '../../types';
+import { useI18n } from '../../i18n/I18nProvider';
 
 interface SalesChartProps {
   sales: Sale[];
 }
 
 const SalesChart: React.FC<SalesChartProps> = ({ sales }) => {
+  const t = useI18n();
   const hoursMap = new Map<number, number>();
   sales.forEach(sale => {
     const hour = new Date(sale.completedAt).getHours();
@@ -16,7 +18,7 @@ const SalesChart: React.FC<SalesChartProps> = ({ sales }) => {
 
   return (
     <div>
-      <h3 className="text-sm font-semibold text-text-primary mb-4">Sales by Hour</h3>
+      <h3 className="text-sm font-semibold text-text-primary mb-4">{t.dashboard.salesChart}</h3>
       <div className="flex items-end gap-1 h-40">
         {hours.map(hour => {
           const val = hoursMap.get(hour) || 0;

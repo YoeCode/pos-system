@@ -7,12 +7,14 @@ import {
 } from '../settingsSlice';
 import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
+import { useI18n } from '../../../i18n/I18nProvider';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const StoreSettingsSection: React.FC = () => {
   const dispatch = useAppDispatch();
   const reduxStore = useAppSelector(selectStoreSettings);
+  const t = useI18n();
 
   const [storeName, setStoreName] = useState(reduxStore.storeName);
   const [storeAddress, setStoreAddress] = useState(reduxStore.storeAddress);
@@ -31,7 +33,7 @@ const StoreSettingsSection: React.FC = () => {
   }, [reduxStore]);
 
   // Validation
-  const storeNameError = storeName.trim() === '' ? 'Store name is required' : undefined;
+  const storeNameError = storeName.trim() === '' ? t.settings.storeName + ' is required' : undefined;
   const emailError =
     storeEmail !== '' && !EMAIL_REGEX.test(storeEmail)
       ? 'Enter a valid email address'
@@ -74,15 +76,15 @@ const StoreSettingsSection: React.FC = () => {
   return (
     <div className="bg-white rounded-xl border border-border p-5 flex flex-col gap-5">
       <div>
-        <h2 className="text-base font-semibold text-text-primary">Store Information</h2>
+        <h2 className="text-base font-semibold text-text-primary">{t.settings.store}</h2>
         <p className="text-xs text-text-muted mt-0.5">
-          Business details shown on receipts and in the sidebar.
+          {t.settings.store}
         </p>
       </div>
 
       <div className="flex flex-col gap-4">
         <Input
-          label="Store Name"
+          label={t.settings.storeName}
           type="text"
           maxLength={60}
           value={storeName}
@@ -93,38 +95,38 @@ const StoreSettingsSection: React.FC = () => {
 
         <div className="flex flex-col gap-1">
           <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">
-            Address
+            {t.settings.storeAddress}
           </label>
           <textarea
             maxLength={200}
             value={storeAddress}
             onChange={e => setStoreAddress(e.target.value)}
-            placeholder="Optional — shown on receipt"
+            placeholder={t.settings.storeAddress}
             rows={3}
             className="w-full px-3 py-2.5 text-sm rounded-lg border border-border bg-white text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors resize-none"
           />
         </div>
 
         <Input
-          label="Phone"
+          label={t.settings.storePhone}
           type="tel"
           value={storePhone}
           onChange={e => setStorePhone(e.target.value)}
-          placeholder="Optional — shown on receipt"
+          placeholder={t.settings.storePhone}
         />
 
         <Input
-          label="Email"
+          label={t.settings.storeEmail}
           type="email"
           maxLength={60}
           value={storeEmail}
           onChange={e => setStoreEmail(e.target.value)}
           error={emailError}
-          placeholder="Optional — shown on receipt"
+          placeholder={t.settings.storeEmail}
         />
 
         <Input
-          label="Receipt Footer Message"
+          label={t.settings.receiptFooterMessage}
           type="text"
           maxLength={80}
           value={receiptFooterMessage}
@@ -139,12 +141,12 @@ const StoreSettingsSection: React.FC = () => {
           onClick={handleReset}
           className="text-xs text-text-muted hover:text-error underline"
         >
-          Reset to defaults
+          {t.settings.resetSettings}
         </button>
 
         <div className="flex items-center gap-3">
           {savedFeedback && (
-            <span className="text-xs text-green-600 font-medium">Changes saved</span>
+            <span className="text-xs text-green-600 font-medium">{t.common.save}</span>
           )}
           <Button
             variant="primary"
@@ -152,7 +154,7 @@ const StoreSettingsSection: React.FC = () => {
             onClick={handleSave}
             disabled={hasErrors || !isDirty}
           >
-            Save Changes
+            {t.common.save}
           </Button>
         </div>
       </div>
