@@ -11,7 +11,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const dispatch = useAppDispatch();
 
   return (
-    <div className="bg-white rounded-xl border border-border overflow-hidden hover:shadow-md transition-shadow duration-150 cursor-pointer group">
+    <div className="bg-white rounded-xl border border-border overflow-hidden hover:shadow-md transition-shadow duration-150 cursor-pointer">
       {/* Image area */}
       <div className="aspect-square bg-gray-100 flex items-center justify-center relative overflow-hidden">
         {product.image ? (
@@ -23,15 +23,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             </svg>
           </div>
         )}
-        {/* Add button overlay */}
-        <button
-          onClick={e => { e.stopPropagation(); dispatch(addToCart(product)); }}
-          className="absolute bottom-2 right-2 w-8 h-8 bg-primary hover:bg-primary-dark text-white rounded-lg flex items-center justify-center shadow-md transition-all duration-150 active:scale-95 opacity-0 group-hover:opacity-100"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
-          </svg>
-        </button>
         {/* Low stock badge */}
         {product.stock < 10 && (
           <div className="absolute top-2 left-2 px-1.5 py-0.5 bg-error/90 text-white text-xs font-semibold rounded">
