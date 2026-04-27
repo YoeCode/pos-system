@@ -48,8 +48,29 @@ const posSlice = createSlice({
     setCategory: (state, action: PayloadAction<string>) => {
       state.selectedCategory = action.payload;
     },
+    addCustomProductToCart: (state, action: PayloadAction<{ name: string; category: string; price: number }>) => {
+      const { name, category, price } = action.payload;
+      const customProduct: Product = {
+        id: `custom-${Date.now()}`,
+        name,
+        sku: `CUSTOM-${Date.now().toString(36).toUpperCase()}`,
+        category,
+        price,
+        costPrice: 0,
+        stock: 999,
+        minStock: 0,
+        status: 'active',
+        publishedOnline: false,
+      };
+      const existing = state.cart.find(item => item.product.id === customProduct.id);
+      if (existing) {
+        existing.quantity += 1;
+      } else {
+        state.cart.push({ product: customProduct, quantity: 1 });
+      }
+    },
   },
 });
 
-export const { addToCart, removeFromCart, updateQuantity, clearCart, setPaymentMethod, setCategory } = posSlice.actions;
+export const { addToCart, removeFromCart, updateQuantity, clearCart, setPaymentMethod, setCategory, addCustomProductToCart } = posSlice.actions;
 export default posSlice.reducer;

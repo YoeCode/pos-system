@@ -8,17 +8,20 @@ import {
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
 import Button from '../../../components/ui/Button';
+import Toggle from '../../../components/ui/Toggle';
+import { useI18n } from '../../../i18n/I18nProvider';
 import type { PaymentMethod } from '../../../types';
 
-const paymentMethodOptions = [
-  { value: 'cash', label: 'Cash' },
-  { value: 'card', label: 'Card' },
-  { value: 'qr', label: 'QR Code' },
+const paymentMethodOptions: { value: PaymentMethod; labelKey: 'cash' | 'card' | 'qr' }[] = [
+  { value: 'cash', labelKey: 'cash' },
+  { value: 'card', labelKey: 'card' },
+  { value: 'qr', labelKey: 'qr' },
 ];
 
 const PosSettingsSection: React.FC = () => {
   const dispatch = useAppDispatch();
   const reduxPos = useAppSelector(selectPosSettings);
+  const t = useI18n();
 
   const [defaultPaymentMethod, setDefaultPaymentMethod] = useState<PaymentMethod>(
     reduxPos.defaultPaymentMethod
@@ -27,22 +30,22 @@ const PosSettingsSection: React.FC = () => {
   const [walkInCustomerLabel, setWalkInCustomerLabel] = useState(reduxPos.walkInCustomerLabel);
   const [orderNumberPrefix, setOrderNumberPrefix] = useState(reduxPos.orderNumberPrefix);
   const [orderNumberSeed, setOrderNumberSeed] = useState(String(reduxPos.orderNumberSeed));
+  const [enableManualProduct, setEnableManualProduct] = useState(reduxPos.enableManualProduct);
   const [savedFeedback, setSavedFeedback] = useState(false);
 
-  // Sync local state when redux state changes externally (e.g. after reset)
   useEffect(() => {
     setDefaultPaymentMethod(reduxPos.defaultPaymentMethod);
     setDefaultCategory(reduxPos.defaultCategory);
     setWalkInCustomerLabel(reduxPos.walkInCustomerLabel);
     setOrderNumberPrefix(reduxPos.orderNumberPrefix);
     setOrderNumberSeed(String(reduxPos.orderNumberSeed));
+    setEnableManualProduct(reduxPos.enableManualProduct);
   }, [reduxPos]);
 
-  // Validation
   const parsedSeed = parseInt(orderNumberSeed, 10);
   const seedError =
     isNaN(parsedSeed) || parsedSeed < 1 || !Number.isInteger(parsedSeed) || String(parsedSeed) !== orderNumberSeed.trim()
-      ? 'Starting order number must be an integer of 1 or more'
+      ? `${t.settings.orderNumberSeed} must be an integer of 1 or more`
       : undefined;
 
   const hasErrors = !!seedError;
@@ -52,7 +55,8 @@ const PosSettingsSection: React.FC = () => {
     defaultCategory !== reduxPos.defaultCategory ||
     walkInCustomerLabel !== reduxPos.walkInCustomerLabel ||
     orderNumberPrefix !== reduxPos.orderNumberPrefix ||
-    orderNumberSeed !== String(reduxPos.orderNumberSeed);
+    orderNumberSeed !== String(reduxPos.orderNumberSeed) ||
+    enableManualProduct !== reduxPos.enableManualProduct;
 
   const handleSave = () => {
     if (hasErrors || !isDirty) return;
@@ -63,6 +67,7 @@ const PosSettingsSection: React.FC = () => {
         walkInCustomerLabel,
         orderNumberPrefix,
         orderNumberSeed: parsedSeed,
+        enableManualProduct,
       })
     );
     setSavedFeedback(true);
@@ -82,40 +87,40 @@ const PosSettingsSection: React.FC = () => {
   return (
     <div className="bg-white rounded-xl border border-border p-5 flex flex-col gap-5">
       <div>
-        <h2 className="text-base font-semibold text-text-primary">POS Behavior</h2>
+        <h2 className="text-base font-semibold text-text-primary">{t.settings.pos}</h2>
         <p className="text-xs text-text-muted mt-0.5">
-          Configure default values and display labels for the point-of-sale terminal.
+          {t.settings.pos}
         </p>
       </div>
 
       <div className="flex flex-col gap-4">
         <Select
-          label="Default Payment Method"
-          options={paymentMethodOptions}
+          label={t.settings.defaultPaymentMethod}
+          options={paymentMethodOptions.map(opt => ({ value: opt.value, label: t.pos[opt.labelKey] }))}
           value={defaultPaymentMethod}
           onChange={e => setDefaultPaymentMethod(e.target.value as PaymentMethod)}
         />
 
         <Input
-          label="Default Category"
+          label={t.settings.defaultCategory}
           type="text"
           maxLength={30}
           value={defaultCategory}
           onChange={e => setDefaultCategory(e.target.value)}
-          placeholder="All Items"
+          placeholder={t.settings.defaultCategory}
         />
 
         <Input
-          label="Walk-In Customer Label"
+          label={t.settings.walkInCustomerLabel}
           type="text"
           maxLength={40}
           value={walkInCustomerLabel}
           onChange={e => setWalkInCustomerLabel(e.target.value)}
-          placeholder="Walk-In Customer"
+          placeholder={t.settings.walkInCustomerLabel}
         />
 
         <Input
-          label="Order Number Prefix"
+          label={t.settings.orderNumberPrefix}
           type="text"
           maxLength={10}
           value={orderNumberPrefix}
@@ -124,7 +129,7 @@ const PosSettingsSection: React.FC = () => {
         />
 
         <Input
-          label="Starting Order Number"
+          label={t.settings.orderNumberSeed}
           type="number"
           min={1}
           step={1}
@@ -132,6 +137,13 @@ const PosSettingsSection: React.FC = () => {
           onChange={e => setOrderNumberSeed(e.target.value)}
           error={seedError}
           placeholder="1042"
+        />
+
+        <Toggle
+          label={t.settings.enableManualProduct}
+          description={t.settings.enableManualProductDesc}
+          checked={enableManualProduct}
+          onChange={setEnableManualProduct}
         />
       </div>
 
@@ -141,12 +153,12 @@ const PosSettingsSection: React.FC = () => {
           onClick={handleReset}
           className="text-xs text-text-muted hover:text-error underline"
         >
-          Reset to defaults
+          {t.settings.resetSettings}
         </button>
 
         <div className="flex items-center gap-3">
           {savedFeedback && (
-            <span className="text-xs text-green-600 font-medium">Changes saved</span>
+            <span className="text-xs text-green-600 font-medium">{t.common.save}</span>
           )}
           <Button
             variant="primary"
@@ -154,7 +166,7 @@ const PosSettingsSection: React.FC = () => {
             onClick={handleSave}
             disabled={hasErrors || !isDirty}
           >
-            Save Changes
+            {t.common.save}
           </Button>
         </div>
       </div>
