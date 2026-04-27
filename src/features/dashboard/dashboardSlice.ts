@@ -14,7 +14,7 @@ const mockProducts: Product[] = [
   { id: '8', name: 'Avocado Brunch', sku: 'AVB-005', category: 'Food', price: 14.50, costPrice: 6, stock: 45, minStock: 10, status: 'active', publishedOnline: false, description: 'Avocado toast' },
 ];
 
-function makeSale(id: string, orderNum: number, hoursAgo: number, items: { productId: string; qty: number }[], method: PaymentMethod): Sale {
+function makeSale(id: string, orderNum: number, hoursAgo: number, items: { productId: string; qty: number }[], method: PaymentMethod, employeeId?: string): Sale {
   const orderItems: OrderItem[] = items.map(i => {
     const p = mockProducts.find(pr => pr.id === i.productId)!;
     return { product: p, quantity: i.qty, lineTotal: p.price * i.qty };
@@ -31,25 +31,26 @@ function makeSale(id: string, orderNum: number, hoursAgo: number, items: { produ
     amountReceived: method === 'cash' ? Math.ceil(total) : total,
     change: method === 'cash' ? Math.ceil(total) - total : null,
     completedAt: date.toISOString(),
+    employeeId,
   };
 }
 
 const mockSales: Sale[] = [
-  makeSale('s1', 1041, 0.3, [{ productId: '1', qty: 1 }, { productId: '4', qty: 2 }], 'card'),
-  makeSale('s2', 1040, 1.2, [{ productId: '5', qty: 3 }], 'cash'),
-  makeSale('s3', 1039, 2.5, [{ productId: '3', qty: 1 }, { productId: '7', qty: 2 }], 'qr'),
-  makeSale('s4', 1038, 4, [{ productId: '8', qty: 2 }], 'card'),
-  makeSale('s5', 1037, 5.5, [{ productId: '2', qty: 1 }], 'cash'),
-  makeSale('s6', 1036, 7, [{ productId: '4', qty: 5 }, { productId: '5', qty: 3 }], 'card'),
-  makeSale('s7', 1035, 9, [{ productId: '1', qty: 1 }], 'qr'),
-  makeSale('s8', 1034, 12, [{ productId: '3', qty: 2 }, { productId: '8', qty: 1 }], 'cash'),
-  makeSale('s9', 1033, 18, [{ productId: '7', qty: 4 }], 'card'),
-  makeSale('s10', 1032, 24, [{ productId: '2', qty: 1 }, { productId: '5', qty: 2 }], 'cash'),
-  makeSale('s11', 1031, 30, [{ productId: '4', qty: 10 }], 'card'),
-  makeSale('s12', 1030, 36, [{ productId: '1', qty: 2 }], 'qr'),
-  makeSale('s13', 1029, 48, [{ productId: '3', qty: 1 }, { productId: '4', qty: 3 }, { productId: '7', qty: 2 }], 'cash'),
-  makeSale('s14', 1028, 55, [{ productId: '8', qty: 4 }], 'card'),
-  makeSale('s15', 1027, 60, [{ productId: '2', qty: 2 }, { productId: '5', qty: 1 }], 'cash'),
+  makeSale('s1', 1041, 0.3, [{ productId: '1', qty: 1 }, { productId: '4', qty: 2 }], 'card', '1'),
+  makeSale('s2', 1040, 1.2, [{ productId: '5', qty: 3 }], 'cash', '2'),
+  makeSale('s3', 1039, 2.5, [{ productId: '3', qty: 1 }, { productId: '7', qty: 2 }], 'qr', '1'),
+  makeSale('s4', 1038, 4, [{ productId: '8', qty: 2 }], 'card', '3'),
+  makeSale('s5', 1037, 5.5, [{ productId: '2', qty: 1 }], 'cash', '2'),
+  makeSale('s6', 1036, 7, [{ productId: '4', qty: 5 }, { productId: '5', qty: 3 }], 'card', '1'),
+  makeSale('s7', 1035, 9, [{ productId: '1', qty: 1 }], 'qr', '4'),
+  makeSale('s8', 1034, 12, [{ productId: '3', qty: 2 }, { productId: '8', qty: 1 }], 'cash', '3'),
+  makeSale('s9', 1033, 18, [{ productId: '7', qty: 4 }], 'card', '2'),
+  makeSale('s10', 1032, 24, [{ productId: '2', qty: 1 }, { productId: '5', qty: 2 }], 'cash', '1'),
+  makeSale('s11', 1031, 30, [{ productId: '4', qty: 10 }], 'card', '5'),
+  makeSale('s12', 1030, 36, [{ productId: '1', qty: 2 }], 'qr', '4'),
+  makeSale('s13', 1029, 48, [{ productId: '3', qty: 1 }, { productId: '4', qty: 3 }, { productId: '7', qty: 2 }], 'cash', '2'),
+  makeSale('s14', 1028, 55, [{ productId: '8', qty: 4 }], 'card', '3'),
+  makeSale('s15', 1027, 60, [{ productId: '2', qty: 2 }, { productId: '5', qty: 1 }], 'cash', '1'),
 ];
 
 interface DashboardState {
