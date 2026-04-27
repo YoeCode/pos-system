@@ -1,25 +1,46 @@
 import React, { useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/store';
 import { clearCart, removeFromCart, setPaymentMethod, updateQuantity } from './posSlice';
-import { selectFormattedOrderNumber } from '../sales/salesSlice';
+import {
+  selectTaxRate,
+  selectTaxLabel,
+  selectTaxIncludedInPrice,
+  selectWalkInCustomerLabel,
+  selectFormattedOrderNumber,
+} from '../settings/settingsSlice';
 import CheckoutModal from './checkout/CheckoutModal';
-import { TAX_RATE } from '../../constants/tax';
+import { useI18n } from '../../i18n/I18nProvider';
 import type { PaymentMethod } from '../../types';
 
 const Cart: React.FC = () => {
   const dispatch = useAppDispatch();
   const { cart, paymentMethod } = useAppSelector(state => state.pos);
   const orderNumber = useAppSelector(selectFormattedOrderNumber);
+  const taxRate = useAppSelector(selectTaxRate);
+  const taxIncludedInPrice = useAppSelector(selectTaxIncludedInPrice);
+  const taxLabel = useAppSelector(selectTaxLabel);
+  const walkInLabel = useAppSelector(selectWalkInCustomerLabel);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const t = useI18n();
 
   const subtotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-  const tax = subtotal * TAX_RATE;
-  const total = subtotal + tax;
+  
+  let tax: number;
+  let total: number;
+  
+  if (taxIncludedInPrice) {
+    const basePrice = subtotal / (1 + taxRate);
+    tax = subtotal - basePrice;
+    total = subtotal;
+  } else {
+    tax = subtotal * taxRate;
+    total = subtotal + tax;
+  }
 
-  const paymentMethods: { id: PaymentMethod; label: string }[] = [
-    { id: 'cash', label: 'CASH' },
-    { id: 'card', label: 'CARD' },
-    { id: 'qr', label: 'QR CODE' },
+  const paymentMethods: { id: PaymentMethod; labelKey: 'cash' | 'card' | 'qr' }[] = [
+    { id: 'cash', labelKey: 'cash' },
+    { id: 'card', labelKey: 'card' },
+    { id: 'qr', labelKey: 'qr' },
   ];
 
   return (
@@ -29,13 +50,13 @@ const Cart: React.FC = () => {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="font-bold text-text-primary text-base">Order #{orderNumber}</h2>
-            <p className="text-xs text-text-muted uppercase tracking-wider mt-0.5">Walk-In Customer</p>
+            <p className="text-xs text-text-muted uppercase tracking-wider mt-0.5">{walkInLabel}</p>
           </div>
           <button
             disabled={cart.length === 0}
             onClick={() => dispatch(clearCart())}
             className="w-8 h-8 flex items-center justify-center rounded-lg text-text-muted hover:text-error hover:bg-error/5 transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-text-muted disabled:hover:bg-transparent"
-            title="Clear cart"
+            title={t.pos.removeFromCart}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -53,7 +74,7 @@ const Cart: React.FC = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
             </div>
-            <p className="text-sm text-text-muted">No items in cart yet.<br />Add products from the grid.</p>
+            <p className="text-sm text-text-muted">{t.pos.emptyCart}</p>
           </div>
         ) : (
           cart.map(item => (
@@ -109,23 +130,23 @@ const Cart: React.FC = () => {
         {/* Totals */}
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-text-muted">Subtotal</span>
+            <span className="text-text-muted">{t.pos.subtotal}</span>
             <span className="font-mono text-text-primary">${subtotal.toFixed(2)}</span>
           </div>
           <div className="flex items-center justify-between text-sm">
-            <span className="text-text-muted">Tax (21%)</span>
+            <span className="text-text-muted">{taxLabel}</span>
             <span className="font-mono text-text-muted">${tax.toFixed(2)}</span>
           </div>
           <div className="h-px bg-border" />
           <div className="flex items-center justify-between">
-            <span className="font-bold text-text-primary text-sm">Total Amount</span>
+            <span className="font-bold text-text-primary text-sm">{t.pos.total}</span>
             <span className="font-mono text-primary font-bold text-xl">${total.toFixed(2)}</span>
           </div>
         </div>
 
         {/* Payment method */}
         <div>
-          <p className="text-xs font-semibold text-text-muted uppercase tracking-widest mb-2">Payment Method</p>
+          <p className="text-xs font-semibold text-text-muted uppercase tracking-widest mb-2">{t.pos.paymentMethod}</p>
           <div className="grid grid-cols-3 gap-1.5">
             {paymentMethods.map(method => (
               <button
@@ -137,7 +158,7 @@ const Cart: React.FC = () => {
                     : 'bg-white border border-border text-text-muted hover:border-text-primary hover:text-text-primary'
                 }`}
               >
-                {method.label}
+                {t.pos[method.labelKey].toUpperCase()}
               </button>
             ))}
           </div>
@@ -149,7 +170,7 @@ const Cart: React.FC = () => {
           onClick={() => cart.length > 0 && setIsCheckoutOpen(true)}
           className="w-full py-3.5 bg-primary hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold rounded-xl text-sm transition-all duration-150 active:scale-[0.98]"
         >
-          CHARGE ${total.toFixed(2)}
+          {t.pos.checkout.toUpperCase()} ${total.toFixed(2)}
         </button>
       </div>
 

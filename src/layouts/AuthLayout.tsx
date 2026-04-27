@@ -1,10 +1,13 @@
 import React from 'react';
+import { useI18n } from '../i18n/I18nProvider';
 
 interface AuthLayoutProps {
   children: React.ReactNode;
 }
 
 const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
+  const t = useI18n();
+  
   return (
     <div
       className="min-h-screen flex items-center justify-center relative overflow-hidden"
@@ -33,10 +36,10 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
       </div>
       {/* Footer */}
       <div className="absolute bottom-6 left-0 right-0 flex items-center justify-between px-8 text-xs text-[#768390]">
-        <span>PRIVACY PROTOCOL · TERMS OF SERVICE · V2.4.0-STABLE</span>
+        <span>{t.settings.privacyProtocol} · {t.settings.termsOfService} · {t.settings.version}2.4.0-STABLE</span>
         <span className="flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-primary inline-block animate-pulse" />
-          SYSTEM STATUS — OPTIMAL
+          {t.settings.systemStatusOptimal}
         </span>
       </div>
     </div>

@@ -7,9 +7,24 @@ interface SalesState {
   nextOrderNumber: number;
 }
 
+/** Read the stored order seed from pos_settings without importing settingsSlice (avoids circular dependency). */
+const loadStoredOrderSeed = (): number => {
+  try {
+    const stored = localStorage.getItem('pos_settings');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      const seed = parsed?.pos?.orderNumberSeed;
+      if (typeof seed === 'number' && seed >= 1) return seed;
+    }
+  } catch {
+    // ignore — fall through to default
+  }
+  return 1042;
+};
+
 const initialState: SalesState = {
   sales: [],
-  nextOrderNumber: 1042,
+  nextOrderNumber: loadStoredOrderSeed(),
 };
 
 const salesSlice = createSlice({
@@ -32,9 +47,6 @@ interface StateWithSales {
 
 export const selectNextOrderNumber = (state: StateWithSales): number =>
   state.sales.nextOrderNumber;
-
-export const selectFormattedOrderNumber = (state: StateWithSales): string =>
-  `ORD-${state.sales.nextOrderNumber}`;
 
 export const selectSaleById = (state: StateWithSales, saleId: string): Sale | undefined =>
   state.sales.sales.find(s => s.id === saleId);

@@ -145,6 +145,9 @@ interface ProductsState {
   selectedProduct: Product | null;
   searchQuery: string;
   selectedCategory: string;
+  statusFilter: string;
+  stockFilter: string;
+  publishedFilter: string;
 }
 
 const initialState: ProductsState = {
@@ -152,6 +155,9 @@ const initialState: ProductsState = {
   selectedProduct: null,
   searchQuery: '',
   selectedCategory: 'All',
+  statusFilter: 'all',
+  stockFilter: 'all',
+  publishedFilter: 'all',
 };
 
 const productsSlice = createSlice({
@@ -177,8 +183,17 @@ const productsSlice = createSlice({
     setSelectedCategory: (state, action: PayloadAction<string>) => {
       state.selectedCategory = action.payload;
     },
+    setStatusFilter: (state, action: PayloadAction<string>) => {
+      state.statusFilter = action.payload;
+    },
+    setStockFilter: (state, action: PayloadAction<string>) => {
+      state.stockFilter = action.payload;
+    },
+    setPublishedFilter: (state, action: PayloadAction<string>) => {
+      state.publishedFilter = action.payload;
+    },
   },
 });
 
-export const { setProducts, selectProduct, addProduct, updateProduct, setSearchQuery, setSelectedCategory } = productsSlice.actions;
+export const { setProducts, selectProduct, addProduct, updateProduct, setSearchQuery, setSelectedCategory, setStatusFilter, setStockFilter, setPublishedFilter } = productsSlice.actions;
 export default productsSlice.reducer;

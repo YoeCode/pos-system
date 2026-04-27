@@ -81,4 +81,42 @@ export interface Sale {
   amountReceived: number | null;
   change: number | null;
   completedAt: string;
+  employeeId?: string;
+}
+
+export interface TaxSettings {
+  taxRate: number;
+  taxName: string;
+  taxIncludedInPrice: boolean;
+  taxRegistrationNumber: string;
+}
+
+export interface StoreSettings {
+  storeName: string;
+  storeAddress: string;
+  storePhone: string;
+  storeEmail: string;
+  receiptFooterMessage: string;
+}
+
+export interface PosSettings {
+  defaultPaymentMethod: PaymentMethod;
+  defaultCategory: string;
+  walkInCustomerLabel: string;
+  orderNumberPrefix: string;
+  orderNumberSeed: number;
+  enableManualProduct: boolean;
+}
+
+export type Language = 'en' | 'es';
+
+export interface LanguageSettings {
+  language: Language;
+}
+
+export interface SettingsState {
+  tax: TaxSettings;
+  store: StoreSettings;
+  pos: PosSettings;
+  language: LanguageSettings;
 }

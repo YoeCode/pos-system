@@ -62,7 +62,7 @@ const loadStoredSession = (): { isAuthenticated: boolean; user: AuthUser | null 
       }
     }
   } catch {
-    localStorage.removeItem('nexopos_session');
+    try { localStorage.removeItem('nexopos_session'); } catch { /* ignore */ }
   }
   return { isAuthenticated: false, user: null };
 };

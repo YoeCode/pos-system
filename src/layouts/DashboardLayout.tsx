@@ -3,6 +3,8 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../app/store';
 import { logout } from '../features/auth/authSlice';
 import { ROLE_PERMISSIONS } from '../types';
+import { selectStoreName } from '../features/settings/settingsSlice';
+import { useI18n } from '../i18n/I18nProvider';
 
 interface NavItemProps {
   to: string;
@@ -68,6 +70,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const user = useAppSelector(state => state.auth.user);
+  const storeName = useAppSelector(selectStoreName);
+  const t = useI18n();
 
   const handleLogout = () => {
     dispatch(logout());
@@ -77,12 +81,12 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const userPermissions = user ? ROLE_PERMISSIONS[user.role] || [] : [];
 
   const navItems = [
-    { to: '/dashboard', icon: <DashboardIcon />, label: 'Dashboard', permission: 'dashboard' },
-    { to: '/pos', icon: <SalesIcon />, label: 'Sales', permission: 'pos' },
-    { to: '/products', icon: <ProductsIcon />, label: 'Products', permission: 'products' },
-    { to: '/employees', icon: <TeamIcon />, label: 'Team', permission: 'employees' },
-    { to: '/reports', icon: <ReportsIcon />, label: 'Reports', permission: 'reports' },
-    { to: '/settings', icon: <SettingsIcon />, label: 'Settings', permission: 'settings' },
+    { to: '/dashboard', icon: <DashboardIcon />, label: t.nav.dashboard, permission: 'dashboard' },
+    { to: '/pos', icon: <SalesIcon />, label: t.nav.pos, permission: 'pos' },
+    { to: '/products', icon: <ProductsIcon />, label: t.nav.products, permission: 'products' },
+    { to: '/employees', icon: <TeamIcon />, label: t.nav.employees, permission: 'employees' },
+    { to: '/reports', icon: <ReportsIcon />, label: t.nav.reports, permission: 'reports' },
+    { to: '/settings', icon: <SettingsIcon />, label: t.nav.settings, permission: 'settings' },
   ].filter(item => userPermissions.includes(item.permission));
 
   return (
@@ -97,7 +101,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                 <path d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 3h2v-2h-2v2zm0 3h2v-2h-2v2zm-2-3h2v-2h-2v2zm3-5h2v-2h-2v2zm2 2h2v-2h-2v2zm-2 2h2v-2h-2v2zm-3 0h2v-2h-2v2z" />
               </svg>
             </div>
-            <span className="font-bold text-lg text-text-primary tracking-tight">NexoPOS</span>
+            <span className="font-bold text-lg text-text-primary tracking-tight">{storeName}</span>
           </div>
         </div>
 
@@ -117,7 +121,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
             </svg>
-            Logout
+            {t.auth.logout}
           </button>
         </div>
       </aside>
@@ -133,7 +137,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
             </svg>
             <input
               type="text"
-              placeholder="Search anything..."
+              placeholder={t.common.search + '...'}
               className="w-full pl-9 pr-4 py-2 text-sm bg-background border border-border rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
             />
           </div>

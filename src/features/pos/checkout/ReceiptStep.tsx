@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 import { useAppSelector } from '../../../app/store';
 import { selectSaleById } from '../../sales/salesSlice';
+import {
+  selectStoreName,
+  selectReceiptFooterMessage,
+  selectTaxLabel,
+} from '../../settings/settingsSlice';
 
 interface ReceiptStepProps {
   saleId: string;
@@ -15,6 +20,9 @@ const paymentMethodLabel: Record<string, string> = {
 
 const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, onDone }) => {
   const sale = useAppSelector(state => selectSaleById(state, saleId));
+  const storeName = useAppSelector(selectStoreName);
+  const footerMessage = useAppSelector(selectReceiptFooterMessage);
+  const taxLabel = useAppSelector(selectTaxLabel);
   const [showGiftTicket, setShowGiftTicket] = useState(false);
 
   if (!sale) return null;
@@ -37,7 +45,7 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, onDone }) => {
       {/* Normal ticket */}
       <div className="mx-auto w-full max-w-xs bg-white border border-dashed border-gray-300 rounded-lg p-5 font-mono text-xs">
         <div className="text-center mb-4">
-          <p className="font-bold text-sm text-text-primary">CASA LIS POS</p>
+          <p className="font-bold text-sm text-text-primary">{storeName.toUpperCase() + ' POS'}</p>
           <p className="text-text-muted mt-0.5">{formattedDate} — {formattedTime}</p>
           <p className="text-text-muted mt-0.5">{order.orderNumber}</p>
         </div>
@@ -66,7 +74,7 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, onDone }) => {
             <span className="text-text-primary">${order.subtotal.toFixed(2)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-text-muted">Tax (21%)</span>
+            <span className="text-text-muted">{taxLabel}</span>
             <span className="text-text-muted">${order.tax.toFixed(2)}</span>
           </div>
           <div className="flex justify-between font-bold text-sm mt-0.5">
@@ -98,7 +106,7 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, onDone }) => {
 
         <div className="border-t border-dashed border-gray-300 my-3" />
 
-        <p className="text-center text-text-muted">Thank you!</p>
+        <p className="text-center text-text-muted">{footerMessage}</p>
       </div>
 
       {/* Gift ticket toggle button */}
@@ -140,7 +148,7 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, onDone }) => {
 
           <div className="border-t border-dashed border-gray-300 my-3" />
 
-          <p className="text-center text-text-muted">Thank you!</p>
+          <p className="text-center text-text-muted">{footerMessage}</p>
         </div>
       )}
 

@@ -1,17 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/store';
-import { setSearchQuery, setSelectedCategory } from '../../features/products/productsSlice';
+import { setSearchQuery, setSelectedCategory, setStatusFilter, setStockFilter, setPublishedFilter } from '../../features/products/productsSlice';
 import ProductsTable from '../../features/products/ProductsTable';
 import ProductDetailPanel from '../../features/products/ProductDetailPanel';
 import ProductCreateModal from '../../features/products/ProductCreateModal';
 import Button from '../../components/ui/Button';
+import { useI18n } from '../../i18n/I18nProvider';
 
 const CATEGORIES = ['All', 'Electronics', 'Food', 'Drinks', 'Apparel', 'Bakery', 'Merchandise'];
 
 const ProductsPage: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { searchQuery, selectedCategory, selectedProduct } = useAppSelector(state => state.products);
+  const { searchQuery, selectedCategory, selectedProduct, statusFilter, stockFilter, publishedFilter } = useAppSelector(state => state.products);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const filterRef = useRef<HTMLDivElement>(null);
+  const t = useI18n();
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
+        setIsFiltersOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const activeFiltersCount = [
+    statusFilter !== 'all',
+    stockFilter !== 'all',
+    publishedFilter !== 'all',
+  ].filter(Boolean).length;
 
   return (
     <div className="flex h-[calc(100vh-57px)] flex-col">
@@ -19,14 +39,14 @@ const ProductsPage: React.FC = () => {
       <div className="px-6 pt-6 pb-4 border-b border-border bg-white">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-xl font-bold text-text-primary">Product Catalog</h1>
-            <p className="text-sm text-text-muted mt-0.5">Manage your inventory and product listings</p>
+            <h1 className="text-xl font-bold text-text-primary">{t.products.title}</h1>
+            <p className="text-sm text-text-muted mt-0.5">{t.products.title}</p>
           </div>
           <Button variant="primary" size="sm" onClick={() => setIsCreateModalOpen(true)}>
             <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            New Product
+            {t.products.addProduct}
           </Button>
         </div>
 
@@ -39,7 +59,7 @@ const ProductsPage: React.FC = () => {
             </svg>
             <input
               type="text"
-              placeholder="Search products..."
+              placeholder={t.products.searchPlaceholder}
               value={searchQuery}
               onChange={e => dispatch(setSearchQuery(e.target.value))}
               className="w-full pl-9 pr-4 py-2 text-sm bg-background border border-border rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
@@ -53,17 +73,82 @@ const ProductsPage: React.FC = () => {
             className="px-3 py-2 text-sm bg-background border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
           >
             {CATEGORIES.map(cat => (
-              <option key={cat} value={cat}>{cat === 'All' ? 'All Categories' : cat}</option>
+              <option key={cat} value={cat}>{cat === 'All' ? t.products.allCategories : cat}</option>
             ))}
           </select>
 
           {/* More filters */}
-          <Button variant="secondary" size="sm">
-            <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
-            </svg>
-            More Filters
-          </Button>
+          <div ref={filterRef} className="relative">
+            <Button variant="secondary" size="sm" onClick={() => setIsFiltersOpen(!isFiltersOpen)}>
+              <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
+              </svg>
+              {t.common.filter}
+              {activeFiltersCount > 0 && (
+                <span className="ml-1.5 w-5 h-5 rounded-full bg-primary text-white text-xs flex items-center justify-center">
+                  {activeFiltersCount}
+                </span>
+              )}
+            </Button>
+
+            {isFiltersOpen && (
+              <div className="absolute top-full left-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-border z-20 p-4 flex flex-col gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">{t.products.status}</label>
+                  <select
+                    value={statusFilter}
+                    onChange={e => dispatch(setStatusFilter(e.target.value))}
+                    className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors bg-white"
+                  >
+                    <option value="all">{t.common.all}</option>
+                    <option value="active">{t.common.active}</option>
+                    <option value="inactive">{t.common.inactive}</option>
+                    <option value="draft">{t.common.draft}</option>
+                  </select>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">{t.products.stock}</label>
+                  <select
+                    value={stockFilter}
+                    onChange={e => dispatch(setStockFilter(e.target.value))}
+                    className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors bg-white"
+                  >
+                    <option value="all">{t.common.all}</option>
+                    <option value="in">{t.products.inStock}</option>
+                    <option value="low">{t.products.lowStock}</option>
+                    <option value="out">{t.products.outOfStock}</option>
+                  </select>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">{t.products.publishedOnline}</label>
+                  <select
+                    value={publishedFilter}
+                    onChange={e => dispatch(setPublishedFilter(e.target.value))}
+                    className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors bg-white"
+                  >
+                    <option value="all">{t.common.all}</option>
+                    <option value="published">Published</option>
+                    <option value="not-published">Not Published</option>
+                  </select>
+                </div>
+
+                {activeFiltersCount > 0 && (
+                  <button
+                    onClick={() => {
+                      dispatch(setStatusFilter('all'));
+                      dispatch(setStockFilter('all'));
+                      dispatch(setPublishedFilter('all'));
+                    }}
+                    className="text-xs text-primary hover:text-primary-dark font-medium transition-colors text-left"
+                  >
+                    {t.common.filter}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
