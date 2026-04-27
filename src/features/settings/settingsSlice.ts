@@ -1,6 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import type { PaymentMethod, TaxSettings, StoreSettings, PosSettings, SettingsState } from '../../types';
+import type { PaymentMethod, TaxSettings, StoreSettings, PosSettings, LanguageSettings, SettingsState, Language } from '../../types';
 import type { RootState } from '../../app/store';
 
 // ─── Default Constants (exported for use by mock data generators) ─────────────
@@ -32,6 +32,11 @@ const defaultPosSettings: PosSettings = {
   walkInCustomerLabel: 'Walk-In Customer',
   orderNumberPrefix: DEFAULT_ORDER_PREFIX,
   orderNumberSeed: DEFAULT_ORDER_SEED,
+  enableManualProduct: true,
+};
+
+const defaultLanguageSettings: LanguageSettings = {
+  language: 'es',
 };
 
 // ─── localStorage Persistence ─────────────────────────────────────────────────
@@ -47,6 +52,7 @@ const loadStoredSettings = (): SettingsState => {
         tax: { ...defaultTaxSettings, ...parsed.tax },
         store: { ...defaultStoreSettings, ...parsed.store },
         pos: { ...defaultPosSettings, ...parsed.pos },
+        language: { ...defaultLanguageSettings, ...parsed.language },
       };
     }
   } catch {
@@ -56,6 +62,7 @@ const loadStoredSettings = (): SettingsState => {
     tax: { ...defaultTaxSettings },
     store: { ...defaultStoreSettings },
     pos: { ...defaultPosSettings },
+    language: { ...defaultLanguageSettings },
   };
 };
 
@@ -79,6 +86,10 @@ const settingsSlice = createSlice({
       state.pos = { ...state.pos, ...action.payload };
       localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(state));
     },
+    updateLanguageSettings: (state, action: PayloadAction<Partial<LanguageSettings>>) => {
+      state.language = { ...state.language, ...action.payload };
+      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(state));
+    },
     resetTaxSettings: (state) => {
       state.tax = { ...defaultTaxSettings };
       localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(state));
@@ -91,6 +102,10 @@ const settingsSlice = createSlice({
       state.pos = { ...defaultPosSettings };
       localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(state));
     },
+    resetLanguageSettings: (state) => {
+      state.language = { ...defaultLanguageSettings };
+      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(state));
+    },
   },
 });
 
@@ -98,9 +113,11 @@ export const {
   updateTaxSettings,
   updateStoreSettings,
   updatePosSettings,
+  updateLanguageSettings,
   resetTaxSettings,
   resetStoreSettings,
   resetPosSettings,
+  resetLanguageSettings,
 } = settingsSlice.actions;
 
 export default settingsSlice.reducer;
@@ -139,6 +156,7 @@ export const selectDefaultCategory = (state: RootState): string => state.setting
 export const selectWalkInCustomerLabel = (state: RootState): string => state.settings.pos.walkInCustomerLabel;
 export const selectOrderNumberPrefix = (state: RootState): string => state.settings.pos.orderNumberPrefix;
 export const selectOrderNumberSeed = (state: RootState): number => state.settings.pos.orderNumberSeed;
+export const selectEnableManualProduct = (state: RootState): boolean => state.settings.pos.enableManualProduct;
 
 // ─── Cross-slice Composed Selector ────────────────────────────────────────────
 // Uses type-only import of RootState to avoid circular runtime dependency.
@@ -147,3 +165,5 @@ export const selectOrderNumberSeed = (state: RootState): number => state.setting
 
 export const selectFormattedOrderNumber = (state: RootState): string =>
   `${state.settings.pos.orderNumberPrefix}${state.sales.nextOrderNumber}`;
+
+export const selectLanguage = (state: RootState): Language => state.settings.language.language;

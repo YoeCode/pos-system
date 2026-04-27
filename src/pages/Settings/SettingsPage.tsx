@@ -2,24 +2,28 @@ import React, { useState } from 'react';
 import TaxSettingsSection from '../../features/settings/sections/TaxSettingsSection';
 import StoreSettingsSection from '../../features/settings/sections/StoreSettingsSection';
 import PosSettingsSection from '../../features/settings/sections/PosSettingsSection';
+import LanguageSettingsSection from '../../features/settings/sections/LanguageSettingsSection';
+import { useI18n } from '../../i18n/I18nProvider';
 
-type SettingsTab = 'tax' | 'store' | 'pos';
-
-const tabs: { id: SettingsTab; label: string }[] = [
-  { id: 'tax', label: 'Tax Configuration' },
-  { id: 'store', label: 'Store Information' },
-  { id: 'pos', label: 'POS Behavior' },
-];
+type SettingsTab = 'tax' | 'store' | 'pos' | 'language';
 
 const SettingsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<SettingsTab>('tax');
+  const t = useI18n();
+
+  const tabs: { id: SettingsTab; label: string }[] = [
+    { id: 'tax', label: t.settings.tax },
+    { id: 'store', label: t.settings.store },
+    { id: 'pos', label: t.settings.pos },
+    { id: 'language', label: t.settings.language },
+  ];
 
   return (
     <div className="p-6 flex flex-col gap-6">
       {/* Page header */}
       <div>
-        <h1 className="text-2xl font-bold text-text-primary">Settings</h1>
-        <p className="text-text-muted mt-1">Manage your store configuration</p>
+        <h1 className="text-2xl font-bold text-text-primary">{t.settings.title}</h1>
+        <p className="text-text-muted mt-1">{t.settings.title}</p>
       </div>
 
       {/* Content: sidebar tabs + form area */}
@@ -47,6 +51,7 @@ const SettingsPage: React.FC = () => {
           {activeTab === 'tax' && <TaxSettingsSection />}
           {activeTab === 'store' && <StoreSettingsSection />}
           {activeTab === 'pos' && <PosSettingsSection />}
+          {activeTab === 'language' && <LanguageSettingsSection />}
         </div>
       </div>
     </div>

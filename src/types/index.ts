@@ -81,6 +81,7 @@ export interface Sale {
   amountReceived: number | null;
   change: number | null;
   completedAt: string;
+  employeeId?: string;
 }
 
 export interface TaxSettings {
@@ -104,10 +105,18 @@ export interface PosSettings {
   walkInCustomerLabel: string;
   orderNumberPrefix: string;
   orderNumberSeed: number;
+  enableManualProduct: boolean;
+}
+
+export type Language = 'en' | 'es';
+
+export interface LanguageSettings {
+  language: Language;
 }
 
 export interface SettingsState {
   tax: TaxSettings;
   store: StoreSettings;
   pos: PosSettings;
+  language: LanguageSettings;
 }
