@@ -3,19 +3,23 @@ import TaxSettingsSection from '../../features/settings/sections/TaxSettingsSect
 import StoreSettingsSection from '../../features/settings/sections/StoreSettingsSection';
 import PosSettingsSection from '../../features/settings/sections/PosSettingsSection';
 import LanguageSettingsSection from '../../features/settings/sections/LanguageSettingsSection';
+import LoyaltySettingsSection from '../../features/settings/sections/LoyaltySettingsSection';
 import { useI18n } from '../../i18n/I18nProvider';
+import { useAppSelector } from '../../app/store';
 
-type SettingsTab = 'tax' | 'store' | 'pos' | 'language';
+type SettingsTab = 'tax' | 'store' | 'pos' | 'language' | 'loyalty';
 
 const SettingsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<SettingsTab>('tax');
   const t = useI18n();
+  const user = useAppSelector(state => state.auth.user);
 
   const tabs: { id: SettingsTab; label: string }[] = [
     { id: 'tax', label: t.settings.tax },
     { id: 'store', label: t.settings.store },
     { id: 'pos', label: t.settings.pos },
     { id: 'language', label: t.settings.language },
+    ...(user?.role === 'admin' ? [{ id: 'loyalty' as SettingsTab, label: t.settings.loyalty }] : []),
   ];
 
   return (
@@ -52,6 +56,7 @@ const SettingsPage: React.FC = () => {
           {activeTab === 'store' && <StoreSettingsSection />}
           {activeTab === 'pos' && <PosSettingsSection />}
           {activeTab === 'language' && <LanguageSettingsSection />}
+          {activeTab === 'loyalty' && <LoyaltySettingsSection />}
         </div>
       </div>
     </div>

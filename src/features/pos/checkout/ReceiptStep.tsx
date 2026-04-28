@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { useAppSelector } from '../../../app/store';
+import { useAppDispatch, useAppSelector } from '../../../app/store';
+import { startNewSale } from '../posSlice';
 import { selectSaleById } from '../../sales/salesSlice';
 import {
   selectStoreName,
@@ -9,6 +10,7 @@ import {
 
 interface ReceiptStepProps {
   saleId: string;
+  loyaltyPointsEarned: number;
   onDone: () => void;
 }
 
@@ -18,7 +20,8 @@ const paymentMethodLabel: Record<string, string> = {
   qr: 'QR Code',
 };
 
-const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, onDone }) => {
+const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, onDone }) => {
+  const dispatch = useAppDispatch();
   const sale = useAppSelector(state => selectSaleById(state, saleId));
   const storeName = useAppSelector(selectStoreName);
   const footerMessage = useAppSelector(selectReceiptFooterMessage);
@@ -81,6 +84,12 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, onDone }) => {
             <span className="text-text-primary">TOTAL</span>
             <span className="text-primary">${order.total.toFixed(2)}</span>
           </div>
+          {loyaltyPointsEarned > 0 && (
+            <div className="flex justify-between text-purple-600 mt-0.5">
+              <span>Points Earned</span>
+              <span>+{loyaltyPointsEarned} pts</span>
+            </div>
+          )}
         </div>
 
         <div className="border-t border-dashed border-gray-300 my-3" />
@@ -154,7 +163,7 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, onDone }) => {
 
       {/* Done button */}
       <button
-        onClick={onDone}
+        onClick={() => { dispatch(startNewSale()); onDone(); }}
         className="w-full py-3.5 bg-primary hover:bg-primary-dark text-white font-bold rounded-xl text-sm transition-all duration-150 active:scale-[0.98]"
       >
         DONE

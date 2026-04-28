@@ -5,20 +5,29 @@ import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import ProductCreateModal from './ProductCreateModal';
 import productsReducer, { addProduct } from './productsSlice';
+import settingsReducer from '../settings/settingsSlice';
+import { I18nProvider } from '../../i18n/I18nProvider';
+
+const defaultSettings = settingsReducer(undefined, { type: '@@INIT' });
 
 function createTestStore() {
   return configureStore({
     reducer: {
       products: productsReducer,
+      settings: settingsReducer,
+    },
+    preloadedState: {
+      settings: { ...defaultSettings, language: { language: 'en' as const } },
     },
   });
 }
 
-function renderModal(isOpen: boolean, onClose = vi.fn()) {
-  const store = createTestStore();
+function renderModal(isOpen: boolean, onClose = vi.fn(), store = createTestStore()) {
   const result = render(
     <Provider store={store}>
-      <ProductCreateModal isOpen={isOpen} onClose={onClose} />
+      <I18nProvider>
+        <ProductCreateModal isOpen={isOpen} onClose={onClose} />
+      </I18nProvider>
     </Provider>
   );
   return { ...result, store, onClose };
@@ -31,13 +40,13 @@ describe('ProductCreateModal', () => {
 
   it('renders nothing when closed', () => {
     renderModal(false);
-    expect(screen.queryByText('New Product')).not.toBeInTheDocument();
+    expect(screen.queryByText('Add Product')).not.toBeInTheDocument();
   });
 
   it('renders modal with title and subtitle when open', () => {
     renderModal(true);
-    expect(screen.getByText('New Product')).toBeInTheDocument();
-    expect(screen.getByText('Add a new product to your inventory')).toBeInTheDocument();
+    // title and subtitle both use t.products.addProduct = 'Add Product'
+    expect(screen.getAllByText('Add Product').length).toBeGreaterThanOrEqual(2);
   });
 
   it('renders all form fields', () => {
@@ -45,11 +54,11 @@ describe('ProductCreateModal', () => {
     expect(screen.getByPlaceholderText('Enter product name')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Brief product description')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('e.g. PR-001')).toBeInTheDocument();
-    expect(screen.getByText('Sale Price')).toBeInTheDocument();
+    expect(screen.getByText('Price')).toBeInTheDocument();
     expect(screen.getByText('Cost Price')).toBeInTheDocument();
-    expect(screen.getByText('Stock Level')).toBeInTheDocument();
+    expect(screen.getByText('Stock')).toBeInTheDocument();
     expect(screen.getByText('Status')).toBeInTheDocument();
-    expect(screen.getByText('Publish online')).toBeInTheDocument();
+    expect(screen.getAllByText('Published Online').length).toBeGreaterThanOrEqual(1);
   });
 
   it('has correct default values', () => {
@@ -63,7 +72,7 @@ describe('ProductCreateModal', () => {
 
   it('disables create button when name or sku is empty', () => {
     renderModal(true);
-    const createButton = screen.getByRole('button', { name: 'Create Product' });
+    const createButton = screen.getByRole('button', { name: 'Add' });
     expect(createButton).toBeDisabled();
   });
 
@@ -72,7 +81,7 @@ describe('ProductCreateModal', () => {
     renderModal(true);
     const nameInput = screen.getByPlaceholderText('Enter product name');
     const skuInput = screen.getByPlaceholderText('e.g. PR-001');
-    const createButton = screen.getByRole('button', { name: 'Create Product' });
+    const createButton = screen.getByRole('button', { name: 'Add' });
 
     await user.type(nameInput, 'Test Product');
     await user.type(skuInput, 'TP-001');
@@ -102,11 +111,20 @@ describe('ProductCreateModal', () => {
   });
 
   it('resets form when modal is reopened', () => {
-    const { rerender } = renderModal(false);
+    const store = createTestStore();
+    const { rerender } = render(
+      <Provider store={store}>
+        <I18nProvider>
+          <ProductCreateModal isOpen={false} onClose={vi.fn()} />
+        </I18nProvider>
+      </Provider>
+    );
 
     rerender(
-      <Provider store={createTestStore()}>
-        <ProductCreateModal isOpen={true} onClose={vi.fn()} />
+      <Provider store={store}>
+        <I18nProvider>
+          <ProductCreateModal isOpen={true} onClose={vi.fn()} />
+        </I18nProvider>
       </Provider>
     );
 
@@ -120,16 +138,11 @@ describe('ProductCreateModal', () => {
     const user = userEvent.setup();
     const store = createTestStore();
     const dispatchSpy = vi.spyOn(store, 'dispatch');
-
-    render(
-      <Provider store={store}>
-        <ProductCreateModal isOpen={true} onClose={vi.fn()} />
-      </Provider>
-    );
+    renderModal(true, vi.fn(), store);
 
     await user.type(screen.getByPlaceholderText('Enter product name'), 'Test Widget');
     await user.type(screen.getByPlaceholderText('e.g. PR-001'), 'TW-100');
-    await user.click(screen.getByRole('button', { name: 'Create Product' }));
+    await user.click(screen.getByRole('button', { name: 'Add' }));
 
     const dispatchedAction = dispatchSpy.mock.calls.find(
       call => (call[0] as any).type === addProduct.type
@@ -150,16 +163,11 @@ describe('ProductCreateModal', () => {
     const user = userEvent.setup();
     const store = createTestStore();
     const dispatchSpy = vi.spyOn(store, 'dispatch');
-
-    render(
-      <Provider store={store}>
-        <ProductCreateModal isOpen={true} onClose={vi.fn()} />
-      </Provider>
-    );
+    renderModal(true, vi.fn(), store);
 
     await user.type(screen.getByPlaceholderText('Enter product name'), '  Trimmed Name  ');
     await user.type(screen.getByPlaceholderText('e.g. PR-001'), '  TW-200  ');
-    await user.click(screen.getByRole('button', { name: 'Create Product' }));
+    await user.click(screen.getByRole('button', { name: 'Add' }));
 
     const dispatchedAction = dispatchSpy.mock.calls.find(
       call => (call[0] as any).type === addProduct.type
@@ -173,12 +181,7 @@ describe('ProductCreateModal', () => {
     const user = userEvent.setup();
     const store = createTestStore();
     const dispatchSpy = vi.spyOn(store, 'dispatch');
-
-    render(
-      <Provider store={store}>
-        <ProductCreateModal isOpen={true} onClose={vi.fn()} />
-      </Provider>
-    );
+    renderModal(true, vi.fn(), store);
 
     await user.type(screen.getByPlaceholderText('Enter product name'), 'Priced Item');
     await user.type(screen.getByPlaceholderText('e.g. PR-001'), 'PI-300');
@@ -195,7 +198,7 @@ describe('ProductCreateModal', () => {
     await user.clear(stockInput);
     await user.type(stockInput, '42');
 
-    await user.click(screen.getByRole('button', { name: 'Create Product' }));
+    await user.click(screen.getByRole('button', { name: 'Add' }));
 
     const dispatchedAction = dispatchSpy.mock.calls.find(
       call => (call[0] as any).type === addProduct.type
@@ -210,12 +213,7 @@ describe('ProductCreateModal', () => {
     const user = userEvent.setup();
     const store = createTestStore();
     const dispatchSpy = vi.spyOn(store, 'dispatch');
-
-    render(
-      <Provider store={store}>
-        <ProductCreateModal isOpen={true} onClose={vi.fn()} />
-      </Provider>
-    );
+    renderModal(true, vi.fn(), store);
 
     await user.type(screen.getByPlaceholderText('Enter product name'), 'Category Item');
     await user.type(screen.getByPlaceholderText('e.g. PR-001'), 'CI-400');
@@ -224,7 +222,7 @@ describe('ProductCreateModal', () => {
     const categorySelect = selects[0];
     await user.selectOptions(categorySelect, 'Food');
 
-    await user.click(screen.getByRole('button', { name: 'Create Product' }));
+    await user.click(screen.getByRole('button', { name: 'Add' }));
 
     const dispatchedAction = dispatchSpy.mock.calls.find(
       call => (call[0] as any).type === addProduct.type
@@ -237,12 +235,7 @@ describe('ProductCreateModal', () => {
     const user = userEvent.setup();
     const store = createTestStore();
     const dispatchSpy = vi.spyOn(store, 'dispatch');
-
-    render(
-      <Provider store={store}>
-        <ProductCreateModal isOpen={true} onClose={vi.fn()} />
-      </Provider>
-    );
+    renderModal(true, vi.fn(), store);
 
     await user.type(screen.getByPlaceholderText('Enter product name'), 'Status Item');
     await user.type(screen.getByPlaceholderText('e.g. PR-001'), 'SI-500');
@@ -251,7 +244,7 @@ describe('ProductCreateModal', () => {
     const statusSelect = selects[1];
     await user.selectOptions(statusSelect, 'active');
 
-    await user.click(screen.getByRole('button', { name: 'Create Product' }));
+    await user.click(screen.getByRole('button', { name: 'Add' }));
 
     const dispatchedAction = dispatchSpy.mock.calls.find(
       call => (call[0] as any).type === addProduct.type
@@ -264,12 +257,7 @@ describe('ProductCreateModal', () => {
     const user = userEvent.setup();
     const store = createTestStore();
     const dispatchSpy = vi.spyOn(store, 'dispatch');
-
-    render(
-      <Provider store={store}>
-        <ProductCreateModal isOpen={true} onClose={vi.fn()} />
-      </Provider>
-    );
+    renderModal(true, vi.fn(), store);
 
     await user.type(screen.getByPlaceholderText('Enter product name'), 'Published Item');
     await user.type(screen.getByPlaceholderText('e.g. PR-001'), 'PI-600');
@@ -281,7 +269,7 @@ describe('ProductCreateModal', () => {
     expect(publishToggle).toBeDefined();
     await user.click(publishToggle!);
 
-    await user.click(screen.getByRole('button', { name: 'Create Product' }));
+    await user.click(screen.getByRole('button', { name: 'Add' }));
 
     const dispatchedAction = dispatchSpy.mock.calls.find(
       call => (call[0] as any).type === addProduct.type
@@ -293,17 +281,11 @@ describe('ProductCreateModal', () => {
   it('calls onClose and resets form after successful creation', async () => {
     const user = userEvent.setup();
     const onClose = vi.fn();
-    const store = createTestStore();
-
-    render(
-      <Provider store={store}>
-        <ProductCreateModal isOpen={true} onClose={onClose} />
-      </Provider>
-    );
+    renderModal(true, onClose);
 
     await user.type(screen.getByPlaceholderText('Enter product name'), 'Final Item');
     await user.type(screen.getByPlaceholderText('e.g. PR-001'), 'FI-700');
-    await user.click(screen.getByRole('button', { name: 'Create Product' }));
+    await user.click(screen.getByRole('button', { name: 'Add' }));
 
     expect(onClose).toHaveBeenCalledTimes(1);
   });
@@ -312,18 +294,13 @@ describe('ProductCreateModal', () => {
     const user = userEvent.setup();
     const store = createTestStore();
     const dispatchSpy = vi.spyOn(store, 'dispatch');
-
-    render(
-      <Provider store={store}>
-        <ProductCreateModal isOpen={true} onClose={vi.fn()} />
-      </Provider>
-    );
+    renderModal(true, vi.fn(), store);
 
     await user.type(screen.getByPlaceholderText('Enter product name'), 'Described Item');
     await user.type(screen.getByPlaceholderText('e.g. PR-001'), 'DI-800');
     await user.type(screen.getByPlaceholderText('Brief product description'), 'A great product');
 
-    await user.click(screen.getByRole('button', { name: 'Create Product' }));
+    await user.click(screen.getByRole('button', { name: 'Add' }));
 
     const dispatchedAction = dispatchSpy.mock.calls.find(
       call => (call[0] as any).type === addProduct.type
@@ -336,16 +313,11 @@ describe('ProductCreateModal', () => {
     const user = userEvent.setup();
     const store = createTestStore();
     const dispatchSpy = vi.spyOn(store, 'dispatch');
-
-    render(
-      <Provider store={store}>
-        <ProductCreateModal isOpen={true} onClose={vi.fn()} />
-      </Provider>
-    );
+    renderModal(true, vi.fn(), store);
 
     await user.type(screen.getByPlaceholderText('Enter product name'), 'UUID Item');
     await user.type(screen.getByPlaceholderText('e.g. PR-001'), 'UI-900');
-    await user.click(screen.getByRole('button', { name: 'Create Product' }));
+    await user.click(screen.getByRole('button', { name: 'Add' }));
 
     const dispatchedAction = dispatchSpy.mock.calls.find(
       call => (call[0] as any).type === addProduct.type

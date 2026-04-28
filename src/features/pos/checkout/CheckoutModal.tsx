@@ -13,6 +13,8 @@ interface CheckoutModalProps {
   total: number;
   paymentMethod: PaymentMethod;
   orderNumber: string;
+  customerId?: string;
+  discountApplied: number;
 }
 
 const CheckoutModal: React.FC<CheckoutModalProps> = ({
@@ -24,14 +26,18 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   total,
   paymentMethod,
   orderNumber,
+  customerId,
+  discountApplied,
 }) => {
   const [step, setStep] = useState<'payment' | 'receipt'>('payment');
   const [completedSaleId, setCompletedSaleId] = useState<string | null>(null);
   const [confirmedOrderNumber, setConfirmedOrderNumber] = useState<string | null>(null);
+  const [loyaltyPointsEarned, setLoyaltyPointsEarned] = useState(0);
 
-  const handleComplete = (saleId: string) => {
+  const handleComplete = (saleId: string, pointsEarned: number) => {
     setConfirmedOrderNumber(orderNumber);
     setCompletedSaleId(saleId);
+    setLoyaltyPointsEarned(pointsEarned);
     setStep('receipt');
   };
 
@@ -39,6 +45,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     setStep('payment');
     setCompletedSaleId(null);
     setConfirmedOrderNumber(null);
+    setLoyaltyPointsEarned(0);
     onClose();
   };
 
@@ -55,11 +62,17 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
           total={total}
           paymentMethod={paymentMethod}
           orderNumber={orderNumber}
+          customerId={customerId}
+          discountApplied={discountApplied}
           onComplete={handleComplete}
         />
       ) : (
         completedSaleId && (
-          <ReceiptStep saleId={completedSaleId} onDone={handleClose} />
+          <ReceiptStep
+            saleId={completedSaleId}
+            loyaltyPointsEarned={loyaltyPointsEarned}
+            onDone={handleClose}
+          />
         )
       )}
     </Modal>
