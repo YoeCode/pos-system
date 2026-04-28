@@ -26,12 +26,14 @@ function makeSale(id: string, orderNum: number, hoursAgo: number, items: { produ
   date.setHours(date.getHours() - hoursAgo);
   return {
     id,
-    order: { id: `ord-${id}`, orderNumber: `ORD-${orderNum}`, items: orderItems, subtotal, tax, total, createdAt: date.toISOString() },
+    order: { id: `ord-${id}`, orderNumber: `ORD-${orderNum}`, items: orderItems, subtotal, tax, total, discount: 0, createdAt: date.toISOString() },
     paymentMethod: method,
     amountReceived: method === 'cash' ? Math.ceil(total) : total,
     change: method === 'cash' ? Math.ceil(total) - total : null,
     completedAt: date.toISOString(),
     employeeId,
+    loyaltyPointsEarned: 0,
+    discountApplied: 0,
   };
 }
 

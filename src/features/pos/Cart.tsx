@@ -1,33 +1,46 @@
 import React, { useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/store';
-import { clearCart, removeFromCart, setPaymentMethod, updateQuantity } from './posSlice';
+import { removeFromCart, setPaymentMethod, updateQuantity, startNewSale } from './posSlice';
 import {
   selectTaxRate,
   selectTaxLabel,
   selectTaxIncludedInPrice,
-  selectWalkInCustomerLabel,
   selectFormattedOrderNumber,
+  selectLoyaltyTiers,
 } from '../settings/settingsSlice';
+import { selectCustomerById } from '../customers/customersSlice';
 import CheckoutModal from './checkout/CheckoutModal';
+import CustomerSelector from '../customers/CustomerSelector';
 import { useI18n } from '../../i18n/I18nProvider';
 import type { PaymentMethod } from '../../types';
 
 const Cart: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { cart, paymentMethod } = useAppSelector(state => state.pos);
+  const { cart, paymentMethod, selectedCustomerId } = useAppSelector(state => state.pos);
   const orderNumber = useAppSelector(selectFormattedOrderNumber);
   const taxRate = useAppSelector(selectTaxRate);
   const taxIncludedInPrice = useAppSelector(selectTaxIncludedInPrice);
   const taxLabel = useAppSelector(selectTaxLabel);
-  const walkInLabel = useAppSelector(selectWalkInCustomerLabel);
+  const tiers = useAppSelector(selectLoyaltyTiers);
+  const selectedCustomer = useAppSelector(s =>
+    selectedCustomerId ? selectCustomerById(s, selectedCustomerId) : null
+  );
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const t = useI18n();
 
-  const subtotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-  
+  const rawSubtotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+
+  const tierConfig = tiers.find(t => t.tier === selectedCustomer?.tier);
+  const discountApplied =
+    selectedCustomer && tierConfig
+      ? Math.round(rawSubtotal * tierConfig.discountPct * 100) / 100
+      : 0;
+
+  const subtotal = rawSubtotal - discountApplied;
+
   let tax: number;
   let total: number;
-  
+
   if (taxIncludedInPrice) {
     const basePrice = subtotal / (1 + taxRate);
     tax = subtotal - basePrice;
@@ -47,14 +60,11 @@ const Cart: React.FC = () => {
     <div className="w-[370px] flex-shrink-0 bg-white border-l border-border flex flex-col h-full">
       {/* Header */}
       <div className="px-5 py-4 border-b border-border">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="font-bold text-text-primary text-base">Order #{orderNumber}</h2>
-            <p className="text-xs text-text-muted uppercase tracking-wider mt-0.5">{walkInLabel}</p>
-          </div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-bold text-text-primary text-base">Order #{orderNumber}</h2>
           <button
             disabled={cart.length === 0}
-            onClick={() => dispatch(clearCart())}
+            onClick={() => dispatch(startNewSale())}
             className="w-8 h-8 flex items-center justify-center rounded-lg text-text-muted hover:text-error hover:bg-error/5 transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-text-muted disabled:hover:bg-transparent"
             title={t.pos.removeFromCart}
           >
@@ -63,6 +73,7 @@ const Cart: React.FC = () => {
             </svg>
           </button>
         </div>
+        <CustomerSelector />
       </div>
 
       {/* Items list */}
@@ -131,8 +142,14 @@ const Cart: React.FC = () => {
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between text-sm">
             <span className="text-text-muted">{t.pos.subtotal}</span>
-            <span className="font-mono text-text-primary">${subtotal.toFixed(2)}</span>
+            <span className="font-mono text-text-primary">${rawSubtotal.toFixed(2)}</span>
           </div>
+          {discountApplied > 0 && (
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-green-600">Loyalty Discount</span>
+              <span className="font-mono text-green-600">-${discountApplied.toFixed(2)}</span>
+            </div>
+          )}
           <div className="flex items-center justify-between text-sm">
             <span className="text-text-muted">{taxLabel}</span>
             <span className="font-mono text-text-muted">${tax.toFixed(2)}</span>
@@ -183,6 +200,8 @@ const Cart: React.FC = () => {
         total={total}
         paymentMethod={paymentMethod}
         orderNumber={orderNumber}
+        customerId={selectedCustomerId ?? undefined}
+        discountApplied={discountApplied}
       />
     </div>
   );

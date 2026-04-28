@@ -6,12 +6,14 @@ interface PosState {
   cart: CartItem[];
   paymentMethod: PaymentMethod;
   selectedCategory: string;
+  selectedCustomerId: string | null;
 }
 
 const initialState: PosState = {
   cart: [],
   paymentMethod: 'cash',
   selectedCategory: 'All Items',
+  selectedCustomerId: null,
 };
 
 const posSlice = createSlice({
@@ -48,6 +50,13 @@ const posSlice = createSlice({
     setCategory: (state, action: PayloadAction<string>) => {
       state.selectedCategory = action.payload;
     },
+    setSelectedCustomer: (state, action: PayloadAction<string | null>) => {
+      state.selectedCustomerId = action.payload;
+    },
+    startNewSale: (state) => {
+      state.cart = [];
+      state.selectedCustomerId = null;
+    },
     addCustomProductToCart: (state, action: PayloadAction<{ name: string; category: string; price: number }>) => {
       const { name, category, price } = action.payload;
       const customProduct: Product = {
@@ -72,5 +81,5 @@ const posSlice = createSlice({
   },
 });
 
-export const { addToCart, removeFromCart, updateQuantity, clearCart, setPaymentMethod, setCategory, addCustomProductToCart } = posSlice.actions;
+export const { addToCart, removeFromCart, updateQuantity, clearCart, setPaymentMethod, setCategory, addCustomProductToCart, setSelectedCustomer, startNewSale } = posSlice.actions;
 export default posSlice.reducer;

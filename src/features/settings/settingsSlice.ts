@@ -1,6 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import type { PaymentMethod, TaxSettings, StoreSettings, PosSettings, LanguageSettings, SettingsState, Language } from '../../types';
+import type { PaymentMethod, TaxSettings, StoreSettings, PosSettings, LanguageSettings, SettingsState, Language, LoyaltySettings } from '../../types';
 import type { RootState } from '../../app/store';
 
 // ─── Default Constants (exported for use by mock data generators) ─────────────
@@ -39,6 +39,17 @@ const defaultLanguageSettings: LanguageSettings = {
   language: 'es',
 };
 
+export const DEFAULT_LOYALTY_SETTINGS: LoyaltySettings = {
+  enabled: true,
+  pointsPerEuro: 1,
+  tiers: [
+    { tier: 'bronze',   threshold: 0,    discountPct: 0 },
+    { tier: 'silver',   threshold: 500,  discountPct: 0.03 },
+    { tier: 'gold',     threshold: 1500, discountPct: 0.05 },
+    { tier: 'platinum', threshold: 5000, discountPct: 0.08 },
+  ],
+};
+
 // ─── localStorage Persistence ─────────────────────────────────────────────────
 
 const SETTINGS_STORAGE_KEY = 'pos_settings';
@@ -53,6 +64,7 @@ const loadStoredSettings = (): SettingsState => {
         store: { ...defaultStoreSettings, ...parsed.store },
         pos: { ...defaultPosSettings, ...parsed.pos },
         language: { ...defaultLanguageSettings, ...parsed.language },
+        loyalty: { ...DEFAULT_LOYALTY_SETTINGS, ...parsed.loyalty },
       };
     }
   } catch {
@@ -63,6 +75,7 @@ const loadStoredSettings = (): SettingsState => {
     store: { ...defaultStoreSettings },
     pos: { ...defaultPosSettings },
     language: { ...defaultLanguageSettings },
+    loyalty: { ...DEFAULT_LOYALTY_SETTINGS },
   };
 };
 
@@ -106,6 +119,14 @@ const settingsSlice = createSlice({
       state.language = { ...defaultLanguageSettings };
       localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(state));
     },
+    updateLoyaltySettings: (state, action: PayloadAction<Partial<LoyaltySettings>>) => {
+      state.loyalty = { ...state.loyalty, ...action.payload };
+      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(state));
+    },
+    resetLoyaltySettings: (state) => {
+      state.loyalty = { ...DEFAULT_LOYALTY_SETTINGS };
+      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(state));
+    },
   },
 });
 
@@ -118,6 +139,8 @@ export const {
   resetStoreSettings,
   resetPosSettings,
   resetLanguageSettings,
+  updateLoyaltySettings,
+  resetLoyaltySettings,
 } = settingsSlice.actions;
 
 export default settingsSlice.reducer;
@@ -167,3 +190,9 @@ export const selectFormattedOrderNumber = (state: RootState): string =>
   `${state.settings.pos.orderNumberPrefix}${state.sales.nextOrderNumber}`;
 
 export const selectLanguage = (state: RootState): Language => state.settings.language.language;
+
+// ─── Loyalty Selectors ────────────────────────────────────────────────────────
+
+export const selectLoyaltySettings = (state: RootState): LoyaltySettings => state.settings.loyalty;
+export const selectPointsPerEuro = (state: RootState): number => state.settings.loyalty.pointsPerEuro;
+export const selectLoyaltyTiers = (state: RootState) => state.settings.loyalty.tiers;

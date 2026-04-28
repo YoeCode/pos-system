@@ -53,3 +53,6 @@ export const selectSaleById = (state: StateWithSales, saleId: string): Sale | un
 
 export const selectAllSales = (state: StateWithSales): Sale[] =>
   state.sales.sales;
+
+export const selectSalesByCustomerId = (state: StateWithSales, customerId: string): Sale[] =>
+  state.sales.sales.filter(s => s.customerId === customerId);
