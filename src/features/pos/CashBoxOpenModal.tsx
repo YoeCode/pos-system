@@ -59,6 +59,15 @@ const CashBoxOpenModal: React.FC<CashBoxOpenModalProps> = ({ isOpen, closedBoxCo
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
+            {loggedInUser && (
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-700 text-sm rounded-full mb-3">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h4m0 0v4m-4-4h4" />
+                </svg>
+                <span className="font-medium">{loggedInUser.name}</span>
+                <span className="text-blue-500">(sesión activa)</span>
+              </div>
+            )}
             <h2 className="text-xl font-bold text-text-primary">Abrir Caja</h2>
             <p className="text-sm text-text-muted mt-1">
               Selecciona los empleados que trabajan en este turno
@@ -66,20 +75,6 @@ const CashBoxOpenModal: React.FC<CashBoxOpenModalProps> = ({ isOpen, closedBoxCo
           </div>
           
           <div className="space-y-2 max-h-64 overflow-y-auto mb-4">
-            {loggedInUser && (
-              <div className="flex items-center gap-3 p-3 rounded-lg border-2 border-green-600 bg-green-50">
-                <div className="w-5 h-5 rounded-full bg-green-600 border-green-600 flex items-center justify-center">
-                  <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-text-primary truncate">{loggedInUser.name}</p>
-                  <p className="text-xs text-text-muted">Usuario actual (seleccionado)</p>
-                </div>
-              </div>
-            )}
-            
             {otherEmployees.map(emp => (
               <button
                 key={emp.id}
