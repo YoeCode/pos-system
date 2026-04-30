@@ -32,15 +32,15 @@ const DashboardPage = () => {
   const lowStockProducts = products.filter(p => p.stock <= p.minStock);
 
   return (
-    <div className="p-6 flex flex-col gap-6">
+    <div className="p-4 lg:p-6 flex flex-col gap-4 lg:gap-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-text-primary">{t.dashboard.title}</h1>
-        <p className="text-text-muted mt-1">{t.dashboard.title}</p>
+        <h1 className="text-xl lg:text-2xl font-bold text-text-primary">{t.dashboard.title}</h1>
+        <p className="text-text-muted mt-1 text-sm lg:text-base">{t.dashboard.title}</p>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
         <KpiCard
           title={t.dashboard.todaySales}
           value={`$${totalRevenue.toFixed(2)}`}
@@ -87,21 +87,21 @@ const DashboardPage = () => {
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="col-span-2 bg-white rounded-xl border border-border p-5">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 lg:gap-4">
+        <div className="lg:col-span-2 bg-white rounded-xl border border-border p-4 lg:p-5">
           <SalesChart sales={sales} />
         </div>
-        <div className="bg-white rounded-xl border border-border p-5">
+        <div className="bg-white rounded-xl border border-border p-4 lg:p-5">
           <PaymentMethodChart sales={sales} />
         </div>
       </div>
 
       {/* Bottom Row */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="col-span-2 bg-white rounded-xl border border-border p-5">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 lg:gap-4">
+        <div className="lg:col-span-2 bg-white rounded-xl border border-border p-4 lg:p-5">
           <RecentSales sales={sales.slice(0, 5)} />
         </div>
-        <div className="bg-white rounded-xl border border-border p-5">
+        <div className="bg-white rounded-xl border border-border p-4 lg:p-5">
           <LowStockAlerts products={lowStockProducts} />
         </div>
       </div>

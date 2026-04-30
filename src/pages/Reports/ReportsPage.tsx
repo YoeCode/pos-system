@@ -256,33 +256,33 @@ const ReportsPage: React.FC = () => {
           </div>
 
           {activeTab === 'sales' && (
-            <div className="flex flex-col gap-6">
-              <div className="grid grid-cols-4 gap-4">
-                <div className="bg-white rounded-xl border border-border p-5">
+            <div className="flex flex-col gap-4 lg:gap-6">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+                <div className="bg-white rounded-xl border border-border p-4 lg:p-5">
                   <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">{t.reports.totalSales}</p>
-                  <p className="text-2xl font-bold text-text-primary mt-1">{formatCurrency(salesStats.totalRevenue)}</p>
+                  <p className="text-xl lg:text-2xl font-bold text-text-primary mt-1">{formatCurrency(salesStats.totalRevenue)}</p>
                 </div>
-                <div className="bg-white rounded-xl border border-border p-5">
+                <div className="bg-white rounded-xl border border-border p-4 lg:p-5">
                   <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">{t.reports.totalOrders}</p>
-                  <p className="text-2xl font-bold text-text-primary mt-1">{salesStats.totalOrders}</p>
+                  <p className="text-xl lg:text-2xl font-bold text-text-primary mt-1">{salesStats.totalOrders}</p>
                 </div>
-                <div className="bg-white rounded-xl border border-border p-5">
+                <div className="bg-white rounded-xl border border-border p-4 lg:p-5">
                   <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">{t.dashboard.averageTicket}</p>
-                  <p className="text-2xl font-bold text-text-primary mt-1">{formatCurrency(salesStats.avgTicket)}</p>
+                  <p className="text-xl lg:text-2xl font-bold text-text-primary mt-1">{formatCurrency(salesStats.avgTicket)}</p>
                 </div>
-                <div className="bg-white rounded-xl border border-border p-5">
+                <div className="bg-white rounded-xl border border-border p-4 lg:p-5">
                   <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">{t.reports.totalTax}</p>
-                  <p className="text-2xl font-bold text-text-primary mt-1">{formatCurrency(salesStats.totalTax)}</p>
+                  <p className="text-xl lg:text-2xl font-bold text-text-primary mt-1">{formatCurrency(salesStats.totalTax)}</p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-4">
                 <div className="bg-white rounded-xl border border-border p-5">
                   <h3 className="text-sm font-semibold text-text-primary mb-4">{t.pos.paymentMethod}</h3>
                   <div className="flex flex-col gap-3">
                     {Object.entries(salesStats.byPayment).map(([method, amount]) => (
                       <div key={method} className="flex items-center justify-between">
-                        <span className="text-sm text-text-muted capitalize">{t.pos[method as 'cash' | 'card' | 'qr']}</span>
+                        <span className="text-sm text-text-muted capitalize">{t.pos[method as 'cash' | 'card' | 'bizum']}</span>
                         <span className="text-sm font-mono font-semibold text-text-primary">{formatCurrency(amount)}</span>
                       </div>
                     ))}
@@ -327,7 +327,7 @@ const ReportsPage: React.FC = () => {
                           <td className="py-3 text-sm font-mono text-text-primary">{sale.order.orderNumber}</td>
                           <td className="py-3 text-sm text-text-muted">{sale.order.items.length} items</td>
                           <td className="py-3 text-sm font-mono text-text-primary text-right">{formatCurrency(sale.order.total)}</td>
-                          <td className="py-3 text-sm text-text-muted text-right capitalize">{t.pos[sale.paymentMethod as 'cash' | 'card' | 'qr']}</td>
+                          <td className="py-3 text-sm text-text-muted text-right capitalize">{t.pos[sale.paymentMethod as 'cash' | 'card' | 'bizum']}</td>
                           <td className="py-3 text-sm text-text-muted text-right">{formatDate(sale.completedAt)}</td>
                         </tr>
                       ))}
@@ -459,7 +459,7 @@ const ReportsPage: React.FC = () => {
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-mono font-semibold text-text-primary">{formatCurrency(sale.order.total)}</p>
-                    <p className="text-xs text-text-muted capitalize">{t.pos[sale.paymentMethod as 'cash' | 'card' | 'qr']}</p>
+                    <p className="text-xs text-text-muted capitalize">{t.pos[sale.paymentMethod as 'cash' | 'card' | 'bizum']}</p>
                   </div>
                 </div>
               ))}

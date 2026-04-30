@@ -34,6 +34,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       {/* Info */}
       <div className="p-3 flex flex-col gap-1">
         <p className="text-sm font-semibold text-text-primary leading-tight line-clamp-2">{product.name}</p>
+        {product.brand && (
+          <p className="text-xs text-text-muted truncate">{product.brand}</p>
+        )}
         <div className="flex items-center justify-between mt-1">
           <span className="text-sm font-semibold text-primary font-mono">${product.price.toFixed(2)}</span>
           <button

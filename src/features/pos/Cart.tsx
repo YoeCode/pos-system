@@ -50,16 +50,16 @@ const Cart: React.FC = () => {
     total = subtotal + tax;
   }
 
-  const paymentMethods: { id: PaymentMethod; labelKey: 'cash' | 'card' | 'qr' }[] = [
+  const paymentMethods: { id: PaymentMethod; labelKey: 'cash' | 'card' | 'bizum' }[] = [
     { id: 'cash', labelKey: 'cash' },
     { id: 'card', labelKey: 'card' },
-    { id: 'qr', labelKey: 'qr' },
+    { id: 'bizum', labelKey: 'bizum' },
   ];
 
   return (
-    <div className="w-[370px] flex-shrink-0 bg-white border-l border-border flex flex-col h-full">
+    <div className="w-full sm:w-[320px] md:w-[370px] flex-shrink-0 bg-white border-l border-border flex flex-col h-full">
       {/* Header */}
-      <div className="px-5 py-4 border-b border-border">
+      <div className="px-4 sm:px-5 py-3 sm:py-4 border-b border-border">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-bold text-text-primary text-base">Order #{orderNumber}</h2>
           <button
@@ -103,8 +103,13 @@ const Cart: React.FC = () => {
 
               {/* Info */}
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-text-primary truncate">{item.product.name}</p>
-                <p className="text-xs font-mono text-text-muted">${(item.product.price * item.quantity).toFixed(2)}</p>
+                <p className="text-sm font-medium text-text-primary truncate">
+                  {item.product.name || item.product.category}
+                </p>
+                {item.product.brand && (
+                  <p className="text-xs text-text-muted truncate">{item.product.brand}</p>
+                )}
+                <p className="text-xs font-mono text-text-muted">€{(item.product.price * item.quantity).toFixed(2)}</p>
               </div>
 
               {/* Quantity controls */}

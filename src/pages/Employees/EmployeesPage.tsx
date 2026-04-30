@@ -19,9 +19,9 @@ const EmployeesPage: React.FC = () => {
   }).length;
 
   return (
-    <div className="p-6 flex flex-col gap-6">
+    <div className="p-4 lg:p-6 flex flex-col gap-4 lg:gap-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-text-primary">{t.nav.employees}</h1>
           <p className="text-sm text-text-muted mt-0.5">{t.nav.employees}</p>
@@ -35,23 +35,23 @@ const EmployeesPage: React.FC = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white rounded-xl border border-border p-5">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 lg:gap-4">
+        <div className="bg-white rounded-xl border border-border p-4 lg:p-5">
           <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">{t.employees.title}</p>
-          <p className="text-3xl font-bold text-text-primary font-mono">{employees.length}</p>
+          <p className="text-2xl lg:text-3xl font-bold text-text-primary font-mono">{employees.length}</p>
         </div>
-        <div className="bg-white rounded-xl border border-border p-5">
+        <div className="bg-white rounded-xl border border-border p-4 lg:p-5">
           <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">{t.common.active}</p>
-          <p className="text-3xl font-bold text-primary font-mono">{activeCount}</p>
+          <p className="text-2xl lg:text-3xl font-bold text-primary font-mono">{activeCount}</p>
         </div>
-        <div className="bg-white rounded-xl border border-border p-5">
+        <div className="bg-white rounded-xl border border-border p-4 lg:p-5">
           <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">{t.employees.startDate}</p>
-          <p className="text-3xl font-bold text-secondary font-mono">{newThisMonth}</p>
+          <p className="text-2xl lg:text-3xl font-bold text-secondary font-mono">{newThisMonth}</p>
         </div>
       </div>
 
       {/* Employee grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 lg:gap-4">
         {employees.map(employee => (
           <EmployeeCard key={employee.id} employee={employee} />
         ))}

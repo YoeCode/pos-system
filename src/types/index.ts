@@ -22,6 +22,7 @@ export interface Product {
   name: string;
   sku: string;
   category: string;
+  brand?: string;
   price: number;
   costPrice: number;
   stock: number;
@@ -83,7 +84,7 @@ export interface LoyaltySettings {
   tiers: LoyaltyTierConfig[];
 }
 
-export type PaymentMethod = 'cash' | 'card' | 'qr';
+export type PaymentMethod = 'cash' | 'card' | 'bizum';
 
 export interface OrderItem {
   product: Product;
@@ -110,6 +111,7 @@ export interface Sale {
   change: number | null;
   completedAt: string;
   employeeId?: string;
+  terminalId?: string;
   customerId?: string;
   loyaltyPointsEarned: number;
   discountApplied: number;
@@ -133,10 +135,14 @@ export interface StoreSettings {
 export interface PosSettings {
   defaultPaymentMethod: PaymentMethod;
   defaultCategory: string;
+  categories: string[];
+  brands: string[];
   walkInCustomerLabel: string;
   orderNumberPrefix: string;
   orderNumberSeed: number;
   enableManualProduct: boolean;
+  multiTerminalMode: boolean;
+  terminalId?: string;
 }
 
 export type Language = 'en' | 'es';

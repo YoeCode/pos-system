@@ -12,11 +12,11 @@ import Toggle from '../../../components/ui/Toggle';
 import { useI18n } from '../../../i18n/I18nProvider';
 import type { PaymentMethod } from '../../../types';
 
-const paymentMethodOptions: { value: PaymentMethod; labelKey: 'cash' | 'card' | 'qr' }[] = [
-  { value: 'cash', labelKey: 'cash' },
-  { value: 'card', labelKey: 'card' },
-  { value: 'qr', labelKey: 'qr' },
-];
+const paymentMethodOptions: { value: PaymentMethod; labelKey: 'cash' | 'card' | 'bizum' }[] = [
+    { value: 'cash', labelKey: 'cash' },
+    { value: 'card', labelKey: 'card' },
+    { value: 'bizum', labelKey: 'bizum' },
+  ];
 
 const PosSettingsSection: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -31,6 +31,8 @@ const PosSettingsSection: React.FC = () => {
   const [orderNumberPrefix, setOrderNumberPrefix] = useState(reduxPos.orderNumberPrefix);
   const [orderNumberSeed, setOrderNumberSeed] = useState(String(reduxPos.orderNumberSeed));
   const [enableManualProduct, setEnableManualProduct] = useState(reduxPos.enableManualProduct);
+  const [multiTerminalMode, setMultiTerminalMode] = useState(reduxPos.multiTerminalMode);
+  const [terminalId, setTerminalId] = useState(reduxPos.terminalId || '');
   const [savedFeedback, setSavedFeedback] = useState(false);
 
   useEffect(() => {
@@ -40,6 +42,8 @@ const PosSettingsSection: React.FC = () => {
     setOrderNumberPrefix(reduxPos.orderNumberPrefix);
     setOrderNumberSeed(String(reduxPos.orderNumberSeed));
     setEnableManualProduct(reduxPos.enableManualProduct);
+    setMultiTerminalMode(reduxPos.multiTerminalMode);
+    setTerminalId(reduxPos.terminalId || '');
   }, [reduxPos]);
 
   const parsedSeed = parseInt(orderNumberSeed, 10);
@@ -56,7 +60,9 @@ const PosSettingsSection: React.FC = () => {
     walkInCustomerLabel !== reduxPos.walkInCustomerLabel ||
     orderNumberPrefix !== reduxPos.orderNumberPrefix ||
     orderNumberSeed !== String(reduxPos.orderNumberSeed) ||
-    enableManualProduct !== reduxPos.enableManualProduct;
+    enableManualProduct !== reduxPos.enableManualProduct ||
+    multiTerminalMode !== reduxPos.multiTerminalMode ||
+    (multiTerminalMode && terminalId !== reduxPos.terminalId);
 
   const handleSave = () => {
     if (hasErrors || !isDirty) return;
@@ -68,6 +74,8 @@ const PosSettingsSection: React.FC = () => {
         orderNumberPrefix,
         orderNumberSeed: parsedSeed,
         enableManualProduct,
+        multiTerminalMode,
+        terminalId: multiTerminalMode ? terminalId.trim() || undefined : undefined,
       })
     );
     setSavedFeedback(true);
@@ -145,6 +153,28 @@ const PosSettingsSection: React.FC = () => {
           checked={enableManualProduct}
           onChange={setEnableManualProduct}
         />
+
+        <div className="border-t border-border pt-4">
+          <Toggle
+            label={t.settings.multiTerminalMode}
+            description={t.settings.multiTerminalModeDesc}
+            checked={multiTerminalMode}
+            onChange={setMultiTerminalMode}
+          />
+          
+          {multiTerminalMode && (
+            <div className="mt-3 ml-1">
+              <Input
+                label={t.settings.terminalId}
+                type="text"
+                maxLength={20}
+                value={terminalId}
+                onChange={e => setTerminalId(e.target.value)}
+                placeholder="CAJA-01"
+              />
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="flex items-center justify-between pt-2 border-t border-border">

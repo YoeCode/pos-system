@@ -1,16 +1,17 @@
 import React from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/store';
 import { setCategory } from './posSlice';
-
-const CATEGORIES = ['All Items', 'Food', 'Drinks', 'Electronics', 'Bakery', 'Merchandise'];
+import { selectCategories } from '../settings/settingsSlice';
 
 const CategoryPills: React.FC = () => {
   const dispatch = useAppDispatch();
   const selected = useAppSelector(state => state.pos.selectedCategory);
+  const categories = useAppSelector(selectCategories);
+  const allCategories = ['All Items', ...categories];
 
   return (
     <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-      {CATEGORIES.map(cat => (
+      {allCategories.map(cat => (
         <button
           key={cat}
           onClick={() => dispatch(setCategory(cat))}

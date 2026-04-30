@@ -12,7 +12,8 @@ const ProductsTable: React.FC = () => {
 
   const filtered = items.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.sku.toLowerCase().includes(searchQuery.toLowerCase());
+      p.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (p.brand && p.brand.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesCategory = selectedCategory === 'All' || p.category === selectedCategory;
     const matchesStatus = statusFilter === 'all' || p.status === statusFilter;
     const matchesPublished = publishedFilter === 'all' ||
@@ -49,6 +50,7 @@ const ProductsTable: React.FC = () => {
         <thead>
           <tr className="border-b border-border">
             <th className="text-left py-3 px-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Product</th>
+            <th className="text-left py-3 px-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Brand</th>
             <th className="text-left py-3 px-4 text-xs font-semibold text-text-muted uppercase tracking-wider">SKU</th>
             <th className="text-left py-3 px-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Category</th>
             <th className="text-right py-3 px-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Price</th>
@@ -81,11 +83,19 @@ const ProductsTable: React.FC = () => {
                   </div>
                   <div>
                     <p className="font-semibold text-text-primary">{product.name}</p>
+                    {product.brand && (
+                      <p className="text-xs text-text-muted">{product.brand}</p>
+                    )}
                     {product.version && (
                       <p className="text-xs text-text-muted">{product.version}</p>
                     )}
                   </div>
                 </div>
+              </td>
+
+              {/* Brand */}
+              <td className="py-3 px-4">
+                <span className="text-xs text-text-muted">{product.brand || '—'}</span>
               </td>
 
               {/* SKU */}

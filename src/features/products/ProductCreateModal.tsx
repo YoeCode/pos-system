@@ -1,11 +1,11 @@
 import React, { useState, useCallback } from 'react';
-import { useAppDispatch } from '../../app/store';
+import { useAppDispatch, useAppSelector } from '../../app/store';
 import { addProduct, CATEGORIES, createEmptyForm, type ProductFormState } from './productsSlice';
+import { selectBrands } from '../settings/settingsSlice';
 import type { Product } from '../../types';
 import Modal from '../../components/ui/Modal';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
-import Toggle from '../../components/ui/Toggle';
 import { useI18n } from '../../i18n/I18nProvider';
 
 interface ProductCreateModalProps {
@@ -17,6 +17,7 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
   const dispatch = useAppDispatch();
   const [form, setForm] = useState<ProductFormState>(createEmptyForm());
   const t = useI18n();
+  const brands = useAppSelector(selectBrands);
 
   const handleClose = useCallback(() => {
     setForm(createEmptyForm());
@@ -31,6 +32,7 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
       name: form.name.trim(),
       sku: form.sku.trim(),
       category: form.category,
+      brand: form.brand || undefined,
       price: form.price,
       costPrice: form.costPrice,
       stock: form.stock,
@@ -98,6 +100,22 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
 
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Brand <span className="text-text-muted/50 normal-case">(optional)</span></label>
+            <select
+              value={form.brand}
+              onChange={e => setForm(prev => ({ ...prev, brand: e.target.value }))}
+              className="w-full px-3 py-2.5 text-sm border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors bg-white"
+            >
+              <option value="">— Select brand —</option>
+              {brands.map(brand => (
+                <option key={brand} value={brand}>{brand}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex flex-col gap-1.5">
             <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">{t.products.price}</label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-sm font-mono">$</span>
@@ -150,28 +168,6 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">{t.products.status}</label>
-            <select
-              value={form.status}
-              onChange={e => setForm(prev => ({ ...prev, status: e.target.value as Product['status'] }))}
-              className="w-full px-3 py-2.5 text-sm border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors bg-white"
-            >
-              <option value="draft">{t.common.draft}</option>
-              <option value="active">{t.common.active}</option>
-              <option value="inactive">{t.common.inactive}</option>
-            </select>
-          </div>
-          <div className="p-3 rounded-lg border border-border bg-background flex items-center">
-            <Toggle
-              checked={form.publishedOnline}
-              onChange={val => setForm(prev => ({ ...prev, publishedOnline: val }))}
-              label={t.products.publishedOnline}
-              description={t.products.publishedOnline}
-            />
-          </div>
-        </div>
 
         <div className="flex gap-3 pt-2">
           <Button variant="secondary" fullWidth onClick={handleClose}>

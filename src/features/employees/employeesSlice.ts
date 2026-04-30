@@ -1,30 +1,31 @@
 import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
 import type { Employee } from '../../types';
+import type { RootState } from '../../app/store';
 
 const mockEmployees: Employee[] = [
   {
     id: '1',
-    name: 'Alex Rivera',
-    email: 'alex.rivera@nexopos.com',
-    phone: '+1 555 0101',
-    role: 'Cashier',
+    name: 'Ana Martínez',
+    email: 'admin@casalis.com',
+    phone: '+34 555 0101',
+    role: 'Admin',
     shift: 'Morning 06:00-14:00',
     pin: '1234',
     active: true,
     permissions: {
       processSales: true,
-      applyDiscounts: false,
-      manageInventory: false,
-      accessReports: false,
+      applyDiscounts: true,
+      manageInventory: true,
+      accessReports: true,
     },
     startDate: '2023-03-15',
   },
   {
     id: '2',
-    name: 'Tom Baker',
-    email: 'tom.baker@nexopos.com',
-    phone: '+1 555 0102',
+    name: 'Carlos López',
+    email: 'manager@casalis.com',
+    phone: '+34 555 0102',
     role: 'Supervisor',
     shift: 'Evening 14:00-22:00',
     pin: '2345',
@@ -33,16 +34,16 @@ const mockEmployees: Employee[] = [
       processSales: true,
       applyDiscounts: true,
       manageInventory: true,
-      accessReports: false,
+      accessReports: true,
     },
     startDate: '2022-07-01',
   },
   {
     id: '3',
-    name: 'Maria Chen',
-    email: 'maria.chen@nexopos.com',
-    phone: '+1 555 0103',
-    role: 'Admin',
+    name: 'María García',
+    email: 'supervisor@casalis.com',
+    phone: '+34 555 0103',
+    role: 'Supervisor',
     shift: 'Morning 06:00-14:00',
     pin: '3456',
     active: true,
@@ -56,13 +57,13 @@ const mockEmployees: Employee[] = [
   },
   {
     id: '4',
-    name: 'James Wilson',
-    email: 'james.wilson@nexopos.com',
-    phone: '+1 555 0104',
+    name: 'Juan Rodríguez',
+    email: 'cashier@casalis.com',
+    phone: '+34 555 0104',
     role: 'Cashier',
     shift: 'Night 22:00-06:00',
     pin: '4567',
-    active: false,
+    active: true,
     permissions: {
       processSales: true,
       applyDiscounts: false,
@@ -70,6 +71,23 @@ const mockEmployees: Employee[] = [
       accessReports: false,
     },
     startDate: '2023-09-20',
+  },
+  {
+    id: '5',
+    name: 'Laura Fernández',
+    email: 'cashier2@casalis.com',
+    phone: '+34 555 0105',
+    role: 'Cashier',
+    shift: 'Morning 06:00-14:00',
+    pin: '5678',
+    active: true,
+    permissions: {
+      processSales: true,
+      applyDiscounts: false,
+      manageInventory: false,
+      accessReports: false,
+    },
+    startDate: '2024-01-15',
   },
 ];
 
@@ -106,4 +124,8 @@ const employeesSlice = createSlice({
 });
 
 export const { addEmployee, updateEmployee, toggleModal, setEditingEmployee } = employeesSlice.actions;
+
+export const selectActiveEmployees = (state: RootState): Employee[] => 
+  state.employees.employees.filter((e: Employee) => e.active);
+
 export default employeesSlice.reducer;

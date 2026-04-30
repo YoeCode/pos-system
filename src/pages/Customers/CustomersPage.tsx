@@ -49,18 +49,18 @@ const CustomersPage: React.FC = () => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-4">
-          <div className="bg-white rounded-xl border border-border p-5">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 lg:gap-4">
+          <div className="bg-white rounded-xl border border-border p-4 lg:p-5">
             <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">Total Customers</p>
-            <p className="text-3xl font-bold text-text-primary font-mono">{allCustomers.length}</p>
+            <p className="text-2xl lg:text-3xl font-bold text-text-primary font-mono">{allCustomers.length}</p>
           </div>
-          <div className="bg-white rounded-xl border border-border p-5">
+          <div className="bg-white rounded-xl border border-border p-4 lg:p-5">
             <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">Active</p>
-            <p className="text-3xl font-bold text-primary font-mono">{activeCustomers.length}</p>
+            <p className="text-2xl lg:text-3xl font-bold text-primary font-mono">{activeCustomers.length}</p>
           </div>
-          <div className="bg-white rounded-xl border border-border p-5">
+          <div className="bg-white rounded-xl border border-border p-4 lg:p-5">
             <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">New This Month</p>
-            <p className="text-3xl font-bold text-secondary font-mono">{newThisMonth}</p>
+            <p className="text-2xl lg:text-3xl font-bold text-secondary font-mono">{newThisMonth}</p>
           </div>
         </div>
 

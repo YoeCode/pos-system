@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../../../app/store';
 import { completeSale } from '../../sales/salesSlice';
-import { selectTaxLabel, selectPointsPerEuro, selectLoyaltyTiers } from '../../settings/settingsSlice';
+import { selectTaxLabel, selectPointsPerEuro, selectLoyaltyTiers, selectMultiTerminalMode, selectTerminalId } from '../../settings/settingsSlice';
 import { addLoyaltyPoints } from '../../customers/customersSlice';
 import { clearCart } from '../posSlice';
+import { selectActiveEmployees } from '../../employees/employeesSlice';
 import type { CartItem, Order, PaymentMethod, Sale } from '../../../types';
 
 interface PaymentStepProps {
@@ -21,7 +22,7 @@ interface PaymentStepProps {
 const paymentMethodLabel: Record<PaymentMethod, string> = {
   cash: 'Cash',
   card: 'Card',
-  qr: 'QR Code',
+  bizum: 'Bizum',
 };
 
 const PaymentStep: React.FC<PaymentStepProps> = ({
@@ -37,9 +38,13 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
 }) => {
   const dispatch = useAppDispatch();
   const taxLabel = useAppSelector(selectTaxLabel);
+  const currentEmployeeId = useAppSelector(state => state.pos.currentEmployeeId);
   const currentUser = useAppSelector(state => state.auth.user);
   const pointsPerEuro = useAppSelector(selectPointsPerEuro);
   const tiers = useAppSelector(selectLoyaltyTiers);
+  const multiTerminalMode = useAppSelector(selectMultiTerminalMode);
+  const terminalId = useAppSelector(selectTerminalId);
+  const allEmployees = useAppSelector(selectActiveEmployees);
   const [amountReceived, setAmountReceived] = useState<string>('');
 
   const isCash = paymentMethod === 'cash';
@@ -67,6 +72,10 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
 
     const loyaltyPointsEarned = customerId ? Math.floor(total * pointsPerEuro) : 0;
 
+    const saleEmployeeId = currentEmployeeId || 
+      (currentUser ? allEmployees.find(e => e.email.toLowerCase() === currentUser.email.toLowerCase())?.id : null) ||
+      currentUser?.id;
+
     const sale: Sale = {
       id: crypto.randomUUID(),
       order,
@@ -74,7 +83,8 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
       amountReceived: isCash ? parsedAmount : null,
       change: isCash ? parsedAmount - total : null,
       completedAt: new Date().toISOString(),
-      employeeId: currentUser?.id,
+      employeeId: saleEmployeeId || undefined,
+      terminalId: multiTerminalMode ? terminalId : undefined,
       customerId,
       loyaltyPointsEarned,
       discountApplied,

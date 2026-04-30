@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/store';
-import { addEmployee, toggleModal } from './employeesSlice';
+import { addEmployee, toggleModal, setEditingEmployee, updateEmployee } from './employeesSlice';
 import type { Employee } from '../../types';
 import Modal from '../../components/ui/Modal';
 import Toggle from '../../components/ui/Toggle';
@@ -34,11 +34,34 @@ const defaultForm = {
 const EmployeeModal: React.FC = () => {
   const dispatch = useAppDispatch();
   const isOpen = useAppSelector(state => state.employees.isModalOpen);
+  const editingEmployee = useAppSelector(state => state.employees.editingEmployee);
   const [form, setForm] = useState(defaultForm);
   const t = useI18n();
 
+  const isEditing = editingEmployee !== null;
+
+  useEffect(() => {
+    if (isOpen) {
+      if (editingEmployee) {
+        setForm({
+          name: editingEmployee.name,
+          email: editingEmployee.email,
+          phone: editingEmployee.phone,
+          pin: editingEmployee.pin,
+          role: editingEmployee.role,
+          shift: editingEmployee.shift,
+          active: editingEmployee.active,
+          permissions: { ...editingEmployee.permissions },
+        });
+      } else {
+        setForm(defaultForm);
+      }
+    }
+  }, [isOpen, editingEmployee]);
+
   const handleClose = () => {
     dispatch(toggleModal());
+    dispatch(setEditingEmployee(null));
     setForm(defaultForm);
   };
 
@@ -48,12 +71,16 @@ const EmployeeModal: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const employee: Employee = {
-      ...form,
-      id: Date.now().toString(),
-      startDate: new Date().toISOString().split('T')[0],
-    };
-    dispatch(addEmployee(employee));
+    if (isEditing && editingEmployee) {
+      dispatch(updateEmployee({ ...form, id: editingEmployee.id, startDate: editingEmployee.startDate }));
+    } else {
+      const employee: Employee = {
+        ...form,
+        id: Date.now().toString(),
+        startDate: new Date().toISOString().split('T')[0],
+      };
+      dispatch(addEmployee(employee));
+    }
     handleClose();
   };
 
@@ -61,8 +88,8 @@ const EmployeeModal: React.FC = () => {
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title={t.employees.addEmployee}
-      subtitle={t.employees.addEmployee}
+      title={isEditing ? t.common.edit : t.employees.addEmployee}
+      subtitle={isEditing ? t.common.edit : t.employees.addEmployee}
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
         {/* Identity & Contact */}
@@ -187,7 +214,7 @@ const EmployeeModal: React.FC = () => {
             {t.common.cancel}
           </Button>
           <Button type="submit" variant="primary">
-            {t.common.add}
+            {isEditing ? t.common.save : t.common.add}
           </Button>
         </div>
       </form>

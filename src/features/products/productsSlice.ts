@@ -3,11 +3,13 @@ import type { PayloadAction } from '@reduxjs/toolkit';
 import type { Product } from '../../types';
 
 export const CATEGORIES = ['Electronics', 'Food', 'Drinks', 'Apparel', 'Bakery', 'Merchandise'];
+export const BRANDS: string[] = [];
 
 export interface ProductFormState {
   name: string;
   sku: string;
   category: string;
+  brand: string;
   price: number;
   costPrice: number;
   stock: number;
@@ -21,6 +23,7 @@ export const createEmptyForm = (): ProductFormState => ({
   name: '',
   sku: '',
   category: CATEGORIES[0],
+  brand: '',
   price: 0,
   costPrice: 0,
   stock: 0,
@@ -36,6 +39,7 @@ const mockProducts: Product[] = [
     name: 'Summit Pro Watch',
     sku: 'WT-992-SMT',
     category: 'Electronics',
+    brand: 'TechFit',
     price: 299,
     costPrice: 180,
     stock: 142,
@@ -50,6 +54,7 @@ const mockProducts: Product[] = [
     name: 'AudioCore Wireless',
     sku: 'AD-402-WRL',
     category: 'Electronics',
+    brand: 'SoundPro',
     price: 189,
     costPrice: 95,
     stock: 8,
@@ -64,6 +69,7 @@ const mockProducts: Product[] = [
     name: 'Velocity Runner X',
     sku: 'FT-881-VRX',
     category: 'Apparel',
+    brand: 'SportMax',
     price: 125,
     costPrice: 60,
     stock: 56,
@@ -78,6 +84,7 @@ const mockProducts: Product[] = [
     name: 'Chocolate Glazed',
     sku: 'CG-001',
     category: 'Food',
+    brand: 'FreshBakery',
     price: 4.50,
     costPrice: 1.20,
     stock: 200,
@@ -91,6 +98,7 @@ const mockProducts: Product[] = [
     name: 'Caramel Iced Latte',
     sku: 'CL-002',
     category: 'Drinks',
+    brand: 'BeanHouse',
     price: 5.25,
     costPrice: 1.80,
     stock: 150,
@@ -104,6 +112,7 @@ const mockProducts: Product[] = [
     name: 'Classic Cheeseburger',
     sku: 'CB-003',
     category: 'Food',
+    brand: 'GrillHouse',
     price: 12.00,
     costPrice: 4.50,
     stock: 80,
@@ -117,6 +126,7 @@ const mockProducts: Product[] = [
     name: 'Artisan Lime Soda',
     sku: 'ALS-004',
     category: 'Drinks',
+    brand: 'FizzCo',
     price: 3.75,
     costPrice: 0.90,
     stock: 120,
@@ -130,6 +140,7 @@ const mockProducts: Product[] = [
     name: 'Avocado Brunch',
     sku: 'AVB-005',
     category: 'Food',
+    brand: 'GreenKitchen',
     price: 14.50,
     costPrice: 6.00,
     stock: 45,
