@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/store';
 import { selectProduct } from './productsSlice';
 import Badge from '../../components/ui/Badge';
+import Fuse from 'fuse.js';
 
 const PAGE_SIZE = 5;
 
@@ -10,10 +11,22 @@ const ProductsTable: React.FC = () => {
   const { items, selectedProduct, searchQuery, selectedCategory, statusFilter, stockFilter, publishedFilter } = useAppSelector(state => state.products);
   const [currentPage, setCurrentPage] = useState(1);
 
+  const fuse = React.useMemo(() => {
+    return new Fuse(items, {
+      keys: ['name', 'sku', 'brand', 'category'],
+      threshold: 0.3,
+      includeScore: true,
+    });
+  }, [items]);
+  
+  const searchResults = React.useMemo(() => {
+    if (!searchQuery) return null;
+    return new Set(fuse.search(searchQuery).map(r => r.item.id));
+  }, [fuse, searchQuery]);
+
   const filtered = items.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (p.brand && p.brand.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesSearch = searchResults ? searchResults.has(p.id) : true;
+    
     const matchesCategory = selectedCategory === 'All' || p.category === selectedCategory;
     const matchesStatus = statusFilter === 'all' || p.status === statusFilter;
     const matchesPublished = publishedFilter === 'all' ||

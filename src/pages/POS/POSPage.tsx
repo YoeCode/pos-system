@@ -13,6 +13,7 @@ import { useI18n } from '../../i18n/I18nProvider';
 import { addCustomProductToCart, updateQuantity, removeFromCart, setPaymentMethod, startNewSale, selectIsCashBoxOpen, closeCashBox } from '../../features/pos/posSlice';
 import { selectEnableManualProduct, selectFormattedOrderNumber, selectTaxRate, selectTaxLabel, selectTaxIncludedInPrice, selectLoyaltyTiers } from '../../features/settings/settingsSlice';
 import { selectCustomerById } from '../../features/customers/customersSlice';
+import Fuse from 'fuse.js';
 import type { PaymentMethod } from '../../types';
 
 const POSPage: React.FC = () => {
@@ -41,11 +42,16 @@ const POSPage: React.FC = () => {
     ? products
     : products.filter(p => p.category === selectedCategory);
 
+  const fuse = React.useMemo(() => {
+    return new Fuse(filtered, {
+      keys: ['name', 'brand', 'category'],
+      threshold: 0.3,
+      includeScore: true,
+    });
+  }, [filtered]);
+  
   const filteredBySearch = searchQuery
-    ? filtered.filter(p => 
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (p.brand && p.brand.toLowerCase().includes(searchQuery.toLowerCase()))
-      )
+    ? fuse.search(searchQuery).map(r => r.item)
     : filtered;
 
   const handleAddManualProduct = (product: { name: string; category: string; brand?: string; price: number }) => {
