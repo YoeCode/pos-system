@@ -11,6 +11,7 @@ interface CashBoxOpenModalProps {
 const CashBoxOpenModal: React.FC<CashBoxOpenModalProps> = ({ isOpen, closedBoxCount = 0 }) => {
   const dispatch = useAppDispatch();
   const employees = useAppSelector(selectActiveEmployees);
+  const loggedInUser = useAppSelector(state => state.auth.user);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const prevClosedCount = useRef(closedBoxCount);
 
@@ -25,6 +26,18 @@ const CashBoxOpenModal: React.FC<CashBoxOpenModalProps> = ({ isOpen, closedBoxCo
         ? prev.filter(eid => eid !== id)
         : [...prev, id]
     );
+  };
+
+  const selectAllWithLoggedIn = () => {
+    const loggedInEmployee = loggedInUser 
+      ? employees.find(e => e.email.toLowerCase() === loggedInUser.email.toLowerCase())
+      : null;
+    
+    const ids = employees.map(e => e.id);
+    if (loggedInEmployee?.id) {
+      ids.push(loggedInEmployee.id);
+    }
+    setSelectedIds([...new Set(ids)]);
   };
 
   const handleOpenCashBox = () => {
@@ -86,10 +99,10 @@ const CashBoxOpenModal: React.FC<CashBoxOpenModalProps> = ({ isOpen, closedBoxCo
           <div className="flex gap-3">
             <button
               type="button"
-              onClick={() => setSelectedIds(employees.map(e => e.id))}
+              onClick={selectAllWithLoggedIn}
               className="flex-1 py-3 text-sm font-medium text-text-muted border border-border rounded-lg hover:bg-gray-50"
             >
-              Seleccionar todos
+              Seleccionar todos (incl. mine)
             </button>
             <button
               type="button"
