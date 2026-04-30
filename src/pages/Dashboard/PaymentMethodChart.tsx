@@ -7,13 +7,13 @@ interface PaymentMethodChartProps {
 
 const PaymentMethodChart: React.FC<PaymentMethodChartProps> = ({ sales }) => {
   const t = useI18n();
-  const methods: Record<string, number> = { cash: 0, card: 0, qr: 0 };
+  const methods: Record<string, number> = { cash: 0, card: 0, bizum: 0 };
   const labels: Record<string, string> = { 
     cash: t.pos.cash, 
     card: t.pos.card, 
-    qr: t.pos.qr 
+    bizum: t.pos.bizum 
   };
-  const colors: Record<string, string> = { cash: 'bg-emerald-500', card: 'bg-blue-500', qr: 'bg-violet-500' };
+  const colors: Record<string, string> = { cash: 'bg-emerald-500', card: 'bg-blue-500', bizum: 'bg-violet-500' };
 
   sales.forEach(sale => {
     methods[sale.paymentMethod] = (methods[sale.paymentMethod] || 0) + sale.order.total;

@@ -8,6 +8,7 @@ import employeesReducer from '../features/employees/employeesSlice';
 import salesReducer from '../features/sales/salesSlice';
 import dashboardReducer from '../features/dashboard/dashboardSlice';
 import settingsReducer from '../features/settings/settingsSlice';
+import customersReducer from '../features/customers/customersSlice';
 
 export const store = configureStore({
   reducer: {
@@ -18,6 +19,7 @@ export const store = configureStore({
     sales: salesReducer,
     dashboard: dashboardReducer,
     settings: settingsReducer,
+    customers: customersReducer,
   },
 });
 

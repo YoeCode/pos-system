@@ -26,28 +26,30 @@ function makeSale(id: string, orderNum: number, hoursAgo: number, items: { produ
   date.setHours(date.getHours() - hoursAgo);
   return {
     id,
-    order: { id: `ord-${id}`, orderNumber: `ORD-${orderNum}`, items: orderItems, subtotal, tax, total, createdAt: date.toISOString() },
+    order: { id: `ord-${id}`, orderNumber: `ORD-${orderNum}`, items: orderItems, subtotal, tax, total, discount: 0, createdAt: date.toISOString() },
     paymentMethod: method,
     amountReceived: method === 'cash' ? Math.ceil(total) : total,
     change: method === 'cash' ? Math.ceil(total) - total : null,
     completedAt: date.toISOString(),
     employeeId,
+    loyaltyPointsEarned: 0,
+    discountApplied: 0,
   };
 }
 
 const mockSales: Sale[] = [
   makeSale('s1', 1041, 0.3, [{ productId: '1', qty: 1 }, { productId: '4', qty: 2 }], 'card', '1'),
   makeSale('s2', 1040, 1.2, [{ productId: '5', qty: 3 }], 'cash', '2'),
-  makeSale('s3', 1039, 2.5, [{ productId: '3', qty: 1 }, { productId: '7', qty: 2 }], 'qr', '1'),
+  makeSale('s3', 1039, 2.5, [{ productId: '3', qty: 1 }, { productId: '7', qty: 2 }], 'bizum', '1'),
   makeSale('s4', 1038, 4, [{ productId: '8', qty: 2 }], 'card', '3'),
   makeSale('s5', 1037, 5.5, [{ productId: '2', qty: 1 }], 'cash', '2'),
   makeSale('s6', 1036, 7, [{ productId: '4', qty: 5 }, { productId: '5', qty: 3 }], 'card', '1'),
-  makeSale('s7', 1035, 9, [{ productId: '1', qty: 1 }], 'qr', '4'),
+  makeSale('s7', 1035, 9, [{ productId: '1', qty: 1 }], 'bizum', '4'),
   makeSale('s8', 1034, 12, [{ productId: '3', qty: 2 }, { productId: '8', qty: 1 }], 'cash', '3'),
   makeSale('s9', 1033, 18, [{ productId: '7', qty: 4 }], 'card', '2'),
   makeSale('s10', 1032, 24, [{ productId: '2', qty: 1 }, { productId: '5', qty: 2 }], 'cash', '1'),
   makeSale('s11', 1031, 30, [{ productId: '4', qty: 10 }], 'card', '5'),
-  makeSale('s12', 1030, 36, [{ productId: '1', qty: 2 }], 'qr', '4'),
+  makeSale('s12', 1030, 36, [{ productId: '1', qty: 2 }], 'bizum', '4'),
   makeSale('s13', 1029, 48, [{ productId: '3', qty: 1 }, { productId: '4', qty: 3 }, { productId: '7', qty: 2 }], 'cash', '2'),
   makeSale('s14', 1028, 55, [{ productId: '8', qty: 4 }], 'card', '3'),
   makeSale('s15', 1027, 60, [{ productId: '2', qty: 2 }, { productId: '5', qty: 1 }], 'cash', '1'),

@@ -12,9 +12,9 @@ export interface AuthUser {
 
 export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
   cashier: ['pos'],
-  supervisor: ['pos', 'products', 'reports'],
-  manager: ['pos', 'products', 'reports', 'employees', 'dashboard'],
-  admin: ['pos', 'products', 'reports', 'employees', 'dashboard', 'settings'],
+  supervisor: ['pos', 'products', 'reports', 'customers'],
+  manager: ['pos', 'products', 'reports', 'employees', 'dashboard', 'customers'],
+  admin: ['pos', 'products', 'reports', 'employees', 'dashboard', 'settings', 'customers'],
 };
 
 export interface Product {
@@ -22,6 +22,7 @@ export interface Product {
   name: string;
   sku: string;
   category: string;
+  brand?: string;
   price: number;
   costPrice: number;
   stock: number;
@@ -56,7 +57,34 @@ export interface Employee {
   startDate: string;
 }
 
-export type PaymentMethod = 'cash' | 'card' | 'qr';
+export type LoyaltyTier = 'bronze' | 'silver' | 'gold' | 'platinum';
+
+export interface LoyaltyTierConfig {
+  tier: LoyaltyTier;
+  threshold: number;
+  discountPct: number;
+}
+
+export interface Customer {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  notes: string;
+  active: boolean;
+  loyaltyPoints: number;
+  tier: LoyaltyTier;
+  totalSpent: number;
+  createdAt: string;
+}
+
+export interface LoyaltySettings {
+  enabled: boolean;
+  pointsPerEuro: number;
+  tiers: LoyaltyTierConfig[];
+}
+
+export type PaymentMethod = 'cash' | 'card' | 'bizum';
 
 export interface OrderItem {
   product: Product;
@@ -71,6 +99,7 @@ export interface Order {
   subtotal: number;
   tax: number;
   total: number;
+  discount: number;
   createdAt: string;
 }
 
@@ -82,6 +111,10 @@ export interface Sale {
   change: number | null;
   completedAt: string;
   employeeId?: string;
+  terminalId?: string;
+  customerId?: string;
+  loyaltyPointsEarned: number;
+  discountApplied: number;
 }
 
 export interface TaxSettings {
@@ -102,10 +135,14 @@ export interface StoreSettings {
 export interface PosSettings {
   defaultPaymentMethod: PaymentMethod;
   defaultCategory: string;
+  categories: string[];
+  brands: string[];
   walkInCustomerLabel: string;
   orderNumberPrefix: string;
   orderNumberSeed: number;
   enableManualProduct: boolean;
+  multiTerminalMode: boolean;
+  terminalId?: string;
 }
 
 export type Language = 'en' | 'es';
@@ -119,4 +156,5 @@ export interface SettingsState {
   store: StoreSettings;
   pos: PosSettings;
   language: LanguageSettings;
+  loyalty: LoyaltySettings;
 }

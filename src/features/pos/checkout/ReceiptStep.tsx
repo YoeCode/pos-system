@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { useAppSelector } from '../../../app/store';
+import { useAppDispatch, useAppSelector } from '../../../app/store';
+import { startNewSale } from '../posSlice';
 import { selectSaleById } from '../../sales/salesSlice';
+import { selectActiveEmployees } from '../../employees/employeesSlice';
 import {
   selectStoreName,
   selectReceiptFooterMessage,
@@ -9,6 +11,7 @@ import {
 
 interface ReceiptStepProps {
   saleId: string;
+  loyaltyPointsEarned: number;
   onDone: () => void;
 }
 
@@ -18,16 +21,22 @@ const paymentMethodLabel: Record<string, string> = {
   qr: 'QR Code',
 };
 
-const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, onDone }) => {
+const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, onDone }) => {
+  const dispatch = useAppDispatch();
   const sale = useAppSelector(state => selectSaleById(state, saleId));
   const storeName = useAppSelector(selectStoreName);
   const footerMessage = useAppSelector(selectReceiptFooterMessage);
   const taxLabel = useAppSelector(selectTaxLabel);
+  const allEmployees = useAppSelector(selectActiveEmployees);
   const [showGiftTicket, setShowGiftTicket] = useState(false);
 
   if (!sale) return null;
 
-  const { order, paymentMethod, amountReceived, change, completedAt } = sale;
+  const { order, paymentMethod, amountReceived, change, completedAt, employeeId } = sale;
+  
+  const employeeName = employeeId 
+    ? allEmployees.find(e => e.id === employeeId)?.name 
+    : null;
 
   const date = new Date(completedAt);
   const formattedDate = date.toLocaleDateString('en-US', {
@@ -48,6 +57,9 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, onDone }) => {
           <p className="font-bold text-sm text-text-primary">{storeName.toUpperCase() + ' POS'}</p>
           <p className="text-text-muted mt-0.5">{formattedDate} — {formattedTime}</p>
           <p className="text-text-muted mt-0.5">{order.orderNumber}</p>
+          {employeeName && (
+            <p className="text-text-muted mt-0.5 font-medium">{employeeName}</p>
+          )}
         </div>
 
         <div className="border-t border-dashed border-gray-300 my-3" />
@@ -56,7 +68,7 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, onDone }) => {
           {order.items.map(item => (
             <div key={item.product.id} className="flex justify-between gap-2">
               <span className="text-text-primary truncate">
-                {item.product.name}
+                {item.product.name || item.product.category}
                 <span className="text-text-muted ml-1">×{item.quantity}</span>
               </span>
               <span className="flex-shrink-0 text-text-primary">
@@ -81,6 +93,12 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, onDone }) => {
             <span className="text-text-primary">TOTAL</span>
             <span className="text-primary">${order.total.toFixed(2)}</span>
           </div>
+          {loyaltyPointsEarned > 0 && (
+            <div className="flex justify-between text-purple-600 mt-0.5">
+              <span>Points Earned</span>
+              <span>+{loyaltyPointsEarned} pts</span>
+            </div>
+          )}
         </div>
 
         <div className="border-t border-dashed border-gray-300 my-3" />
@@ -130,6 +148,9 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, onDone }) => {
             <p className="text-text-muted mt-0.5">GIFT RECEIPT</p>
             <p className="text-text-muted mt-0.5">{formattedDate} — {formattedTime}</p>
             <p className="text-text-muted mt-0.5">{order.orderNumber}</p>
+            {employeeName && (
+              <p className="text-text-muted mt-0.5 font-medium">{employeeName}</p>
+            )}
           </div>
 
           <div className="border-t border-dashed border-gray-300 my-3" />
@@ -138,7 +159,7 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, onDone }) => {
             {order.items.map(item => (
               <div key={item.product.id} className="flex justify-between gap-2">
                 <span className="text-text-primary truncate">
-                  {item.product.name}
+                  {item.product.name || item.product.category}
                   <span className="text-text-muted ml-1">×{item.quantity}</span>
                 </span>
                 <span className="flex-shrink-0 text-text-muted">---</span>
@@ -154,7 +175,7 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, onDone }) => {
 
       {/* Done button */}
       <button
-        onClick={onDone}
+        onClick={() => { dispatch(startNewSale()); onDone(); }}
         className="w-full py-3.5 bg-primary hover:bg-primary-dark text-white font-bold rounded-xl text-sm transition-all duration-150 active:scale-[0.98]"
       >
         DONE

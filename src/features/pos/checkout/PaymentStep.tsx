@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../../../app/store';
 import { completeSale } from '../../sales/salesSlice';
-import { selectTaxLabel } from '../../settings/settingsSlice';
+import { selectTaxLabel, selectPointsPerEuro, selectLoyaltyTiers, selectMultiTerminalMode, selectTerminalId } from '../../settings/settingsSlice';
+import { addLoyaltyPoints } from '../../customers/customersSlice';
 import { clearCart } from '../posSlice';
+import { selectActiveEmployees } from '../../employees/employeesSlice';
 import type { CartItem, Order, PaymentMethod, Sale } from '../../../types';
 
 interface PaymentStepProps {
@@ -12,13 +14,15 @@ interface PaymentStepProps {
   total: number;
   paymentMethod: PaymentMethod;
   orderNumber: string;
-  onComplete: (saleId: string) => void;
+  customerId?: string;
+  discountApplied: number;
+  onComplete: (saleId: string, pointsEarned: number) => void;
 }
 
 const paymentMethodLabel: Record<PaymentMethod, string> = {
   cash: 'Cash',
   card: 'Card',
-  qr: 'QR Code',
+  bizum: 'Bizum',
 };
 
 const PaymentStep: React.FC<PaymentStepProps> = ({
@@ -28,11 +32,19 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
   total,
   paymentMethod,
   orderNumber,
+  customerId,
+  discountApplied,
   onComplete,
 }) => {
   const dispatch = useAppDispatch();
   const taxLabel = useAppSelector(selectTaxLabel);
+  const currentEmployeeId = useAppSelector(state => state.pos.currentEmployeeId);
   const currentUser = useAppSelector(state => state.auth.user);
+  const pointsPerEuro = useAppSelector(selectPointsPerEuro);
+  const tiers = useAppSelector(selectLoyaltyTiers);
+  const multiTerminalMode = useAppSelector(selectMultiTerminalMode);
+  const terminalId = useAppSelector(selectTerminalId);
+  const allEmployees = useAppSelector(selectActiveEmployees);
   const [amountReceived, setAmountReceived] = useState<string>('');
 
   const isCash = paymentMethod === 'cash';
@@ -54,8 +66,15 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
       subtotal,
       tax,
       total,
+      discount: discountApplied,
       createdAt: new Date().toISOString(),
     };
+
+    const loyaltyPointsEarned = customerId ? Math.floor(total * pointsPerEuro) : 0;
+
+    const saleEmployeeId = currentEmployeeId || 
+      (currentUser ? allEmployees.find(e => e.email.toLowerCase() === currentUser.email.toLowerCase())?.id : null) ||
+      currentUser?.id;
 
     const sale: Sale = {
       id: crypto.randomUUID(),
@@ -64,12 +83,21 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
       amountReceived: isCash ? parsedAmount : null,
       change: isCash ? parsedAmount - total : null,
       completedAt: new Date().toISOString(),
-      employeeId: currentUser?.id,
+      employeeId: saleEmployeeId || undefined,
+      terminalId: multiTerminalMode ? terminalId : undefined,
+      customerId,
+      loyaltyPointsEarned,
+      discountApplied,
     };
 
     dispatch(completeSale(sale));
+
+    if (customerId) {
+      dispatch(addLoyaltyPoints({ customerId, points: loyaltyPointsEarned, amountSpent: total, tiers }));
+    }
+
     dispatch(clearCart());
-    onComplete(sale.id);
+    onComplete(sale.id, loyaltyPointsEarned);
   };
 
   return (
@@ -99,8 +127,14 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between text-sm">
           <span className="text-text-muted">Subtotal</span>
-          <span className="font-mono text-text-primary">${subtotal.toFixed(2)}</span>
+          <span className="font-mono text-text-primary">${(subtotal + discountApplied).toFixed(2)}</span>
         </div>
+        {discountApplied > 0 && (
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-green-600">Loyalty Discount</span>
+            <span className="font-mono text-green-600">-${discountApplied.toFixed(2)}</span>
+          </div>
+        )}
         <div className="flex items-center justify-between text-sm">
           <span className="text-text-muted">{taxLabel}</span>
           <span className="font-mono text-text-muted">${tax.toFixed(2)}</span>
