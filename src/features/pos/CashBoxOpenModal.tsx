@@ -6,9 +6,10 @@ import { openCashBox } from './posSlice';
 interface CashBoxOpenModalProps {
   isOpen: boolean;
   closedBoxCount?: number;
+  onClose?: () => void;
 }
 
-const CashBoxOpenModal: React.FC<CashBoxOpenModalProps> = ({ isOpen, closedBoxCount = 0 }) => {
+const CashBoxOpenModal: React.FC<CashBoxOpenModalProps> = ({ isOpen, closedBoxCount = 0, onClose }) => {
   const dispatch = useAppDispatch();
   const employees = useAppSelector(selectActiveEmployees);
   const loggedInUser = useAppSelector(state => state.auth.user);
@@ -50,7 +51,7 @@ const CashBoxOpenModal: React.FC<CashBoxOpenModalProps> = ({ isOpen, closedBoxCo
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div className="relative z-10 bg-white rounded-xl shadow-2xl w-full max-w-md mx-4">
         <div className="p-6">
           <div className="text-center mb-6">
