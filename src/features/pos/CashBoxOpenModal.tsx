@@ -40,6 +40,7 @@ const CashBoxOpenModal: React.FC<CashBoxOpenModalProps> = ({ isOpen, closedBoxCo
         : selectedIds;
       
       dispatch(openCashBox(finalIds));
+      onClose?.();
     }
   };
 
