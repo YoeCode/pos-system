@@ -13,7 +13,7 @@ const EmployeeSelector: React.FC = () => {
   const workingEmployeeIds = useAppSelector(selectWorkingEmployees);
 
   const displayedEmployees = isCashBoxOpen
-    ? employees.filter(e => workingEmployeeIds.includes(e.id))
+    ? employees.filter(e => workingEmployeeIds.includes(e.id) || (loggedInUser && e.email.toLowerCase() === loggedInUser.email.toLowerCase()))
     : employees;
 
   useEffect(() => {
@@ -24,6 +24,15 @@ const EmployeeSelector: React.FC = () => {
       }
     }
   }, [loggedInUser, currentEmployeeId, multiTerminalMode, employees, dispatch]);
+
+  useEffect(() => {
+    if (isCashBoxOpen && loggedInUser && !currentEmployeeId) {
+      const loggedInEmployee = employees.find(e => e.email.toLowerCase() === loggedInUser.email.toLowerCase());
+      if (loggedInEmployee) {
+        dispatch(setCurrentEmployee(loggedInEmployee.id));
+      }
+    }
+  }, [isCashBoxOpen, loggedInUser, currentEmployeeId, employees, dispatch]);
 
   if (multiTerminalMode) {
     return null;

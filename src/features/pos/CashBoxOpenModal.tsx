@@ -28,23 +28,23 @@ const CashBoxOpenModal: React.FC<CashBoxOpenModalProps> = ({ isOpen, closedBoxCo
     );
   };
 
-  const selectAllWithLoggedIn = () => {
-    const loggedInEmployee = loggedInUser 
-      ? employees.find(e => e.email.toLowerCase() === loggedInUser.email.toLowerCase())
-      : null;
-    
-    const ids = employees.map(e => e.id);
-    if (loggedInEmployee?.id) {
-      ids.push(loggedInEmployee.id);
-    }
-    setSelectedIds([...new Set(ids)]);
-  };
-
   const handleOpenCashBox = () => {
     if (selectedIds.length > 0) {
-      dispatch(openCashBox(selectedIds));
+      const loggedInEmployee = loggedInUser 
+        ? employees.find(e => e.email.toLowerCase() === loggedInUser.email.toLowerCase())
+        : null;
+      
+      const finalIds = loggedInEmployee?.id 
+        ? [...new Set([...selectedIds, loggedInEmployee.id])]
+        : selectedIds;
+      
+      dispatch(openCashBox(finalIds));
     }
   };
+
+  const otherEmployees = employees.filter(e => 
+    !loggedInUser || e.email.toLowerCase() !== loggedInUser.email.toLowerCase()
+  );
 
   if (!isOpen) return null;
 
@@ -66,7 +66,21 @@ const CashBoxOpenModal: React.FC<CashBoxOpenModalProps> = ({ isOpen, closedBoxCo
           </div>
           
           <div className="space-y-2 max-h-64 overflow-y-auto mb-4">
-            {employees.map(emp => (
+            {loggedInUser && (
+              <div className="flex items-center gap-3 p-3 rounded-lg border-2 border-green-600 bg-green-50">
+                <div className="w-5 h-5 rounded-full bg-green-600 border-green-600 flex items-center justify-center">
+                  <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-text-primary truncate">{loggedInUser.name}</p>
+                  <p className="text-xs text-text-muted">Usuario actual (seleccionado)</p>
+                </div>
+              </div>
+            )}
+            
+            {otherEmployees.map(emp => (
               <button
                 key={emp.id}
                 type="button"
@@ -99,10 +113,10 @@ const CashBoxOpenModal: React.FC<CashBoxOpenModalProps> = ({ isOpen, closedBoxCo
           <div className="flex gap-3">
             <button
               type="button"
-              onClick={selectAllWithLoggedIn}
+              onClick={() => setSelectedIds(otherEmployees.map(e => e.id))}
               className="flex-1 py-3 text-sm font-medium text-text-muted border border-border rounded-lg hover:bg-gray-50"
             >
-              Seleccionar todos (incl. mine)
+              Seleccionar todos
             </button>
             <button
               type="button"
