@@ -156,11 +156,14 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, 
       {showGiftTicket && (
         <div className="mx-auto w-full max-w-xs bg-white border border-dashed border-gray-300 rounded-lg p-5 font-mono text-xs">
           <div className="text-center mb-4">
+            {ticketConfig?.showLogo && ticketConfig?.logoUrl && (
+              <img src={ticketConfig.logoUrl} alt="Logo" className="w-16 h-16 object-contain mx-auto mb-2" />
+            )}
             <p className="font-bold text-sm text-text-primary">TICKET REGALO</p>
             <p className="text-text-muted mt-0.5">GIFT RECEIPT</p>
             <p className="text-text-muted mt-0.5">{formattedDate} — {formattedTime}</p>
             <p className="text-text-muted mt-0.5">{order.orderNumber}</p>
-            {employeeName && (
+            {ticketConfig?.showEmployee !== false && employeeName && (
               <p className="text-text-muted mt-0.5 font-medium">{employeeName}</p>
             )}
           </div>
