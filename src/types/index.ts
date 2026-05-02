@@ -12,9 +12,9 @@ export interface AuthUser {
 
 export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
   cashier: ['pos'],
-  supervisor: ['pos', 'products', 'reports', 'customers'],
-  manager: ['pos', 'products', 'reports', 'employees', 'dashboard', 'customers'],
-  admin: ['pos', 'products', 'reports', 'employees', 'dashboard', 'settings', 'customers'],
+  supervisor: ['pos', 'products', 'reports', 'customers', 'inventory'],
+  manager: ['pos', 'products', 'reports', 'employees', 'dashboard', 'customers', 'inventory'],
+  admin: ['pos', 'products', 'reports', 'employees', 'dashboard', 'settings', 'customers', 'inventory'],
 };
 
 export interface Product {

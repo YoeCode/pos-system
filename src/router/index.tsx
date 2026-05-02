@@ -14,6 +14,7 @@ import DashboardPage from '../pages/Dashboard/DashboardPage';
 import ReportsPage from '../pages/Reports/ReportsPage';
 import SettingsPage from '../pages/Settings/SettingsPage';
 import CustomersPage from '../pages/Customers/CustomersPage';
+import InventoryPage from '../pages/Inventory/InventoryPage';
 
 const PAGE_ROUTES: Record<string, string> = {
   '/pos': 'pos',
@@ -23,6 +24,7 @@ const PAGE_ROUTES: Record<string, string> = {
   '/reports': 'reports',
   '/settings': 'settings',
   '/customers': 'customers',
+  '/inventory': 'inventory',
 };
 
 const ProtectedRoute = ({ children }: { children: ReactNode }) => {
@@ -122,6 +124,16 @@ export const router = createBrowserRouter([
       <ProtectedRoute>
         <DashboardLayout>
           <CustomersPage />
+        </DashboardLayout>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/inventory',
+    element: (
+      <ProtectedRoute>
+        <DashboardLayout>
+          <InventoryPage />
         </DashboardLayout>
       </ProtectedRoute>
     ),
