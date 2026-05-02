@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/store';
-import { selectProduct, updateProduct, CATEGORIES } from './productsSlice';
+import { updateProduct, CATEGORIES } from './productsSlice';
 import type { Product } from '../../types';
 import Toggle from '../../components/ui/Toggle';
 import Button from '../../components/ui/Button';
@@ -113,22 +113,14 @@ const ProductDetailPanel: React.FC = () => {
   };
 
   return (
-    <div className="w-[380px] flex-shrink-0 bg-white border-l border-border flex flex-col h-full">
+    <div className="flex-1 flex flex-col h-full overflow-y-auto bg-white rounded-xl border border-border">
       {/* Header */}
-      <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-        <h3 className="font-semibold text-text-primary text-sm">Product Details</h3>
-        <button
-          onClick={() => dispatch(selectProduct(null))}
-          className="w-7 h-7 flex items-center justify-center rounded text-text-muted hover:text-text-primary hover:bg-gray-100 transition-colors"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
+      <div className="px-6 py-5 border-b border-border flex items-center justify-between">
+        <h3 className="text-xl font-bold text-text-primary">Product Details</h3>
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-5">
+      <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
         {/* Image upload */}
         <div>
           <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Product Image</p>
@@ -289,7 +281,7 @@ const ProductDetailPanel: React.FC = () => {
       </div>
 
       {/* Footer */}
-      <div className="px-5 py-4 border-t border-border">
+      <div className="px-6 py-5 border-t border-border">
         <Button variant="primary" fullWidth onClick={handleSave}>
           Save Changes
         </Button>

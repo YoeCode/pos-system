@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/store';
-import { setSearchQuery, setSelectedCategory, setStatusFilter, setStockFilter, setPublishedFilter } from '../../features/products/productsSlice';
+import { setSearchQuery, setSelectedCategory, setStatusFilter, setStockFilter, setPublishedFilter, selectProduct } from '../../features/products/productsSlice';
 import ProductsTable from '../../features/products/ProductsTable';
 import ProductDetailPanel from '../../features/products/ProductDetailPanel';
 import ProductCreateModal from '../../features/products/ProductCreateModal';
@@ -16,6 +16,10 @@ const ProductsPage: React.FC = () => {
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
   const t = useI18n();
+
+  const handleCloseProduct = () => {
+    dispatch(selectProduct(null));
+  };
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -153,17 +157,32 @@ const ProductsPage: React.FC = () => {
       </div>
 
       {/* Body */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Table */}
-        <div className={`flex-1 overflow-auto bg-white ${selectedProduct ? '' : 'rounded-b-none'}`}>
-          <ProductsTable />
-        </div>
-
-        {/* Detail Panel */}
-        {selectedProduct && (
+      {selectedProduct ? (
+        <div className="flex-1 p-6 flex flex-col gap-6 overflow-auto">
+          <div className="flex items-center gap-2 text-sm">
+            <button
+              onClick={handleCloseProduct}
+              className="text-text-muted hover:text-text-primary transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <span className="text-text-muted">/</span>
+            <span className="font-medium text-text-primary">Products</span>
+            <span className="text-text-muted">/</span>
+            <span className="text-primary">{selectedProduct.name}</span>
+          </div>
           <ProductDetailPanel />
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className="flex flex-1 overflow-hidden">
+          {/* Table */}
+          <div className="flex-1 overflow-auto bg-white">
+            <ProductsTable />
+          </div>
+        </div>
+      )}
 
       {/* Create Modal */}
       <ProductCreateModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} />
