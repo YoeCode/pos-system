@@ -3,6 +3,7 @@ import { useAppSelector } from '../../app/store';
 import { selectAllCustomers, selectActiveCustomers, selectCustomerById } from '../../features/customers/customersSlice';
 import CustomerDetailPanel from '../../features/customers/CustomerDetailPanel';
 import CustomerModal from '../../features/customers/CustomerModal';
+import SaleDetailView from '../../features/sales/SaleDetailView';
 import Button from '../../components/ui/Button';
 import type { LoyaltyTier } from '../../types';
 
@@ -18,11 +19,28 @@ const CustomersPage: React.FC = () => {
   const activeCustomers = useAppSelector(selectActiveCustomers);
   const [search, setSearch] = useState('');
   const [detailCustomerId, setDetailCustomerId] = useState<string | null>(null);
+  const [selectedSaleId, setSelectedSaleId] = useState<string | null>(null);
+  const [selectedSaleLabel, setSelectedSaleLabel] = useState<string>('');
   const [isAddOpen, setIsAddOpen] = useState(false);
 
   const selectedCustomer = useAppSelector(s => 
     detailCustomerId ? selectCustomerById(s, detailCustomerId) : null
   );
+
+  const handleSaleClick = (saleId: string, orderNumber: string) => {
+    setSelectedSaleId(saleId);
+    setSelectedSaleLabel(orderNumber);
+  };
+
+  const handleBackToCustomer = () => {
+    setSelectedSaleId(null);
+    setSelectedSaleLabel('');
+  };
+
+  const handleBackToList = () => {
+    setDetailCustomerId(null);
+    setSelectedSaleId(null);
+  };
 
   const now = new Date();
   const newThisMonth = allCustomers.filter(c => {
@@ -38,25 +56,34 @@ const CustomersPage: React.FC = () => {
   return (
     <div className="flex h-full">
       {detailCustomerId && selectedCustomer ? (
-        <div className="flex-1 p-6 flex flex-col gap-6 overflow-auto">
-          <div className="flex items-center gap-2 text-sm">
-            <button
-              onClick={() => setDetailCustomerId(null)}
-              className="text-text-muted hover:text-text-primary transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            <span className="text-text-muted">/</span>
-            <span className="font-medium text-text-primary">Customer</span>
-            <span className="text-text-muted">/</span>
-            <span className="text-primary">{selectedCustomer.name}</span>
-          </div>
-          <CustomerDetailPanel
-            customerId={detailCustomerId}
+        selectedSaleId ? (
+          <SaleDetailView
+            saleId={selectedSaleId}
+            onBack={handleBackToCustomer}
+            breadcrumbLabel={selectedSaleLabel}
           />
-        </div>
+        ) : (
+          <div className="flex-1 p-6 flex flex-col gap-6 overflow-auto">
+            <div className="flex items-center gap-2 text-sm">
+              <button
+                onClick={handleBackToList}
+                className="text-text-muted hover:text-text-primary transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <span className="text-text-muted">/</span>
+              <span className="font-medium text-text-primary">Customer</span>
+              <span className="text-text-muted">/</span>
+              <span className="text-primary">{selectedCustomer.name}</span>
+            </div>
+            <CustomerDetailPanel
+              customerId={detailCustomerId}
+              onSaleClick={handleSaleClick}
+            />
+          </div>
+        )
       ) : (
         <div className="flex-1 p-6 flex flex-col gap-6 overflow-auto">
           <div className="flex items-center justify-between">

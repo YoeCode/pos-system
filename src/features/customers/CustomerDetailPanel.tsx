@@ -8,6 +8,7 @@ import type { LoyaltyTier } from '../../types';
 
 interface CustomerDetailPanelProps {
   customerId: string;
+  onSaleClick: (saleId: string, orderNumber: string) => void;
 }
 
 const tierColors: Record<LoyaltyTier, string> = {
@@ -17,7 +18,7 @@ const tierColors: Record<LoyaltyTier, string> = {
   platinum: 'text-purple-600 bg-purple-50 border-purple-200',
 };
 
-const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({ customerId }) => {
+const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({ customerId, onSaleClick }) => {
   const customer = useAppSelector(s => selectCustomerById(s, customerId));
   const allSales = useAppSelector(s => selectSalesByCustomerId(s, customerId));
   const tiers = useAppSelector(selectLoyaltyTiers);
@@ -111,7 +112,11 @@ const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({ customerId })
           ) : (
             <div className="flex flex-col gap-3">
               {recentSales.map(sale => (
-                <div key={sale.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                <button
+                  key={sale.id}
+                  onClick={() => onSaleClick(sale.id, sale.order.orderNumber)}
+                  className="flex items-center justify-between py-2 border-b border-border last:border-0 hover:bg-gray-50 cursor-pointer transition-colors text-left"
+                >
                   <div>
                     <p className="text-sm font-medium text-text-primary">{sale.order.orderNumber}</p>
                     <p className="text-xs text-text-muted">
@@ -128,7 +133,7 @@ const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({ customerId })
                       <p className="text-xs text-purple-600">+{sale.loyaltyPointsEarned} pts</p>
                     )}
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           )}
