@@ -8,7 +8,6 @@ import type { LoyaltyTier } from '../../types';
 
 interface CustomerDetailPanelProps {
   customerId: string;
-  onClose: () => void;
 }
 
 const tierColors: Record<LoyaltyTier, string> = {
@@ -18,7 +17,7 @@ const tierColors: Record<LoyaltyTier, string> = {
   platinum: 'text-purple-600 bg-purple-50 border-purple-200',
 };
 
-const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({ customerId, onClose }) => {
+const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({ customerId }) => {
   const customer = useAppSelector(s => selectCustomerById(s, customerId));
   const allSales = useAppSelector(s => selectSalesByCustomerId(s, customerId));
   const tiers = useAppSelector(selectLoyaltyTiers);
@@ -40,41 +39,29 @@ const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({ customerId, o
 
   return (
     <>
-      <div className="w-[380px] flex-shrink-0 bg-white border-l border-border flex flex-col h-full overflow-y-auto">
-        {/* Header */}
-        <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+      <div className="flex-1 flex flex-col h-full overflow-y-auto">
+        <div className="px-6 py-5 border-b border-border flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xl">
               {customer.name.charAt(0)}
             </div>
             <div>
-              <h3 className="font-semibold text-text-primary text-sm">{customer.name}</h3>
-              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border uppercase ${tierColors[customer.tier]}`}>
+              <h2 className="text-xl font-bold text-text-primary">{customer.name}</h2>
+              <span className={`text-[10px] font-bold px-2 py-1 rounded border uppercase ${tierColors[customer.tier]}`}>
                 {customer.tier}
               </span>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setIsEditOpen(true)}
-              className="text-xs text-primary hover:underline font-medium"
-            >
-              Edit
-            </button>
-            <button
-              onClick={onClose}
-              className="text-text-muted hover:text-text-primary transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
+          <button
+            onClick={() => setIsEditOpen(true)}
+            className="text-sm text-primary hover:underline font-medium"
+          >
+            Edit
+          </button>
         </div>
 
-        {/* Profile */}
-        <div className="px-5 py-4 border-b border-border flex flex-col gap-2">
-          <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">Profile</p>
+        <div className="px-6 py-5 border-b border-border flex flex-col gap-4">
+          <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">Profile</p>
           {customer.email && (
             <div className="flex items-center gap-2 text-sm">
               <span className="text-text-muted w-12 flex-shrink-0">Email</span>
@@ -93,8 +80,7 @@ const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({ customerId, o
           )}
         </div>
 
-        {/* Loyalty Summary */}
-        <div className="px-5 py-4 border-b border-border flex flex-col gap-3">
+        <div className="px-6 py-5 border-b border-border flex flex-col gap-3">
           <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">Loyalty</p>
           <div className="flex items-center justify-between">
             <span className="text-sm text-text-muted">Current Points</span>
@@ -118,13 +104,12 @@ const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({ customerId, o
           )}
         </div>
 
-        {/* Purchase History */}
-        <div className="px-5 py-4 flex flex-col gap-3 flex-1">
+        <div className="px-6 py-5 flex flex-col gap-3 flex-1">
           <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">Purchase History</p>
           {recentSales.length === 0 ? (
             <p className="text-sm text-text-muted">No purchases yet</p>
           ) : (
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-3">
               {recentSales.map(sale => (
                 <div key={sale.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                   <div>
