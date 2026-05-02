@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAppSelector } from '../../app/store';
 import { useI18n } from '../../i18n/I18nProvider';
 
@@ -7,6 +7,7 @@ type InventoryTab = 'summary' | 'lowstock' | 'reorder';
 const InventoryPage: React.FC = () => {
   const t = useI18n();
   const [activeTab, setActiveTab] = useState<InventoryTab>('summary');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const products = useAppSelector(state => state.products.items);
 
   const tabs = [
@@ -15,22 +16,37 @@ const InventoryPage: React.FC = () => {
     { id: 'reorder' as const, label: t.inventory.reorder },
   ];
 
-  const stockByCategory = products.reduce((acc, product) => {
-    const cat = product.category || 'Uncategorized';
-    if (!acc[cat]) {
-      acc[cat] = { count: 0, totalStock: 0, totalValue: 0 };
-    }
-    acc[cat].count += 1;
-    acc[cat].totalStock += product.stock;
-    acc[cat].totalValue += product.stock * product.price;
-    return acc;
-  }, {} as Record<string, { count: number; totalStock: number; totalValue: number }>);
+  const stockByCategory = useMemo(() => {
+    return products.reduce((acc, product) => {
+      const cat = product.category || 'Uncategorized';
+      if (!acc[cat]) {
+        acc[cat] = { count: 0, totalStock: 0, totalValue: 0 };
+      }
+      acc[cat].count += 1;
+      acc[cat].totalStock += product.stock;
+      acc[cat].totalValue += product.stock * product.price;
+      return acc;
+    }, {} as Record<string, { count: number; totalStock: number; totalValue: number }>);
+  }, [products]);
+
+  const categoryProducts = useMemo(() => {
+    if (!selectedCategory) return [];
+    return products.filter(p => (p.category || 'Uncategorized') === selectedCategory);
+  }, [products, selectedCategory]);
 
   const lowStockProducts = products.filter(p => p.stock <= p.minStock && p.stock > 0);
   const outOfStockProducts = products.filter(p => p.stock === 0);
   const reorderProducts = products.filter(p => p.stock <= p.minStock);
 
   const totalValue = products.reduce((sum, p) => sum + (p.stock * p.price), 0);
+
+  const handleCategoryClick = (category: string) => {
+    setSelectedCategory(category);
+  };
+
+  const handleBack = () => {
+    setSelectedCategory(null);
+  };
 
   return (
     <div className="flex h-[calc(100vh-57px)]">
@@ -90,7 +106,11 @@ const InventoryPage: React.FC = () => {
                 </thead>
                 <tbody>
                   {Object.entries(stockByCategory).map(([category, data]) => (
-                    <tr key={category} className="border-b border-border last:border-0">
+                    <tr 
+                      key={category} 
+                      className="border-b border-border last:border-0 hover:bg-gray-50 cursor-pointer transition-colors"
+                      onClick={() => handleCategoryClick(category)}
+                    >
                       <td className="px-5 py-3 text-sm font-medium text-text-primary">{category}</td>
                       <td className="px-5 py-3 text-sm text-right font-mono text-text-primary">{data.count}</td>
                       <td className="px-5 py-3 text-sm text-right font-mono text-text-primary">{data.totalStock}</td>
@@ -100,6 +120,49 @@ const InventoryPage: React.FC = () => {
                 </tbody>
               </table>
             </div>
+
+            {selectedCategory && (
+              <div className="bg-white rounded-xl border border-border overflow-hidden">
+                <div className="px-5 py-3 border-b border-border bg-primary/10 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-semibold text-text-primary">{selectedCategory}</h3>
+                    <p className="text-xs text-text-muted">{categoryProducts.length} {t.inventory.products.toLowerCase()}</p>
+                  </div>
+                  <button 
+                    onClick={handleBack}
+                    className="text-xs font-medium text-primary hover:text-primary/80"
+                  >
+                    {t.common.back}
+                  </button>
+                </div>
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-border">
+                      <th className="text-left px-5 py-3 text-xs font-semibold text-text-muted uppercase">{t.inventory.product}</th>
+                      <th className="text-right px-5 py-3 text-xs font-semibold text-text-muted uppercase">SKU</th>
+                      <th className="text-right px-5 py-3 text-xs font-semibold text-text-muted uppercase">{t.inventory.stock}</th>
+                      <th className="text-right px-5 py-3 text-xs font-semibold text-text-muted uppercase">{t.inventory.minStock}</th>
+                      <th className="text-right px-5 py-3 text-xs font-semibold text-text-muted uppercase">{t.inventory.value}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {categoryProducts.map(product => (
+                      <tr key={product.id} className="border-b border-border last:border-0">
+                        <td className="px-5 py-3 text-sm font-medium text-text-primary">{product.name}</td>
+                        <td className="px-5 py-3 text-sm text-right font-mono text-text-muted">{product.sku}</td>
+                        <td className="px-5 py-3 text-right">
+                          <span className={`text-sm font-mono font-medium ${product.stock <= product.minStock ? 'text-orange-600' : 'text-text-primary'}`}>
+                            {product.stock}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3 text-sm text-right font-mono text-text-muted">{product.minStock}</td>
+                        <td className="px-5 py-3 text-sm text-right font-mono text-text-primary">${(product.stock * product.price).toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </>
         )}
 
