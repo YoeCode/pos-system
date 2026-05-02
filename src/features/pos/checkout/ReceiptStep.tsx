@@ -7,6 +7,7 @@ import {
   selectStoreName,
   selectReceiptFooterMessage,
   selectTaxLabel,
+  selectTicketConfig,
 } from '../../settings/settingsSlice';
 
 interface ReceiptStepProps {
@@ -28,6 +29,7 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, 
   const footerMessage = useAppSelector(selectReceiptFooterMessage);
   const taxLabel = useAppSelector(selectTaxLabel);
   const allEmployees = useAppSelector(selectActiveEmployees);
+  const ticketConfig = useAppSelector(selectTicketConfig);
   const [showGiftTicket, setShowGiftTicket] = useState(false);
 
   if (!sale) return null;
@@ -54,10 +56,18 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, 
       {/* Normal ticket */}
       <div className="mx-auto w-full max-w-xs bg-white border border-dashed border-gray-300 rounded-lg p-5 font-mono text-xs">
         <div className="text-center mb-4">
-          <p className="font-bold text-sm text-text-primary">{storeName.toUpperCase() + ' POS'}</p>
+          {ticketConfig?.showLogo && ticketConfig?.logoUrl && (
+            <img src={ticketConfig.logoUrl} alt="Logo" className="w-16 h-16 object-contain mx-auto mb-2" />
+          )}
+          {ticketConfig?.showStoreName && (
+            <p className="font-bold text-sm text-text-primary">{storeName.toUpperCase() + ' POS'}</p>
+          )}
+          {ticketConfig?.customHeader && (
+            <p className="text-text-muted mt-0.5">{ticketConfig.customHeader}</p>
+          )}
           <p className="text-text-muted mt-0.5">{formattedDate} — {formattedTime}</p>
           <p className="text-text-muted mt-0.5">{order.orderNumber}</p>
-          {employeeName && (
+          {ticketConfig?.showEmployee !== false && employeeName && (
             <p className="text-text-muted mt-0.5 font-medium">{employeeName}</p>
           )}
         </div>
@@ -124,7 +134,9 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, 
 
         <div className="border-t border-dashed border-gray-300 my-3" />
 
-        <p className="text-center text-text-muted">{footerMessage}</p>
+        <p className="text-center text-text-muted">
+          {ticketConfig?.customFooter || footerMessage}
+        </p>
       </div>
 
       {/* Gift ticket toggle button */}

@@ -1,6 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import type { PaymentMethod, TaxSettings, StoreSettings, PosSettings, LanguageSettings, SettingsState, Language, LoyaltySettings } from '../../types';
+import type { PaymentMethod, TaxSettings, StoreSettings, PosSettings, LanguageSettings, SettingsState, Language, LoyaltySettings, TicketConfig } from '../../types';
 import type { RootState } from '../../app/store';
 
 // ─── Default Constants (exported for use by mock data generators) ─────────────
@@ -37,6 +37,14 @@ const defaultPosSettings: PosSettings = {
   orderNumberSeed: DEFAULT_ORDER_SEED,
   enableManualProduct: true,
   multiTerminalMode: false,
+  ticketConfig: {
+    showLogo: false,
+    logoUrl: undefined,
+    showEmployee: true,
+    showStoreName: true,
+    customHeader: undefined,
+    customFooter: undefined,
+  },
 };
 
 const defaultLanguageSettings: LanguageSettings = {
@@ -198,6 +206,7 @@ export const selectOrderNumberSeed = (state: RootState): number => state.setting
 export const selectEnableManualProduct = (state: RootState): boolean => state.settings.pos.enableManualProduct;
 export const selectMultiTerminalMode = (state: RootState): boolean => state.settings.pos.multiTerminalMode;
 export const selectTerminalId = (state: RootState): string | undefined => state.settings.pos.terminalId;
+export const selectTicketConfig = (state: RootState): TicketConfig => state.settings.pos.ticketConfig;
 
 // ─── Cross-slice Composed Selector ────────────────────────────────────────────
 // Uses type-only import of RootState to avoid circular runtime dependency.

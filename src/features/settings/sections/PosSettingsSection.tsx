@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '../../../app/store';
 import {
   selectPosSettings,
@@ -34,6 +34,13 @@ const PosSettingsSection: React.FC = () => {
   const [multiTerminalMode, setMultiTerminalMode] = useState(reduxPos.multiTerminalMode);
   const [terminalId, setTerminalId] = useState(reduxPos.terminalId || '');
   const [savedFeedback, setSavedFeedback] = useState(false);
+  const [showLogo, setShowLogo] = useState(reduxPos.ticketConfig?.showLogo ?? false);
+  const [logoUrl, setLogoUrl] = useState(reduxPos.ticketConfig?.logoUrl || '');
+  const [showEmployee, setShowEmployee] = useState(reduxPos.ticketConfig?.showEmployee ?? true);
+  const [showStoreName, setShowStoreName] = useState(reduxPos.ticketConfig?.showStoreName ?? true);
+  const [customHeader, setCustomHeader] = useState(reduxPos.ticketConfig?.customHeader || '');
+  const [customFooter, setCustomFooter] = useState(reduxPos.ticketConfig?.customFooter || '');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setDefaultPaymentMethod(reduxPos.defaultPaymentMethod);
@@ -44,6 +51,12 @@ const PosSettingsSection: React.FC = () => {
     setEnableManualProduct(reduxPos.enableManualProduct);
     setMultiTerminalMode(reduxPos.multiTerminalMode);
     setTerminalId(reduxPos.terminalId || '');
+    setShowLogo(reduxPos.ticketConfig?.showLogo ?? false);
+    setLogoUrl(reduxPos.ticketConfig?.logoUrl || '');
+    setShowEmployee(reduxPos.ticketConfig?.showEmployee ?? true);
+    setShowStoreName(reduxPos.ticketConfig?.showStoreName ?? true);
+    setCustomHeader(reduxPos.ticketConfig?.customHeader || '');
+    setCustomFooter(reduxPos.ticketConfig?.customFooter || '');
   }, [reduxPos]);
 
   const parsedSeed = parseInt(orderNumberSeed, 10);
@@ -62,7 +75,32 @@ const PosSettingsSection: React.FC = () => {
     orderNumberSeed !== String(reduxPos.orderNumberSeed) ||
     enableManualProduct !== reduxPos.enableManualProduct ||
     multiTerminalMode !== reduxPos.multiTerminalMode ||
-    (multiTerminalMode && terminalId !== reduxPos.terminalId);
+    (multiTerminalMode && terminalId !== reduxPos.terminalId) ||
+    showLogo !== (reduxPos.ticketConfig?.showLogo ?? false) ||
+    logoUrl !== (reduxPos.ticketConfig?.logoUrl || '') ||
+    showEmployee !== (reduxPos.ticketConfig?.showEmployee ?? true) ||
+    showStoreName !== (reduxPos.ticketConfig?.showStoreName ?? true) ||
+    customHeader !== (reduxPos.ticketConfig?.customFooter || '');
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setLogoUrl(reader.result as string);
+        setShowLogo(true);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveLogo = () => {
+    setLogoUrl('');
+    setShowLogo(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   const handleSave = () => {
     if (hasErrors || !isDirty) return;
@@ -76,6 +114,14 @@ const PosSettingsSection: React.FC = () => {
         enableManualProduct,
         multiTerminalMode,
         terminalId: multiTerminalMode ? terminalId.trim() || undefined : undefined,
+        ticketConfig: {
+          showLogo,
+          logoUrl: logoUrl || undefined,
+          showEmployee,
+          showStoreName,
+          customHeader: customHeader || undefined,
+          customFooter: customFooter || undefined,
+        },
       })
     );
     setSavedFeedback(true);
@@ -174,6 +220,73 @@ const PosSettingsSection: React.FC = () => {
               />
             </div>
           )}
+        </div>
+
+        <div className="border-t border-border pt-4">
+          <h3 className="text-sm font-semibold text-text-primary mb-3">{t.settings.ticketConfig}</h3>
+          
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs font-medium text-text-muted mb-1.5">{t.settings.ticketLogo}</label>
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept="image/*"
+                onChange={handleLogoUpload}
+                className="hidden"
+              />
+              {logoUrl ? (
+                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-border">
+                  <img src={logoUrl} alt="Logo" className="w-16 h-16 object-contain" />
+                  <button
+                    type="button"
+                    onClick={handleRemoveLogo}
+                    className="text-xs text-red-600 hover:text-red-700"
+                  >
+                    {t.settings.removeLogo}
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full py-3 px-4 text-sm border border-dashed border-border rounded-lg text-text-muted hover:border-primary hover:text-primary transition-colors"
+                >
+                  {t.settings.uploadLogo}
+                </button>
+              )}
+            </div>
+
+            <Toggle
+              label={t.settings.showEmployee}
+              checked={showEmployee}
+              onChange={setShowEmployee}
+            />
+
+            <Toggle
+              label={t.settings.showStoreName}
+              checked={showStoreName}
+              onChange={setShowStoreName}
+            />
+
+            <Input
+              label={t.settings.customHeader}
+              type="text"
+              maxLength={60}
+              value={customHeader}
+              onChange={e => setCustomHeader(e.target.value)}
+              placeholder={t.settings.customHeaderPlaceholder}
+            />
+
+            <Input
+              label={t.settings.customFooter}
+              type="text"
+              maxLength={60}
+              value={customFooter}
+              onChange={e => setCustomFooter(e.target.value)}
+              placeholder={t.settings.customFooterPlaceholder}
+            />
+          </div>
         </div>
       </div>
 

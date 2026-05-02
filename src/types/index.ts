@@ -143,6 +143,16 @@ export interface PosSettings {
   enableManualProduct: boolean;
   multiTerminalMode: boolean;
   terminalId?: string;
+  ticketConfig: TicketConfig;
+}
+
+export interface TicketConfig {
+  showLogo: boolean;
+  logoUrl?: string;
+  showEmployee: boolean;
+  showStoreName: boolean;
+  customHeader?: string;
+  customFooter?: string;
 }
 
 export type Language = 'en' | 'es';
