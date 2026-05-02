@@ -6,11 +6,13 @@ import { openCashBox } from './posSlice';
 interface CashBoxOpenModalProps {
   isOpen: boolean;
   closedBoxCount?: number;
+  onClose?: () => void;
 }
 
-const CashBoxOpenModal: React.FC<CashBoxOpenModalProps> = ({ isOpen, closedBoxCount = 0 }) => {
+const CashBoxOpenModal: React.FC<CashBoxOpenModalProps> = ({ isOpen, closedBoxCount = 0, onClose }) => {
   const dispatch = useAppDispatch();
   const employees = useAppSelector(selectActiveEmployees);
+  const loggedInUser = useAppSelector(state => state.auth.user);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const prevClosedCount = useRef(closedBoxCount);
 
@@ -29,15 +31,28 @@ const CashBoxOpenModal: React.FC<CashBoxOpenModalProps> = ({ isOpen, closedBoxCo
 
   const handleOpenCashBox = () => {
     if (selectedIds.length > 0) {
-      dispatch(openCashBox(selectedIds));
+      const loggedInEmployee = loggedInUser 
+        ? employees.find(e => e.email.toLowerCase() === loggedInUser.email.toLowerCase())
+        : null;
+      
+      const finalIds = loggedInEmployee?.id 
+        ? [...new Set([...selectedIds, loggedInEmployee.id])]
+        : selectedIds;
+      
+      dispatch(openCashBox(finalIds));
+      onClose?.();
     }
   };
+
+  const otherEmployees = employees.filter(e => 
+    !loggedInUser || e.email.toLowerCase() !== loggedInUser.email.toLowerCase()
+  );
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div className="relative z-10 bg-white rounded-xl shadow-2xl w-full max-w-md mx-4">
         <div className="p-6">
           <div className="text-center mb-6">
@@ -46,6 +61,15 @@ const CashBoxOpenModal: React.FC<CashBoxOpenModalProps> = ({ isOpen, closedBoxCo
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
+            {loggedInUser && (
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-700 text-sm rounded-full mb-3">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h4m0 0v4m-4-4h4" />
+                </svg>
+                <span className="font-medium">{loggedInUser.name}</span>
+                <span className="text-blue-500">(sesión activa)</span>
+              </div>
+            )}
             <h2 className="text-xl font-bold text-text-primary">Abrir Caja</h2>
             <p className="text-sm text-text-muted mt-1">
               Selecciona los empleados que trabajan en este turno
@@ -53,7 +77,7 @@ const CashBoxOpenModal: React.FC<CashBoxOpenModalProps> = ({ isOpen, closedBoxCo
           </div>
           
           <div className="space-y-2 max-h-64 overflow-y-auto mb-4">
-            {employees.map(emp => (
+            {otherEmployees.map(emp => (
               <button
                 key={emp.id}
                 type="button"
@@ -86,7 +110,7 @@ const CashBoxOpenModal: React.FC<CashBoxOpenModalProps> = ({ isOpen, closedBoxCo
           <div className="flex gap-3">
             <button
               type="button"
-              onClick={() => setSelectedIds(employees.map(e => e.id))}
+              onClick={() => setSelectedIds(otherEmployees.map(e => e.id))}
               className="flex-1 py-3 text-sm font-medium text-text-muted border border-border rounded-lg hover:bg-gray-50"
             >
               Seleccionar todos

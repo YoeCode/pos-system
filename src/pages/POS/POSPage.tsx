@@ -13,6 +13,7 @@ import { useI18n } from '../../i18n/I18nProvider';
 import { addCustomProductToCart, updateQuantity, removeFromCart, setPaymentMethod, startNewSale, selectIsCashBoxOpen, closeCashBox } from '../../features/pos/posSlice';
 import { selectEnableManualProduct, selectFormattedOrderNumber, selectTaxRate, selectTaxLabel, selectTaxIncludedInPrice, selectLoyaltyTiers } from '../../features/settings/settingsSlice';
 import { selectCustomerById } from '../../features/customers/customersSlice';
+import Fuse from 'fuse.js';
 import type { PaymentMethod } from '../../types';
 
 const POSPage: React.FC = () => {
@@ -35,17 +36,23 @@ const POSPage: React.FC = () => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [showCloseBoxConfirm, setShowCloseBoxConfirm] = useState(false);
+  const [showCashBoxModal, setShowCashBoxModal] = useState(false);
   const [closedBoxCount, setClosedBoxCount] = useState(0);
 
   const filtered = selectedCategory === 'All Items'
     ? products
     : products.filter(p => p.category === selectedCategory);
 
+  const fuse = React.useMemo(() => {
+    return new Fuse(filtered, {
+      keys: ['name', 'brand', 'category'],
+      threshold: 0.3,
+      includeScore: true,
+    });
+  }, [filtered]);
+  
   const filteredBySearch = searchQuery
-    ? filtered.filter(p => 
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (p.brand && p.brand.toLowerCase().includes(searchQuery.toLowerCase()))
-      )
+    ? fuse.search(searchQuery).map(r => r.item)
     : filtered;
 
   const handleAddManualProduct = (product: { name: string; category: string; brand?: string; price: number }) => {
@@ -82,80 +89,110 @@ const POSPage: React.FC = () => {
         <div className="px-3 lg:px-6 pt-3 lg:pt-5 pb-2 flex-shrink-0">
           <div className="mb-3">
             <div className="flex items-center justify-between">
-              <EmployeeSelector />
-              {isCashBoxOpen && (
+              {isCashBoxOpen ? (
+                <>
+                  <EmployeeSelector />
+                  <button
+                    onClick={() => setShowCloseBoxConfirm(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 border border-red-200 rounded-full hover:bg-red-50 transition-colors"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m0 0v2m0-2h2m-2 0H8m13-6a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Cerrar caja
+                  </button>
+                </>
+              ) : (
                 <button
-                  onClick={() => setShowCloseBoxConfirm(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 border border-red-200 rounded-full hover:bg-red-50 transition-colors"
+                  onClick={() => setShowCashBoxModal(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 border border-green-200 bg-green-50 rounded-full hover:bg-green-100 transition-colors"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m0 0v2m0-2h2m-2 0H8m13-6a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  Cerrar caja
+                  Abrir caja
                 </button>
               )}
             </div>
           </div>
-          <div className="flex items-center justify-between gap-2 mb-3">
-            <div className="flex-1 min-w-0">
-              <CategoryPills />
-            </div>
-            {enableManualProduct && (
-              <button
-                onClick={() => setIsManualModalOpen(true)}
-                className="hidden sm:flex px-3 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors items-center gap-2 whitespace-nowrap"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                <span className="hidden md:inline">{t.settings.addManualProduct}</span>
-              </button>
-            )}
-          </div>
-          <SearchInput />
-        </div>
-
-        <div className="flex-1 overflow-y-auto px-3 lg:px-6 pb-4">
-          {filteredBySearch.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full gap-2 text-center">
-              <p className="text-text-muted text-sm">{searchQuery ? t.common.noResults : t.common.noResults}</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 lg:gap-3">
-              {filteredBySearch.map(product => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
+          {isCashBoxOpen && (
+            <>
+              <div className="flex items-center justify-between gap-2 mb-3">
+                <div className="flex-1 min-w-0">
+                  <CategoryPills />
+                </div>
+                {enableManualProduct && (
+                  <button
+                    onClick={() => setIsManualModalOpen(true)}
+                    className="hidden sm:flex px-3 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors items-center gap-2 whitespace-nowrap"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    <span className="hidden md:inline">{t.settings.addManualProduct}</span>
+                  </button>
+                )}
+              </div>
+              <SearchInput />
+            </>
           )}
         </div>
-      </div>
 
-      {/* Cart - lateral on lg+ */}
-      <div className="hidden lg:flex lg:w-[320px] xl:w-[360px] flex-shrink-0">
-        <Cart />
-      </div>
-
-      {/* Bottom cart button - visible when NOT on desktop */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30">
-        {cart.length > 0 ? (
-          <button
-            onClick={() => setIsCartOpen(true)}
-            className="w-full bg-primary hover:bg-primary-dark text-white py-4 px-4 flex items-center justify-between shadow-lg"
-          >
-            <div className="flex items-center gap-3">
-              <span className="bg-white/20 px-2 py-1 rounded text-sm font-medium">
-                {cart.length} {cart.length === 1 ? 'item' : 'items'}
-              </span>
-              <span className="font-semibold">View Cart</span>
-            </div>
-            <span className="font-bold text-lg">${total.toFixed(2)}</span>
-          </button>
+        {isCashBoxOpen ? (
+          <div className="flex-1 overflow-y-auto px-3 lg:px-6 pb-4">
+            {filteredBySearch.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full gap-2 text-center">
+                <p className="text-text-muted text-sm">{searchQuery ? t.common.noResults : t.common.noResults}</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 lg:gap-3">
+                {filteredBySearch.map(product => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+            )}
+          </div>
         ) : (
-          <div className="w-full bg-gray-100 border-t border-border py-2 px-4 text-center text-sm text-text-muted">
-            Add products to cart
+          <div className="flex-1 flex flex-col items-center justify-center px-3 lg:px-6 pb-4 text-center">
+            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+              <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <p className="text-text-muted font-medium">Caja cerrada</p>
+            <p className="text-text-muted text-sm mt-1">Abre la caja para empezar a vender</p>
           </div>
         )}
       </div>
+
+      {isCashBoxOpen && (
+        <div className="hidden lg:flex lg:w-[320px] xl:w-[360px] flex-shrink-0">
+          <Cart />
+        </div>
+      )}
+
+      {isCashBoxOpen && (
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30">
+          {cart.length > 0 ? (
+            <button
+              onClick={() => setIsCartOpen(true)}
+              className="w-full bg-primary hover:bg-primary-dark text-white py-4 px-4 flex items-center justify-between shadow-lg"
+            >
+              <div className="flex items-center gap-3">
+                <span className="bg-white/20 px-2 py-1 rounded text-sm font-medium">
+                  {cart.length} {cart.length === 1 ? 'item' : 'items'}
+                </span>
+                <span className="font-semibold">View Cart</span>
+              </div>
+              <span className="font-bold text-lg">${total.toFixed(2)}</span>
+            </button>
+          ) : (
+            <div className="w-full bg-gray-100 border-t border-border py-2 px-4 text-center text-sm text-text-muted">
+              Add products to cart
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Full Bottom Sheet Cart Modal */}
       {isCartOpen && (
@@ -308,7 +345,7 @@ const POSPage: React.FC = () => {
         discountApplied={discountApplied}
       />
 
-      <CashBoxOpenModal isOpen={!isCashBoxOpen} closedBoxCount={closedBoxCount} />
+      <CashBoxOpenModal isOpen={showCashBoxModal} closedBoxCount={closedBoxCount} onClose={() => setShowCashBoxModal(false)} />
 
       {showCloseBoxConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
