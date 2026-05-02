@@ -17,6 +17,13 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
   admin: ['pos', 'products', 'reports', 'employees', 'dashboard', 'settings', 'customers', 'inventory'],
 };
 
+export interface ProductSize {
+  size: string;
+  stock: number;
+  minStock?: number;
+  sku?: string;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -32,6 +39,7 @@ export interface Product {
   status: 'active' | 'inactive' | 'draft';
   publishedOnline: boolean;
   version?: string;
+  sizes?: ProductSize[];
 }
 
 export interface CartItem {

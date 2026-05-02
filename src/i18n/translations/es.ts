@@ -69,6 +69,7 @@ export const es = {
     estimated: 'Estimado',
     noReorder: 'No hay productos para reordenar',
     outOfStock: 'Sin Stock',
+    size: 'Talla',
   },
   dashboard: {
     title: 'Panel',

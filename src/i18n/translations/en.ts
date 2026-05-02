@@ -69,6 +69,7 @@ export const en = {
     estimated: 'Estimated',
     noReorder: 'No products to reorder',
     outOfStock: 'Out of Stock',
+    size: 'Size',
   },
   dashboard: {
     title: 'Dashboard',

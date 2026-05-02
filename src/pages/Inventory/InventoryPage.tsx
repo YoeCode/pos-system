@@ -1,8 +1,23 @@
 import React, { useState, useMemo } from 'react';
 import { useAppSelector } from '../../app/store';
 import { useI18n } from '../../i18n/I18nProvider';
+import type { Product } from '../../types';
 
 type InventoryTab = 'summary' | 'lowstock' | 'reorder';
+
+const getProductStock = (product: Product): number => {
+  if (product.sizes && product.sizes.length > 0) {
+    return product.sizes.reduce((sum, s) => sum + s.stock, 0);
+  }
+  return product.stock;
+};
+
+const getProductMinStock = (product: Product): number => {
+  if (product.sizes && product.sizes.length > 0) {
+    return product.sizes.reduce((sum, s) => sum + (s.minStock || product.minStock), 0);
+  }
+  return product.minStock;
+};
 
 const InventoryPage: React.FC = () => {
   const t = useI18n();
@@ -19,12 +34,14 @@ const InventoryPage: React.FC = () => {
   const stockByCategory = useMemo(() => {
     return products.reduce((acc, product) => {
       const cat = product.category || 'Uncategorized';
+      const totalStock = getProductStock(product);
+      const totalValue = totalStock * product.price;
       if (!acc[cat]) {
         acc[cat] = { count: 0, totalStock: 0, totalValue: 0 };
       }
       acc[cat].count += 1;
-      acc[cat].totalStock += product.stock;
-      acc[cat].totalValue += product.stock * product.price;
+      acc[cat].totalStock += totalStock;
+      acc[cat].totalValue += totalValue;
       return acc;
     }, {} as Record<string, { count: number; totalStock: number; totalValue: number }>);
   }, [products]);
@@ -34,11 +51,22 @@ const InventoryPage: React.FC = () => {
     return products.filter(p => (p.category || 'Uncategorized') === selectedCategory);
   }, [products, selectedCategory]);
 
-  const lowStockProducts = products.filter(p => p.stock <= p.minStock && p.stock > 0);
-  const outOfStockProducts = products.filter(p => p.stock === 0);
-  const reorderProducts = products.filter(p => p.stock <= p.minStock);
+  const lowStockProducts = products.filter(p => {
+    const stock = getProductStock(p);
+    const minStock = getProductMinStock(p);
+    return stock <= minStock && stock > 0;
+  });
 
-  const totalValue = products.reduce((sum, p) => sum + (p.stock * p.price), 0);
+  const outOfStockProducts = products.filter(p => getProductStock(p) === 0);
+  
+  const reorderProducts = products.filter(p => {
+    const stock = getProductStock(p);
+    const minStock = getProductMinStock(p);
+    return stock <= minStock;
+  });
+
+  const totalStock = products.reduce((sum, p) => sum + getProductStock(p), 0);
+  const totalValue = products.reduce((sum, p) => sum + (getProductStock(p) * p.price), 0);
 
   const handleCategoryClick = (category: string) => {
     setSelectedCategory(category);
@@ -82,7 +110,7 @@ const InventoryPage: React.FC = () => {
               <div className="bg-white rounded-xl border border-border p-5">
                 <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">{t.inventory.totalStock}</p>
                 <p className="text-3xl font-bold text-primary font-mono">
-                  {products.reduce((sum, p) => sum + p.stock, 0).toLocaleString()}
+                  {totalStock.toLocaleString()}
                 </p>
               </div>
               <div className="bg-white rounded-xl border border-border p-5">
@@ -146,19 +174,44 @@ const InventoryPage: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {categoryProducts.map(product => (
-                      <tr key={product.id} className="border-b border-border last:border-0">
-                        <td className="px-5 py-3 text-sm font-medium text-text-primary">{product.name}</td>
-                        <td className="px-5 py-3 text-sm text-right font-mono text-text-muted">{product.sku}</td>
-                        <td className="px-5 py-3 text-right">
-                          <span className={`text-sm font-mono font-medium ${product.stock <= product.minStock ? 'text-orange-600' : 'text-text-primary'}`}>
-                            {product.stock}
-                          </span>
-                        </td>
-                        <td className="px-5 py-3 text-sm text-right font-mono text-text-muted">{product.minStock}</td>
-                        <td className="px-5 py-3 text-sm text-right font-mono text-text-primary">${(product.stock * product.price).toFixed(2)}</td>
-                      </tr>
-                    ))}
+                    {categoryProducts.map(product => {
+                      const stock = getProductStock(product);
+                      const minStock = getProductMinStock(product);
+                      const hasSizes = product.sizes && product.sizes.length > 0;
+                      return (
+                        <tr key={product.id} className="border-b border-border last:border-0">
+                          <td className="px-5 py-3">
+                            <p className="text-sm font-medium text-text-primary">{product.name}</p>
+                            {hasSizes && (
+                              <div className="flex gap-1 mt-1 flex-wrap">
+                                {product.sizes!.map(s => (
+                                  <span 
+                                    key={s.size}
+                                    className={`text-xs px-1.5 py-0.5 rounded ${
+                                      s.stock === 0 
+                                        ? 'bg-red-100 text-red-700' 
+                                        : s.stock <= (s.minStock || product.minStock) 
+                                          ? 'bg-orange-100 text-orange-700'
+                                          : 'bg-gray-100 text-text-muted'
+                                    }`}
+                                  >
+                                    {s.size}: {s.stock}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-5 py-3 text-sm text-right font-mono text-text-muted">{product.sku}</td>
+                          <td className="px-5 py-3 text-right">
+                            <span className={`text-sm font-mono font-medium ${stock <= minStock ? 'text-orange-600' : 'text-text-primary'}`}>
+                              {stock}
+                            </span>
+                          </td>
+                          <td className="px-5 py-3 text-sm text-right font-mono text-text-muted">{minStock}</td>
+                          <td className="px-5 py-3 text-sm text-right font-mono text-text-primary">${(stock * product.price).toFixed(2)}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -186,23 +239,37 @@ const InventoryPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {lowStockProducts.map(product => (
-                    <tr key={product.id} className="border-b border-border last:border-0">
-                      <td className="px-5 py-3">
-                        <p className="text-sm font-medium text-text-primary">{product.name}</p>
-                        <p className="text-xs text-text-muted">{product.sku}</p>
-                      </td>
-                      <td className="px-5 py-3 text-right">
-                        <span className={`text-sm font-mono font-bold ${product.stock <= product.minStock * 0.5 ? 'text-red-600' : 'text-orange-600'}`}>
-                          {product.stock}
-                        </span>
-                      </td>
-                      <td className="px-5 py-3 text-sm text-right font-mono text-text-muted">{product.minStock}</td>
-                      <td className="px-5 py-3 text-sm text-right font-mono text-red-600 font-medium">
-                        +{Math.max(0, product.minStock - product.stock)}
-                      </td>
-                    </tr>
-                  ))}
+                  {lowStockProducts.map(product => {
+                    const stock = getProductStock(product);
+                    const minStock = getProductMinStock(product);
+                    const hasSizes = product.sizes && product.sizes.length > 0;
+                    return (
+                      <tr key={product.id} className="border-b border-border last:border-0">
+                        <td className="px-5 py-3">
+                          <p className="text-sm font-medium text-text-primary">{product.name}</p>
+                          {hasSizes && (
+                            <div className="flex gap-1 mt-1 flex-wrap">
+                              {product.sizes!.filter(s => s.stock <= (s.minStock || product.minStock) && s.stock > 0).map(s => (
+                                <span key={s.size} className="text-xs px-1.5 py-0.5 rounded bg-orange-100 text-orange-700">
+                                  {s.size}: {s.stock}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          {!hasSizes && <p className="text-xs text-text-muted">{product.sku}</p>}
+                        </td>
+                        <td className="px-5 py-3 text-right">
+                          <span className={`text-sm font-mono font-bold ${stock <= minStock * 0.5 ? 'text-red-600' : 'text-orange-600'}`}>
+                            {stock}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3 text-sm text-right font-mono text-text-muted">{minStock}</td>
+                        <td className="px-5 py-3 text-sm text-right font-mono text-red-600 font-medium">
+                          +{Math.max(0, minStock - stock)}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             )}
@@ -242,7 +309,9 @@ const InventoryPage: React.FC = () => {
                   </thead>
                   <tbody>
                     {reorderProducts.map(product => {
-                      const reorderQty = Math.max(10, product.minStock * 2 - product.stock);
+                      const stock = getProductStock(product);
+                      const minStock = getProductMinStock(product);
+                      const reorderQty = Math.max(10, minStock * 2 - stock);
                       const estimated = reorderQty * product.costPrice;
                       return (
                         <tr key={product.id} className="border-b border-border last:border-0">
@@ -251,8 +320,8 @@ const InventoryPage: React.FC = () => {
                             <p className="text-xs text-text-muted">{product.sku}</p>
                           </td>
                           <td className="px-5 py-3 text-right">
-                            <span className={`text-sm font-mono font-bold ${product.stock === 0 ? 'text-red-600' : 'text-orange-600'}`}>
-                              {product.stock}
+                            <span className={`text-sm font-mono font-bold ${stock === 0 ? 'text-red-600' : 'text-orange-600'}`}>
+                              {stock}
                             </span>
                           </td>
                           <td className="px-5 py-3 text-sm text-right font-mono text-text-primary font-medium">{reorderQty}</td>
