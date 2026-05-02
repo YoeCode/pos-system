@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/store';
-import { updateProduct, CATEGORIES } from './productsSlice';
+import { updateProduct, DEFAULT_CATEGORIES } from './productsSlice';
 import type { Product } from '../../types';
 import Toggle from '../../components/ui/Toggle';
 import Button from '../../components/ui/Button';
@@ -209,7 +209,7 @@ const ProductDetailPanel: React.FC = () => {
               onChange={e => setForm(prev => ({ ...prev, category: e.target.value }))}
               className="w-full px-3 py-2.5 text-sm border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors bg-white"
             >
-              {CATEGORIES.map(cat => (
+              {DEFAULT_CATEGORIES.map(cat => (
                 <option key={cat} value={cat}>{cat}</option>
               ))}
             </select>

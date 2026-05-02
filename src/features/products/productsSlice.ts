@@ -1,9 +1,8 @@
 import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import type { Product } from '../../types';
+import type { Product, ProductSize } from '../../types';
 
-export const CATEGORIES = ['Electronics', 'Food', 'Drinks', 'Apparel', 'Bakery', 'Merchandise'];
-export const BRANDS: string[] = [];
+export const DEFAULT_CATEGORIES = ['Electronics', 'Food', 'Drinks', 'Apparel', 'Lencería', 'Bakery', 'Merchandise'];
 
 export interface ProductFormState {
   name: string;
@@ -17,12 +16,14 @@ export interface ProductFormState {
   description: string;
   publishedOnline: boolean;
   status: Product['status'];
+  sizes: ProductSize[];
+  hasSizes: boolean;
 }
 
 export const createEmptyForm = (): ProductFormState => ({
   name: '',
   sku: '',
-  category: CATEGORIES[0],
+  category: DEFAULT_CATEGORIES[0],
   brand: '',
   price: 0,
   costPrice: 0,
@@ -31,6 +32,8 @@ export const createEmptyForm = (): ProductFormState => ({
   description: '',
   publishedOnline: false,
   status: 'draft',
+  sizes: [],
+  hasSizes: false,
 });
 
 const mockProducts: Product[] = [
@@ -66,18 +69,65 @@ const mockProducts: Product[] = [
   },
   {
     id: '3',
-    name: 'Velocity Runner X',
-    sku: 'FT-881-VRX',
+    name: 'Camiseta Básica',
+    sku: 'CB-001-BAS',
     category: 'Apparel',
-    brand: 'SportMax',
-    price: 125,
-    costPrice: 60,
-    stock: 56,
-    minStock: 10,
+    brand: 'Casa Lis',
+    price: 25,
+    costPrice: 12,
+    stock: 0,
+    minStock: 20,
     status: 'active',
     publishedOnline: true,
-    version: 'v3.0',
-    description: 'Lightweight performance running shoes for professional athletes.',
+    sizes: [
+      { size: 'S', stock: 15, minStock: 5 },
+      { size: 'M', stock: 8, minStock: 5 },
+      { size: 'L', stock: 3, minStock: 5 },
+      { size: 'XL', stock: 0, minStock: 5 },
+    ],
+    description: 'Camiseta básica de algodón.',
+  },
+  {
+    id: '3b',
+    name: 'Sujetador Everyday',
+    sku: 'SUJ-EVY-01',
+    category: 'Lencería',
+    brand: 'Casa Lis',
+    price: 35,
+    costPrice: 15,
+    stock: 0,
+    minStock: 30,
+    status: 'active',
+    publishedOnline: true,
+    sizes: [
+      { size: '80A', stock: 5, minStock: 3 },
+      { size: '80B', stock: 8, minStock: 3 },
+      { size: '85A', stock: 12, minStock: 3 },
+      { size: '85B', stock: 6, minStock: 3 },
+      { size: '90A', stock: 2, minStock: 3 },
+      { size: '90B', stock: 0, minStock: 3 },
+    ],
+    description: 'Sujetador everyday suave.',
+  },
+  {
+    id: '3c',
+    name: 'Pantalón Classic',
+    sku: 'PNT-CLS-01',
+    category: 'Apparel',
+    brand: 'Casa Lis',
+    price: 45,
+    costPrice: 20,
+    stock: 0,
+    minStock: 15,
+    status: 'active',
+    publishedOnline: true,
+    sizes: [
+      { size: '38', stock: 4, minStock: 3 },
+      { size: '40', stock: 6, minStock: 3 },
+      { size: '42', stock: 2, minStock: 3 },
+      { size: '44', stock: 0, minStock: 3 },
+    ],
+    description: 'Pantalón classic tela elástica.',
   },
   {
     id: '4',

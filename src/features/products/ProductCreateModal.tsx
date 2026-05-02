@@ -1,7 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import { useAppDispatch, useAppSelector } from '../../app/store';
-import { addProduct, CATEGORIES, createEmptyForm, type ProductFormState } from './productsSlice';
-import { selectBrands } from '../settings/settingsSlice';
+import { useAppDispatch } from '../../app/store';
+import { addProduct, DEFAULT_CATEGORIES, createEmptyForm, type ProductFormState } from './productsSlice';
 import type { Product } from '../../types';
 import Modal from '../../components/ui/Modal';
 import Input from '../../components/ui/Input';
@@ -17,7 +16,6 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
   const dispatch = useAppDispatch();
   const [form, setForm] = useState<ProductFormState>(createEmptyForm());
   const t = useI18n();
-  const brands = useAppSelector(selectBrands);
 
   const handleClose = useCallback(() => {
     setForm(createEmptyForm());
@@ -27,6 +25,14 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
   const handleSubmit = () => {
     if (!form.name.trim() || !form.sku.trim()) return;
 
+    const stock = form.hasSizes 
+      ? form.sizes.reduce((sum, s) => sum + s.stock, 0)
+      : form.stock;
+    
+    const minStock = form.hasSizes
+      ? form.sizes.reduce((sum, s) => sum + (s.minStock || form.minStock), 0)
+      : form.minStock;
+
     const newProduct: Product = {
       id: crypto.randomUUID(),
       name: form.name.trim(),
@@ -35,11 +41,12 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
       brand: form.brand || undefined,
       price: form.price,
       costPrice: form.costPrice,
-      stock: form.stock,
-      minStock: form.minStock,
+      stock,
+      minStock,
       description: form.description.trim() || undefined,
       status: form.status,
       publishedOnline: form.publishedOnline,
+      sizes: form.hasSizes ? form.sizes : undefined,
     };
 
     dispatch(addProduct(newProduct));
@@ -91,83 +98,82 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
               onChange={e => setForm(prev => ({ ...prev, category: e.target.value }))}
               className="w-full px-3 py-2.5 text-sm border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors bg-white"
             >
-              {CATEGORIES.map(cat => (
+              {DEFAULT_CATEGORIES.map(cat => (
                 <option key={cat} value={cat}>{cat}</option>
               ))}
             </select>
-          </div>
+</div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Brand <span className="text-text-muted/50 normal-case">(optional)</span></label>
-            <select
-              value={form.brand}
-              onChange={e => setForm(prev => ({ ...prev, brand: e.target.value }))}
-              className="w-full px-3 py-2.5 text-sm border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors bg-white"
-            >
-              <option value="">— Select brand —</option>
-              {brands.map(brand => (
-                <option key={brand} value={brand}>{brand}</option>
+        <div className="flex flex-col gap-2">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={form.hasSizes}
+              onChange={e => setForm(prev => ({ 
+                ...prev, 
+                hasSizes: e.target.checked,
+                sizes: e.target.checked ? [{ size: '', stock: 0, minStock: 0 }] : []
+              }))}
+              className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
+            />
+            <span className="text-sm font-medium text-text-primary">{t.inventory.size}</span>
+          </label>
+
+          {form.hasSizes && (
+            <div className="flex flex-col gap-2 pl-6">
+              {form.sizes.map((s, idx) => (
+                <div key={idx} className="grid grid-cols-3 gap-2">
+                  <input
+                    type="text"
+                    placeholder="Talla"
+                    value={s.size}
+                    onChange={e => {
+                      const newSizes = [...form.sizes];
+                      newSizes[idx] = { ...newSizes[idx], size: e.target.value };
+                      setForm(prev => ({ ...prev, sizes: newSizes }));
+                    }}
+                    className="px-2 py-2 text-sm border border-border rounded text-text-primary font-mono"
+                  />
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="Stock"
+                    value={s.stock}
+                    onChange={e => {
+                      const newSizes = [...form.sizes];
+                      newSizes[idx] = { ...newSizes[idx], stock: parseInt(e.target.value) || 0 };
+                      setForm(prev => ({ ...prev, sizes: newSizes }));
+                    }}
+                    className="px-2 py-2 text-sm border border-border rounded text-text-primary font-mono"
+                  />
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="Min"
+                    value={s.minStock}
+                    onChange={e => {
+                      const newSizes = [...form.sizes];
+                      newSizes[idx] = { ...newSizes[idx], minStock: parseInt(e.target.value) || 0 };
+                      setForm(prev => ({ ...prev, sizes: newSizes }));
+                    }}
+                    className="px-2 py-2 text-sm border border-border rounded text-text-primary font-mono"
+                  />
+                </div>
               ))}
-            </select>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">{t.products.price}</label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-sm font-mono">$</span>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={form.price}
-                onChange={e => setForm(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
-                className="w-full pl-7 pr-3 py-2.5 text-sm border border-border rounded-lg text-text-primary font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
-              />
+              <button
+                type="button"
+                onClick={() => setForm(prev => ({ 
+                  ...prev, 
+                  sizes: [...prev.sizes, { size: '', stock: 0, minStock: 0 }] 
+                }))}
+                className="text-xs text-primary hover:underline"
+              >
+                + Añadir talla
+              </button>
             </div>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">{t.products.costPrice}</label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-sm font-mono">$</span>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={form.costPrice}
-                onChange={e => setForm(prev => ({ ...prev, costPrice: parseFloat(e.target.value) || 0 }))}
-                className="w-full pl-7 pr-3 py-2.5 text-sm border border-border rounded-lg text-text-primary font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
-              />
-            </div>
-          </div>
+          )}
         </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">{t.products.stock}</label>
-            <input
-              type="number"
-              min="0"
-              value={form.stock}
-              onChange={e => setForm(prev => ({ ...prev, stock: parseInt(e.target.value) || 0 }))}
-              className="w-full px-3 py-2.5 text-sm border border-border rounded-lg text-text-primary font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">{t.products.minStock}</label>
-            <input
-              type="number"
-              min="0"
-              value={form.minStock}
-              onChange={e => setForm(prev => ({ ...prev, minStock: parseInt(e.target.value) || 0 }))}
-              className="w-full px-3 py-2.5 text-sm border border-border rounded-lg text-text-primary font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
-            />
-          </div>
-        </div>
-
 
         <div className="flex gap-3 pt-2">
           <Button variant="secondary" fullWidth onClick={handleClose}>
