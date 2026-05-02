@@ -76,31 +76,91 @@ const InventoryPage: React.FC = () => {
     setSelectedCategory(null);
   };
 
+  const renderCategoryProducts = () => (
+    <div className="bg-white rounded-xl border border-border overflow-hidden">
+      <table className="w-full">
+        <thead>
+          <tr className="border-b border-border">
+            <th className="text-left px-5 py-3 text-xs font-semibold text-text-muted uppercase">{t.inventory.product}</th>
+            <th className="text-right px-5 py-3 text-xs font-semibold text-text-muted uppercase">SKU</th>
+            <th className="text-right px-5 py-3 text-xs font-semibold text-text-muted uppercase">{t.inventory.stock}</th>
+            <th className="text-right px-5 py-3 text-xs font-semibold text-text-muted uppercase">{t.inventory.minStock}</th>
+            <th className="text-right px-5 py-3 text-xs font-semibold text-text-muted uppercase">{t.inventory.value}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {categoryProducts.map(product => {
+            const stock = getProductStock(product);
+            const minStock = getProductMinStock(product);
+            const hasSizes = product.sizes && product.sizes.length > 0;
+            return (
+              <tr key={product.id} className="border-b border-border last:border-0">
+                <td className="px-5 py-3">
+                  <p className="text-sm font-medium text-text-primary">{product.name}</p>
+                  {hasSizes && (
+                    <div className="flex gap-1 mt-1 flex-wrap">
+                      {product.sizes!.map(s => (
+                        <span 
+                          key={s.size}
+                          className={`text-xs px-1.5 py-0.5 rounded ${
+                            s.stock === 0 
+                              ? 'bg-red-100 text-red-700' 
+                              : s.stock <= (s.minStock || product.minStock) 
+                                ? 'bg-orange-100 text-orange-700'
+                                : 'bg-gray-100 text-text-muted'
+                          }`}
+                        >
+                          {s.size}: {s.stock}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </td>
+                <td className="px-5 py-3 text-sm text-right font-mono text-text-muted">{product.sku}</td>
+                <td className="px-5 py-3 text-right">
+                  <span className={`text-sm font-mono font-medium ${stock <= minStock ? 'text-orange-600' : 'text-text-primary'}`}>
+                    {stock}
+                  </span>
+                </td>
+                <td className="px-5 py-3 text-sm text-right font-mono text-text-muted">{minStock}</td>
+                <td className="px-5 py-3 text-sm text-right font-mono text-text-primary">${(stock * product.price).toFixed(2)}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+
   return (
     <div className="flex h-[calc(100vh-57px)]">
       <div className="flex-1 p-6 flex flex-col gap-6 overflow-auto">
-        <div>
-          <h1 className="text-xl font-bold text-text-primary">{t.inventory.title}</h1>
-          <p className="text-sm text-text-muted mt-0.5">{t.inventory.subtitle}</p>
-        </div>
+        {!selectedCategory && (
+          <>
+            <div>
+              <h1 className="text-xl font-bold text-text-primary">{t.inventory.title}</h1>
+              <p className="text-sm text-text-muted mt-0.5">{t.inventory.subtitle}</p>
+            </div>
 
-        <div className="flex gap-1 bg-white rounded-lg border border-border p-1 w-fit">
-          {tabs.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                activeTab === tab.id
-                  ? 'bg-primary text-white'
-                  : 'text-text-muted hover:text-text-primary hover:bg-gray-50'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+            <div className="flex gap-1 bg-white rounded-lg border border-border p-1 w-fit">
+              {tabs.map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                    activeTab === tab.id
+                      ? 'bg-primary text-white'
+                      : 'text-text-muted hover:text-text-primary hover:bg-gray-50'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
 
-        {activeTab === 'summary' && (
+        {activeTab === 'summary' && !selectedCategory && (
           <>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-white rounded-xl border border-border p-5">
@@ -148,74 +208,26 @@ const InventoryPage: React.FC = () => {
                 </tbody>
               </table>
             </div>
+          </>
+        )}
 
-            {selectedCategory && (
-              <div className="bg-white rounded-xl border border-border overflow-hidden">
-                <div className="px-5 py-3 border-b border-border bg-primary/10 flex items-center justify-between">
-                  <div>
-                    <h3 className="text-sm font-semibold text-text-primary">{selectedCategory}</h3>
-                    <p className="text-xs text-text-muted">{categoryProducts.length} {t.inventory.products.toLowerCase()}</p>
-                  </div>
-                  <button 
-                    onClick={handleBack}
-                    className="text-xs font-medium text-primary hover:text-primary/80"
-                  >
-                    {t.common.back}
-                  </button>
-                </div>
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-border">
-                      <th className="text-left px-5 py-3 text-xs font-semibold text-text-muted uppercase">{t.inventory.product}</th>
-                      <th className="text-right px-5 py-3 text-xs font-semibold text-text-muted uppercase">SKU</th>
-                      <th className="text-right px-5 py-3 text-xs font-semibold text-text-muted uppercase">{t.inventory.stock}</th>
-                      <th className="text-right px-5 py-3 text-xs font-semibold text-text-muted uppercase">{t.inventory.minStock}</th>
-                      <th className="text-right px-5 py-3 text-xs font-semibold text-text-muted uppercase">{t.inventory.value}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {categoryProducts.map(product => {
-                      const stock = getProductStock(product);
-                      const minStock = getProductMinStock(product);
-                      const hasSizes = product.sizes && product.sizes.length > 0;
-                      return (
-                        <tr key={product.id} className="border-b border-border last:border-0">
-                          <td className="px-5 py-3">
-                            <p className="text-sm font-medium text-text-primary">{product.name}</p>
-                            {hasSizes && (
-                              <div className="flex gap-1 mt-1 flex-wrap">
-                                {product.sizes!.map(s => (
-                                  <span 
-                                    key={s.size}
-                                    className={`text-xs px-1.5 py-0.5 rounded ${
-                                      s.stock === 0 
-                                        ? 'bg-red-100 text-red-700' 
-                                        : s.stock <= (s.minStock || product.minStock) 
-                                          ? 'bg-orange-100 text-orange-700'
-                                          : 'bg-gray-100 text-text-muted'
-                                    }`}
-                                  >
-                                    {s.size}: {s.stock}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                          </td>
-                          <td className="px-5 py-3 text-sm text-right font-mono text-text-muted">{product.sku}</td>
-                          <td className="px-5 py-3 text-right">
-                            <span className={`text-sm font-mono font-medium ${stock <= minStock ? 'text-orange-600' : 'text-text-primary'}`}>
-                              {stock}
-                            </span>
-                          </td>
-                          <td className="px-5 py-3 text-sm text-right font-mono text-text-muted">{minStock}</td>
-                          <td className="px-5 py-3 text-sm text-right font-mono text-text-primary">${(stock * product.price).toFixed(2)}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
+        {activeTab === 'summary' && selectedCategory && (
+          <>
+            <div className="flex items-center gap-2 text-sm">
+              <button
+                onClick={handleBack}
+                className="text-text-muted hover:text-text-primary transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <span className="text-text-muted">/</span>
+              <span className="font-medium text-text-primary">{t.inventory.title}</span>
+              <span className="text-text-muted">/</span>
+              <span className="text-primary">{selectedCategory}</span>
+            </div>
+            {renderCategoryProducts()}
           </>
         )}
 
