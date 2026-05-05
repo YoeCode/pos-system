@@ -22,7 +22,7 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, label, submenus }) => {
         <div>
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="flex items-center justify-between gap-3 w-full px-4 py-3 lg:py-2.5 mx-2 rounded-lg text-sm font-medium transition-all duration-150 text-text-muted hover:text-text-primary hover:bg-gray-50"
+            className="flex items-center justify-between gap-3 w-full px-4 py-3 lg:py-2.5 mx-2 rounded-lg text-sm font-medium transition-all duration-150 text-text-muted hover:text-text-primary"
           >
             <div className="flex items-center gap-3">
               <span className="w-5 h-5 lg:w-4 lg:h-4 flex-shrink-0">{icon}</span>
@@ -39,8 +39,8 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, label, submenus }) => {
                   className={({ isActive }) =>
                     `flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors ${
                       isActive
-                        ? 'text-text-primary bg-gray-50'
-                        : 'text-text-muted hover:text-text-primary hover:bg-gray-50'
+                        ? 'text-text-primary'
+                        : 'text-text-muted hover:text-text-primary'
                     }`
                   }
                 >
@@ -58,7 +58,7 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, label, submenus }) => {
             `flex items-center gap-3 px-4 py-3 lg:py-2.5 mx-2 rounded-lg text-sm font-medium transition-all duration-150 ${
               isActive
                 ? 'text-text-primary bg-gray-50 border-l-[3px] border-primary'
-                : 'text-text-muted hover:text-text-primary hover:bg-gray-50 border-l-[3px] border-transparent'
+                : 'text-text-muted hover:text-text-primary border-l-[3px] border-transparent'
             }`
           }
         >
