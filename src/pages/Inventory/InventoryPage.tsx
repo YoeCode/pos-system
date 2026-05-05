@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAppSelector } from '../../app/store';
 import { useI18n } from '../../i18n/I18nProvider';
 import type { Product } from '../../types';
@@ -21,9 +22,17 @@ const getProductMinStock = (product: Product): number => {
 
 const InventoryPage: React.FC = () => {
   const t = useI18n();
+  const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<InventoryTab>('summary');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const products = useAppSelector(state => state.products.items);
+
+  useEffect(() => {
+    const tab = searchParams.get('tab') as InventoryTab;
+    if (tab && ['summary', 'lowstock', 'reorder'].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   const tabs = [
     { id: 'summary' as const, label: t.inventory.summary },
