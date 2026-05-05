@@ -37,10 +37,10 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, label, submenus }) => {
                     to={submenu.to}
                     onClick={() => document.body.classList.remove('overflow-hidden')}
                     className={({ isActive }) =>
-                      `flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors ${
+                      `flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-all ${
                         isActive
                           ? 'text-text-primary'
-                          : 'text-text-muted hover:text-text-primary'
+                          : 'text-text-muted hover:text-text-primary hover:underline underline-offset-2'
                       }`
                     }
                   >
