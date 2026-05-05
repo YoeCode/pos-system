@@ -23,10 +23,10 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, label, submenus }) => {
   const shouldShowDropdown = isInventoryRoute ? (isOpen || hasActiveSubmenu) : isOpen;
 
   useEffect(() => {
-    if (!isInventoryRoute && isOpen) {
+    if (!isInventoryRoute) {
       setIsOpen(false);
     }
-  }, [location.pathname, isInventoryRoute, isOpen]);
+  }, [location.pathname, isInventoryRoute]);
 
   const handleClick = () => {
     if (submenus && submenus.length > 0) {
