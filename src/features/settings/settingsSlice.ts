@@ -1,6 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import type { PaymentMethod, TaxSettings, StoreSettings, PosSettings, LanguageSettings, SettingsState, Language, LoyaltySettings, TicketConfig } from '../../types';
+import type { PaymentMethod, TaxSettings, StoreSettings, PosSettings, LanguageSettings, SettingsState, Language, LoyaltySettings, TicketConfig, SizeGroup } from '../../types';
 import type { RootState } from '../../app/store';
 
 // ─── Default Constants (exported for use by mock data generators) ─────────────
@@ -11,6 +11,14 @@ export const DEFAULT_STORE_NAME = 'Casa Lis';
 export const DEFAULT_ORDER_PREFIX = 'ORD-';
 export const DEFAULT_ORDER_SEED = 1042;
 export const DEFAULT_BRANDS = ['Nestlé', 'Coca-Cola', 'Pepsi', 'Mondelez', 'Kellogg\'s'];
+export const DEFAULT_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+
+export const DEFAULT_SIZE_GROUPS: SizeGroup[] = [
+  { id: 'standard', name: 'Estándar', sizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL'] },
+  { id: 'numerical', name: 'Numérica', sizes: ['38', '40', '42', '44', '46', '48'] },
+  { id: 'bras', name: 'Sujetadores', sizes: ['80A', '80B', '85A', '85B', '90A', '90B'] },
+  { id: 'shoes', name: 'Zapatos', sizes: ['35', '36', '37', '38', '39', '40', '41', '42', '43', '44'] },
+];
 
 const defaultTaxSettings: TaxSettings = {
   taxRate: DEFAULT_TAX_RATE,
@@ -32,6 +40,8 @@ const defaultPosSettings: PosSettings = {
   defaultCategory: 'All Items',
   categories: ['Electronics', 'Food', 'Drinks', 'Apparel', 'Bakery', 'Merchandise'],
   brands: DEFAULT_BRANDS,
+  sizes: DEFAULT_SIZES,
+  sizeGroups: DEFAULT_SIZE_GROUPS,
   walkInCustomerLabel: 'Walk-In Customer',
   orderNumberPrefix: DEFAULT_ORDER_PREFIX,
   orderNumberSeed: DEFAULT_ORDER_SEED,
@@ -147,6 +157,23 @@ const settingsSlice = createSlice({
       state.pos.brands = action.payload;
       localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(state));
     },
+    updateSizes: (state, action: PayloadAction<string[]>) => {
+      state.pos.sizes = action.payload;
+      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(state));
+    },
+    addSizeGroup: (state, action: PayloadAction<SizeGroup>) => {
+      state.pos.sizeGroups.push(action.payload);
+      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(state));
+    },
+    updateSizeGroup: (state, action: PayloadAction<SizeGroup>) => {
+      const idx = state.pos.sizeGroups.findIndex(g => g.id === action.payload.id);
+      if (idx !== -1) state.pos.sizeGroups[idx] = action.payload;
+      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(state));
+    },
+    removeSizeGroup: (state, action: PayloadAction<string>) => {
+      state.pos.sizeGroups = state.pos.sizeGroups.filter(g => g.id !== action.payload);
+      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(state));
+    },
   },
 });
 
@@ -163,6 +190,10 @@ export const {
   resetLoyaltySettings,
   updateCategories,
   updateBrands,
+  updateSizes,
+  addSizeGroup,
+  updateSizeGroup,
+  removeSizeGroup,
 } = settingsSlice.actions;
 
 export default settingsSlice.reducer;
@@ -200,6 +231,8 @@ export const selectDefaultPaymentMethod = (state: RootState): PaymentMethod => s
 export const selectDefaultCategory = (state: RootState): string => state.settings.pos.defaultCategory;
 export const selectCategories = (state: RootState): string[] => state.settings.pos.categories;
 export const selectBrands = (state: RootState): string[] => state.settings.pos.brands;
+export const selectSizes = (state: RootState): string[] => state.settings.pos.sizes;
+export const selectSizeGroups = (state: RootState) => state.settings.pos.sizeGroups;
 export const selectWalkInCustomerLabel = (state: RootState): string => state.settings.pos.walkInCustomerLabel;
 export const selectOrderNumberPrefix = (state: RootState): string => state.settings.pos.orderNumberPrefix;
 export const selectOrderNumberSeed = (state: RootState): number => state.settings.pos.orderNumberSeed;

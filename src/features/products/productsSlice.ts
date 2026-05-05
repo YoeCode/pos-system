@@ -18,6 +18,7 @@ export interface ProductFormState {
   status: Product['status'];
   sizes: ProductSize[];
   hasSizes: boolean;
+  sizeGroupId: string;
 }
 
 export const createEmptyForm = (): ProductFormState => ({
@@ -34,6 +35,7 @@ export const createEmptyForm = (): ProductFormState => ({
   status: 'draft',
   sizes: [],
   hasSizes: false,
+  sizeGroupId: '',
 });
 
 const mockProducts: Product[] = [

@@ -40,6 +40,7 @@ export interface Product {
   publishedOnline: boolean;
   version?: string;
   sizes?: ProductSize[];
+  sizeGroupId?: string;
 }
 
 export interface CartItem {
@@ -140,11 +141,19 @@ export interface StoreSettings {
   receiptFooterMessage: string;
 }
 
+export interface SizeGroup {
+  id: string;
+  name: string;
+  sizes: string[];
+}
+
 export interface PosSettings {
   defaultPaymentMethod: PaymentMethod;
   defaultCategory: string;
   categories: string[];
   brands: string[];
+  sizes: string[];
+  sizeGroups: SizeGroup[];
   walkInCustomerLabel: string;
   orderNumberPrefix: string;
   orderNumberSeed: number;

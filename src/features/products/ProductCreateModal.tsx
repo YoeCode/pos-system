@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
-import { useAppDispatch } from '../../app/store';
+import { useAppDispatch, useAppSelector } from '../../app/store';
 import { addProduct, DEFAULT_CATEGORIES, createEmptyForm, type ProductFormState } from './productsSlice';
+import { selectSizeGroups } from '../settings/settingsSlice';
 import type { Product } from '../../types';
 import Modal from '../../components/ui/Modal';
 import Input from '../../components/ui/Input';
@@ -14,6 +15,7 @@ interface ProductCreateModalProps {
 
 const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose }) => {
   const dispatch = useAppDispatch();
+  const sizeGroups = useAppSelector(selectSizeGroups);
   const [form, setForm] = useState<ProductFormState>(createEmptyForm());
   const t = useI18n();
 
@@ -47,6 +49,7 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
       status: form.status,
       publishedOnline: form.publishedOnline,
       sizes: form.hasSizes ? form.sizes : undefined,
+      sizeGroupId: form.sizeGroupId || undefined,
     };
 
     dispatch(addProduct(newProduct));
@@ -122,6 +125,27 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
 
           {form.hasSizes && (
             <div className="flex flex-col gap-2 pl-6">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-text-muted">{t.settings.sizeGroups || 'Size Group'}</label>
+                <select
+                  value={form.sizeGroupId}
+                  onChange={e => {
+                    const groupId = e.target.value;
+                    const group = sizeGroups.find(g => g.id === groupId);
+                    setForm(prev => ({
+                      ...prev,
+                      sizeGroupId: groupId,
+                      sizes: group ? group.sizes.map(size => ({ size, stock: 0, minStock: 0 })) : [{ size: '', stock: 0, minStock: 0 }]
+                    }));
+                  }}
+                  className="w-full px-3 py-2.5 text-sm border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors bg-white"
+                >
+                  <option value="">{t.common.select || 'Select...'}</option>
+                  {sizeGroups.map(group => (
+                    <option key={group.id} value={group.id}>{group.name}</option>
+                  ))}
+                </select>
+              </div>
               {form.sizes.map((s, idx) => (
                 <div key={idx} className="grid grid-cols-3 gap-2">
                   <input
