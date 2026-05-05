@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../app/store';
 import { logout } from '../features/auth/authSlice';
 import { ROLE_PERMISSIONS } from '../types';
@@ -15,6 +15,8 @@ interface NavItemProps {
 
 const NavItem: React.FC<NavItemProps> = ({ to, icon, label, submenus }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const location = useLocation();
+  const hasActiveSubmenu = submenus?.some(sub => location.pathname === sub.to || location.pathname.startsWith(sub.to.split('?')[0]));
 
   return (
     <div className="relative">
@@ -29,7 +31,7 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, label, submenus }) => {
               <span className="hidden sm:inline">{label}</span>
             </div>
           </button>
-{isOpen && (
+          {(isOpen || hasActiveSubmenu) && (
               <div className="ml-6 mt-1">
                 {submenus.map(submenu => (
                   <NavLink
