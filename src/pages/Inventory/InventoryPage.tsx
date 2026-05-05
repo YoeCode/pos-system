@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAppSelector } from '../../app/store';
 import { useI18n } from '../../i18n/I18nProvider';
@@ -23,22 +23,10 @@ const getProductMinStock = (product: Product): number => {
 const InventoryPage: React.FC = () => {
   const t = useI18n();
   const [searchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState<InventoryTab>('summary');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const products = useAppSelector(state => state.products.items);
-
-  useEffect(() => {
-    const tab = searchParams.get('tab') as InventoryTab;
-    if (tab && ['summary', 'lowstock', 'reorder'].includes(tab)) {
-      setActiveTab(tab);
-    }
-  }, [searchParams]);
-
-  const tabs = [
-    { id: 'summary' as const, label: t.inventory.summary },
-    { id: 'lowstock' as const, label: t.inventory.lowStock },
-    { id: 'reorder' as const, label: t.inventory.reorder },
-  ];
+  
+  const activeTab = (searchParams.get('tab') as InventoryTab) || 'summary';
 
   const stockByCategory = useMemo(() => {
     return products.reduce((acc, product) => {
@@ -149,22 +137,6 @@ const InventoryPage: React.FC = () => {
             <div>
               <h1 className="text-xl font-bold text-text-primary">{t.inventory.title}</h1>
               <p className="text-sm text-text-muted mt-0.5">{t.inventory.subtitle}</p>
-            </div>
-
-            <div className="flex gap-1 bg-white rounded-lg border border-border p-1 w-fit">
-              {tabs.map(tab => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                    activeTab === tab.id
-                      ? 'bg-primary text-white'
-                      : 'text-text-muted hover:text-text-primary hover:bg-gray-50'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
             </div>
           </>
         )}
