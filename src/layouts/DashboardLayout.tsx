@@ -32,21 +32,21 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, label, submenus }) => {
 {isOpen && (
               <div className="ml-6 mt-1">
                 {submenus.map(submenu => (
-                <NavLink
-                  key={submenu.to}
-                  to={submenu.to}
-                  onClick={() => document.body.classList.remove('overflow-hidden')}
-className={({ isActive }) =>
-                    `flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors ${
-                      isActive
-                        ? 'text-text-primary'
-                        : 'text-text-muted hover:text-text-primary'
-                    }`
-                  }
-                >
-                  <span className="hidden sm:inline">{submenu.label}</span>
-                </NavLink>
-              ))}
+                  <NavLink
+                    key={submenu.to}
+                    to={submenu.to}
+                    onClick={() => document.body.classList.remove('overflow-hidden')}
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors ${
+                        isActive
+                          ? 'text-text-primary'
+                          : 'text-text-muted hover:text-text-primary'
+                      }`
+                    }
+                  >
+                    <span className="hidden sm:inline">{submenu.label}</span>
+                  </NavLink>
+                ))}
             </div>
           )}
         </div>
