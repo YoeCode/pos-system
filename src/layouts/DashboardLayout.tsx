@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../app/store';
 import { logout } from '../features/auth/authSlice';
 import { ROLE_PERMISSIONS } from '../types';
@@ -15,6 +15,8 @@ interface NavItemProps {
 
 const NavItem: React.FC<NavItemProps> = ({ to, icon, label, submenus }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const location = useLocation();
+  const hasActiveSubmenu = submenus?.some(sub => location.pathname === sub.to || location.pathname.startsWith(sub.to.split('?')[0]));
 
   return (
     <div className="relative">
@@ -22,14 +24,18 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, label, submenus }) => {
         <div>
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="flex items-center justify-between gap-3 w-full px-4 py-3 lg:py-2.5 mx-2 rounded-lg text-sm font-medium transition-all duration-150 text-text-muted hover:text-text-primary"
+            className={`flex items-center justify-between gap-3 w-full px-4 py-3 lg:py-2.5 mx-2 rounded-lg text-sm font-medium transition-all duration-150 ${
+              hasActiveSubmenu
+                ? 'text-text-primary bg-gray-50 border-l-[3px] border-primary'
+                : 'text-text-muted hover:text-text-primary border-l-[3px] border-transparent'
+            }`}
           >
             <div className="flex items-center gap-3">
               <span className="w-5 h-5 lg:w-4 lg:h-4 flex-shrink-0">{icon}</span>
               <span className="hidden sm:inline">{label}</span>
             </div>
           </button>
-          {isOpen && (
+          {(isOpen || hasActiveSubmenu) && (
               <div className="ml-6 mt-1">
                 {submenus.map(submenu => (
                   <NavLink
