@@ -29,9 +29,9 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, label, submenus }) => {
               <span className="hidden sm:inline">{label}</span>
             </div>
           </button>
-          {isOpen && (
-            <div className="ml-6 mr-2 mt-1 bg-surface rounded-lg border border-border overflow-hidden">
-              {submenus.map(submenu => (
+{isOpen && (
+              <div className="ml-6 mt-1">
+                {submenus.map(submenu => (
                 <NavLink
                   key={submenu.to}
                   to={submenu.to}
