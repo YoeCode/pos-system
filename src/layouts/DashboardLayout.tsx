@@ -20,12 +20,19 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, label, submenus }) => {
   const hasActiveSubmenu = submenus?.some(sub => location.pathname === sub.to || location.pathname.startsWith(sub.to.split('?')[0]));
   const isActive = isThisActive || hasActiveSubmenu;
 
+  const handleClick = () => {
+    if (submenus && submenus.length > 0) {
+      setIsOpen(!isOpen);
+    }
+  };
+
   return (
     <div className="relative">
       {submenus && submenus.length > 0 ? (
         <div>
-          <button
-            onClick={() => setIsOpen(!isOpen)}
+          <NavLink
+            to={to}
+            onClick={handleClick}
             className={`flex items-center justify-between gap-3 w-full px-4 py-3 lg:py-2.5 mx-2 rounded-lg text-sm font-medium transition-all duration-150 ${
               isActive
                 ? 'text-text-primary bg-gray-50 border-l-[3px] border-primary'
@@ -36,7 +43,7 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, label, submenus }) => {
               <span className="w-5 h-5 lg:w-4 lg:h-4 flex-shrink-0">{icon}</span>
               <span className="hidden sm:inline">{label}</span>
             </div>
-          </button>
+          </NavLink>
           {(isOpen || hasActiveSubmenu) && (
               <div className="ml-6 mt-1">
                 {submenus.map(submenu => (
