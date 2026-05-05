@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../app/store';
 import { logout } from '../features/auth/authSlice';
@@ -19,6 +19,14 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, label, submenus }) => {
   const isThisActive = location.pathname === to;
   const hasActiveSubmenu = submenus?.some(sub => location.pathname === sub.to || location.pathname.startsWith(sub.to.split('?')[0]));
   const isActive = isThisActive || hasActiveSubmenu;
+  const isInventoryRoute = to === '/inventory';
+  const shouldShowDropdown = isInventoryRoute ? (isOpen || hasActiveSubmenu) : isOpen;
+
+  useEffect(() => {
+    if (!isInventoryRoute && isOpen) {
+      setIsOpen(false);
+    }
+  }, [location.pathname, isInventoryRoute, isOpen]);
 
   const handleClick = () => {
     if (submenus && submenus.length > 0) {
@@ -44,7 +52,7 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, label, submenus }) => {
               <span className="hidden sm:inline">{label}</span>
             </div>
           </NavLink>
-          {(isOpen || hasActiveSubmenu) && (
+          {shouldShowDropdown && (
               <div className="ml-6 mt-1">
                 {submenus.map(submenu => (
                   <NavLink
