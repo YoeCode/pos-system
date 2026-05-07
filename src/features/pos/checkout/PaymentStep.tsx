@@ -131,7 +131,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
         </div>
         {discountApplied > 0 && (
           <div className="flex items-center justify-between text-sm">
-            <span className="text-green-600">Loyalty Discount</span>
+            <span className="text-green-600">Discount</span>
             <span className="font-mono text-green-600">-${discountApplied.toFixed(2)}</span>
           </div>
         )}

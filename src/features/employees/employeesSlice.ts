@@ -128,4 +128,7 @@ export const { addEmployee, updateEmployee, toggleModal, setEditingEmployee } = 
 export const selectActiveEmployees = (state: RootState): Employee[] => 
   state.employees.employees.filter((e: Employee) => e.active);
 
+export const selectEmployees = (state: RootState): Employee[] =>
+  state.employees.employees;
+
 export default employeesSlice.reducer;

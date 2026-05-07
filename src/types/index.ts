@@ -46,6 +46,8 @@ export interface Product {
 export interface CartItem {
   product: Product;
   quantity: number;
+  lineId: string;
+  selectedSize?: string;
 }
 
 export interface Employee {

@@ -40,7 +40,7 @@ describe('posSlice — loyalty additions', () => {
   describe('clearCart — RF-02-C', () => {
     it('clears cart items but does NOT reset selectedCustomerId', () => {
       const withCustomer = posReducer(INITIAL_STATE, setSelectedCustomer('cust-001'));
-      const withItem = posReducer(withCustomer, addToCart(MOCK_PRODUCT));
+      const withItem = posReducer(withCustomer, addToCart({ product: MOCK_PRODUCT }));
       const cleared = posReducer(withItem, clearCart());
       expect(cleared.cart).toHaveLength(0);
       expect(cleared.selectedCustomerId).toBe('cust-001');
@@ -50,7 +50,7 @@ describe('posSlice — loyalty additions', () => {
   describe('startNewSale — RF-02-D', () => {
     it('resets cart AND selectedCustomerId to null', () => {
       let state = posReducer(INITIAL_STATE, setSelectedCustomer('cust-002'));
-      state = posReducer(state, addToCart(MOCK_PRODUCT));
+      state = posReducer(state, addToCart({ product: MOCK_PRODUCT }));
       expect(state.cart).toHaveLength(1);
       expect(state.selectedCustomerId).toBe('cust-002');
 

@@ -249,6 +249,9 @@ const POSPage: React.FC = () => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-text-primary truncate">{item.product.name || item.product.category}</p>
+                        {item.selectedSize && (
+                          <p className="text-xs text-blue-600 font-medium">Talla: {item.selectedSize}</p>
+                        )}
                         <div className="flex items-center gap-1.5">
                           <p className="text-xs text-text-muted">€{(item.product.price * item.quantity).toFixed(2)}</p>
                           {itemDiscounts[item.lineId] && (

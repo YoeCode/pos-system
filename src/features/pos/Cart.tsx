@@ -100,6 +100,9 @@ const Cart: React.FC = () => {
                 <p className="text-sm font-medium text-text-primary truncate">
                   {item.product.name || item.product.category}
                 </p>
+                {item.selectedSize && (
+                  <p className="text-xs text-blue-600 font-medium">Talla: {item.selectedSize}</p>
+                )}
                 {item.product.brand && (
                   <p className="text-xs text-text-muted truncate">{item.product.brand}</p>
                 )}
