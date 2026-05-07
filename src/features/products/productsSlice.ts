@@ -296,8 +296,23 @@ const productsSlice = createSlice({
     setPublishedFilter: (state, action: PayloadAction<string>) => {
       state.publishedFilter = action.payload;
     },
+    reduceStock: (state, action: PayloadAction<{ productId: string; quantity: number; size?: string }>) => {
+      const { productId, quantity, size } = action.payload;
+      const product = state.items.find(p => p.id === productId);
+      if (!product) return;
+
+      if (size && product.sizes) {
+        const sizeEntry = product.sizes.find(s => s.size === size);
+        if (sizeEntry) {
+          sizeEntry.stock = Math.max(0, sizeEntry.stock - quantity);
+        }
+        product.stock = product.sizes.reduce((sum, s) => sum + s.stock, 0);
+      } else {
+        product.stock = Math.max(0, product.stock - quantity);
+      }
+    },
   },
 });
 
-export const { setProducts, selectProduct, addProduct, updateProduct, setSearchQuery, setSelectedCategory, setStatusFilter, setStockFilter, setPublishedFilter } = productsSlice.actions;
+export const { setProducts, selectProduct, addProduct, updateProduct, setSearchQuery, setSelectedCategory, setStatusFilter, setStockFilter, setPublishedFilter, reduceStock } = productsSlice.actions;
 export default productsSlice.reducer;
