@@ -51,9 +51,10 @@ const ProductDetailPanel: React.FC = () => {
 
   const [snapshot, setSnapshot] = useState<FormState | null>(null);
   const [sizeSnapshot, setSizeSnapshot] = useState<Record<string, number> | null>(null);
-  const [stockUnlocked, setStockUnlocked] = useState(false);
+  const [unlockedActions, setUnlockedActions] = useState<Set<'stock' | 'publish'>>(new Set());
   const [authorizedBy, setAuthorizedBy] = useState<Employee | null>(null);
   const [showPinModal, setShowPinModal] = useState(false);
+  const [pendingAuthAction, setPendingAuthAction] = useState<'stock' | 'publish' | null>(null);
 
   const hasSizes = product ? !!(product.sizes && product.sizes.length > 0) : false;
   const totalSizeStock = hasSizes ? product!.sizes!.reduce((s, sz) => s + sz.stock, 0) : form.stock;
@@ -89,8 +90,9 @@ const ProductDetailPanel: React.FC = () => {
       setSizeSnapshot({ ...stocks });
 
       setIsEditing(false);
-      setStockUnlocked(false);
+      setUnlockedActions(new Set());
       setAuthorizedBy(null);
+      setPendingAuthAction(null);
     }
   }, [product]);
 
@@ -150,30 +152,41 @@ const ProductDetailPanel: React.FC = () => {
     };
     dispatch(updateProduct(updated));
     setIsEditing(false);
-    setStockUnlocked(false);
+    setUnlockedActions(new Set());
     setAuthorizedBy(null);
+    setPendingAuthAction(null);
   };
 
   const handleCancel = () => {
     if (snapshot) setForm(snapshot);
     if (sizeSnapshot) setSizeStocks(sizeSnapshot);
     setIsEditing(false);
-    setStockUnlocked(false);
+    setUnlockedActions(new Set());
     setAuthorizedBy(null);
+    setPendingAuthAction(null);
   };
 
   const handleEdit = () => {
     setSnapshot({ ...form });
     setSizeSnapshot({ ...sizeStocks });
     setIsEditing(true);
-    setStockUnlocked(false);
+    setUnlockedActions(new Set());
     setAuthorizedBy(null);
+    setPendingAuthAction(null);
+  };
+
+  const requestAuth = (action: 'stock' | 'publish') => {
+    setPendingAuthAction(action);
+    setShowPinModal(true);
   };
 
   const handleStockAuthSuccess = (employee: Employee) => {
     setAuthorizedBy(employee);
-    setStockUnlocked(true);
+    if (pendingAuthAction) {
+      setUnlockedActions(prev => new Set(prev).add(pendingAuthAction));
+    }
     setShowPinModal(false);
+    setPendingAuthAction(null);
   };
 
   const statusLabel = form.status === 'active' ? 'Active' : form.status === 'inactive' ? 'Inactive' : 'Draft';
@@ -371,7 +384,7 @@ const ProductDetailPanel: React.FC = () => {
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Stock by Size</label>
-                {isEditing && !stockUnlocked && (
+                {isEditing && !unlockedActions.has('stock') && (
                   <button
                     onClick={() => setShowPinModal(true)}
                     className="flex items-center gap-1 text-xs text-amber-600 hover:text-amber-700 font-medium"
@@ -396,7 +409,7 @@ const ProductDetailPanel: React.FC = () => {
                   const minStock = sizeMinStocks[sizeOption.size] ?? sizeOption.minStock ?? 0;
                   const currentStock = sizeStocks[sizeOption.size] ?? sizeOption.stock;
                   const isLow = currentStock <= minStock;
-                  const isEditable = isEditing && stockUnlocked;
+                  const isEditable = isEditing && unlockedActions.has('stock');
 
                   return (
                     <div
@@ -444,7 +457,7 @@ const ProductDetailPanel: React.FC = () => {
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">{stockLabel}</label>
-                {isEditing && !stockUnlocked && (
+                {isEditing && !unlockedActions.has('stock') && (
                   <button
                     onClick={() => setShowPinModal(true)}
                     className="flex items-center gap-1 text-xs text-amber-600 hover:text-amber-700 font-medium"
@@ -457,7 +470,7 @@ const ProductDetailPanel: React.FC = () => {
                 )}
               </div>
               {isEditing ? (
-                stockUnlocked ? (
+                unlockedActions.has('stock') ? (
                   <div className="flex flex-col gap-1">
                     <input
                       type="number"
@@ -489,7 +502,7 @@ const ProductDetailPanel: React.FC = () => {
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Min. Stock</label>
               {isEditing ? (
-                stockUnlocked ? (
+                unlockedActions.has('stock') ? (
                   <input
                     type="number"
                     min="0"
@@ -531,12 +544,42 @@ const ProductDetailPanel: React.FC = () => {
 
         <div className="p-3 rounded-lg border border-border bg-background">
           {isEditing ? (
-            <Toggle
-              checked={form.publishedOnline}
-              onChange={val => setForm(prev => ({ ...prev, publishedOnline: val }))}
-              label="Publish to online store"
-              description="Make this product visible in the online catalog"
-            />
+            <>
+              {unlockedActions.has('publish') && authorizedBy && (
+                <p className="text-xs text-green-600 flex items-center gap-1 mb-2">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Authorized by {authorizedBy.name}
+                </p>
+              )}
+              {unlockedActions.has('publish') ? (
+              <Toggle
+                checked={form.publishedOnline}
+                onChange={val => setForm(prev => ({ ...prev, publishedOnline: val }))}
+                label="Publish to online store"
+                description="Make this product visible in the online catalog"
+              />
+            ) : (
+              <button
+                onClick={() => requestAuth('publish')}
+                className="w-full flex items-center justify-between py-2"
+              >
+                <div className="flex items-center gap-2">
+                  <span className={`w-2 h-2 rounded-full ${form.publishedOnline ? 'bg-green-500' : 'bg-gray-400'}`} />
+                  <span className="text-sm text-text-primary">
+                    {form.publishedOnline ? 'Published to online store' : 'Not published'}
+                  </span>
+                </div>
+                <span className="flex items-center gap-1 text-xs text-amber-600 font-medium">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                  Unlock
+                </span>
+              </button>
+            )}
+            </>
           ) : (
             <div className="flex items-center gap-2">
               <span className={`w-2 h-2 rounded-full ${form.publishedOnline ? 'bg-green-500' : 'bg-gray-400'}`} />
@@ -550,10 +593,10 @@ const ProductDetailPanel: React.FC = () => {
 
       <PinAuthModal
         isOpen={showPinModal}
-        onClose={() => setShowPinModal(false)}
+        onClose={() => { setShowPinModal(false); setPendingAuthAction(null); }}
         onSuccess={handleStockAuthSuccess}
-        title="Authorize Stock Edit"
-        description="Stock changes require supervisor authorization"
+        title={pendingAuthAction === 'publish' ? 'Authorize Publish Change' : 'Authorize Stock Edit'}
+        description={pendingAuthAction === 'publish' ? 'Publishing changes require supervisor authorization' : 'Stock changes require supervisor authorization'}
       />
     </div>
   );
