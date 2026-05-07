@@ -72,10 +72,15 @@ const ProductsTable: React.FC = () => {
           </tr>
         </thead>
         <tbody className="divide-y divide-border">
-          {paginatedItems.map(product => (
+          {paginatedItems.map(product => {
+            const displayStock = product.sizes && product.sizes.length > 0
+              ? product.sizes.reduce((s, sz) => s + sz.stock, 0)
+              : product.stock;
+
+            return (
             <tr
               key={product.id}
-              onClick={() => dispatch(selectProduct(selectedProduct?.id === product.id ? null : product))}
+              onClick={() => dispatch(selectProduct(product))}
               className={`cursor-pointer transition-colors ${
                 selectedProduct?.id === product.id
                   ? 'bg-primary/5'
@@ -128,8 +133,8 @@ const ProductsTable: React.FC = () => {
 
               {/* Stock */}
               <td className="py-3 px-4 text-right">
-                <span className={`font-mono text-sm font-semibold ${product.stock <= product.minStock ? 'text-error' : 'text-text-primary'}`}>
-                  {product.stock}
+                <span className={`font-mono text-sm font-semibold ${displayStock <= product.minStock ? 'text-error' : 'text-text-primary'}`}>
+                  {displayStock}
                 </span>
               </td>
 
@@ -138,7 +143,8 @@ const ProductsTable: React.FC = () => {
                 <span className="font-mono text-sm text-text-muted">{product.minStock}</span>
               </td>
             </tr>
-          ))}
+            );
+          })}
         </tbody>
       </table>
 
