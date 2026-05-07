@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/store';
-import { removeFromCart, setPaymentMethod, updateQuantity, startNewSale } from './posSlice';
+import { removeFromCart, setPaymentMethod, updateQuantity, splitLine, startNewSale } from './posSlice';
 import {
   selectTaxRate,
   selectTaxLabel,
@@ -11,7 +11,9 @@ import {
 import { selectCustomerById } from '../customers/customersSlice';
 import CheckoutModal from './checkout/CheckoutModal';
 import CustomerSelector from '../customers/CustomerSelector';
+import DiscountModal from './DiscountModal';
 import { useI18n } from '../../i18n/I18nProvider';
+import { calculateCart } from './calculation';
 import type { PaymentMethod } from '../../types';
 
 const Cart: React.FC = () => {
@@ -26,29 +28,21 @@ const Cart: React.FC = () => {
     selectedCustomerId ? selectCustomerById(s, selectedCustomerId) : null
   );
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [showItemDiscountModal, setShowItemDiscountModal] = useState(false);
+  const [itemDiscountTarget, setItemDiscountTarget] = useState<string | null>(null);
+  const [itemDiscounts, setItemDiscounts] = useState<Record<string, number>>({});
   const t = useI18n();
 
-  const rawSubtotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-
   const tierConfig = tiers.find(t => t.tier === selectedCustomer?.tier);
-  const discountApplied =
-    selectedCustomer && tierConfig
-      ? Math.round(rawSubtotal * tierConfig.discountPct * 100) / 100
-      : 0;
 
-  const subtotal = rawSubtotal - discountApplied;
+  const calc = calculateCart(cart, {
+    taxRate,
+    taxIncludedInPrice,
+    itemDiscounts,
+    loyaltyTierConfig: selectedCustomer && tierConfig ? tierConfig : undefined,
+  });
 
-  let tax: number;
-  let total: number;
-
-  if (taxIncludedInPrice) {
-    const basePrice = subtotal / (1 + taxRate);
-    tax = subtotal - basePrice;
-    total = subtotal;
-  } else {
-    tax = subtotal * taxRate;
-    total = subtotal + tax;
-  }
+  const { grossSubtotal, totalDiscount, tax, total } = calc;
 
   const paymentMethods: { id: PaymentMethod; labelKey: 'cash' | 'card' | 'bizum' }[] = [
     { id: 'cash', labelKey: 'cash' },
@@ -89,7 +83,7 @@ const Cart: React.FC = () => {
           </div>
         ) : (
           cart.map(item => (
-            <div key={item.product.id} className="flex items-center gap-3">
+            <div key={item.lineId} className="flex items-center gap-3">
               {/* Thumbnail */}
               <div className="w-10 h-10 rounded-lg bg-gray-100 flex-shrink-0 flex items-center justify-center overflow-hidden">
                 {item.product.image ? (
@@ -109,27 +103,55 @@ const Cart: React.FC = () => {
                 {item.product.brand && (
                   <p className="text-xs text-text-muted truncate">{item.product.brand}</p>
                 )}
-                <p className="text-xs font-mono text-text-muted">€{(item.product.price * item.quantity).toFixed(2)}</p>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-xs font-mono text-text-muted">€{(item.product.price * item.quantity).toFixed(2)}</p>
+                  {itemDiscounts[item.lineId] && (
+                    <span className="text-xs font-mono text-green-600">-€{(item.product.price * item.quantity * (itemDiscounts[item.lineId] || 0) / 100).toFixed(2)}</span>
+                  )}
+                </div>
               </div>
 
               {/* Quantity controls */}
               <div className="flex items-center gap-1">
                 <button
-                  onClick={() => dispatch(updateQuantity({ productId: item.product.id, quantity: item.quantity - 1 }))}
+                  onClick={() => dispatch(updateQuantity({ lineId: item.lineId, quantity: item.quantity - 1 }))}
                   className="w-6 h-6 rounded border border-border text-text-muted hover:border-error hover:text-error flex items-center justify-center transition-colors text-xs"
                 >
                   −
                 </button>
                 <span className="w-6 text-center text-sm font-semibold text-text-primary font-mono">{item.quantity}</span>
                 <button
-                  onClick={() => dispatch(updateQuantity({ productId: item.product.id, quantity: item.quantity + 1 }))}
+                  onClick={() => dispatch(updateQuantity({ lineId: item.lineId, quantity: item.quantity + 1 }))}
                   className="w-6 h-6 rounded border border-border text-text-muted hover:border-primary hover:text-primary flex items-center justify-center transition-colors text-xs"
                 >
                   +
                 </button>
+                {item.quantity > 1 && (
+                  <button
+                    onClick={() => dispatch(splitLine(item.lineId))}
+                    className="w-6 h-6 rounded text-blue-500 hover:text-blue-600 flex items-center justify-center transition-colors"
+                    title="Split line"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                    </svg>
+                  </button>
+                )}
                 <button
-                  onClick={() => dispatch(removeFromCart(item.product.id))}
-                  className="w-6 h-6 rounded text-text-muted hover:text-error flex items-center justify-center transition-colors ml-0.5"
+                  onClick={() => {
+                    setItemDiscountTarget(item.lineId);
+                    setShowItemDiscountModal(true);
+                  }}
+                  className="w-6 h-6 rounded text-amber-500 hover:text-amber-600 flex items-center justify-center transition-colors"
+                  title={t.pos.itemDiscount || 'Discount'}
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => dispatch(removeFromCart(item.lineId))}
+                  className="w-6 h-6 rounded text-text-muted hover:text-error flex items-center justify-center transition-colors"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -143,16 +165,15 @@ const Cart: React.FC = () => {
 
       {/* Totals + Payment */}
       <div className="px-5 pb-5 border-t border-border pt-4 flex flex-col gap-4">
-        {/* Totals */}
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between text-sm">
             <span className="text-text-muted">{t.pos.subtotal}</span>
-            <span className="font-mono text-text-primary">${rawSubtotal.toFixed(2)}</span>
+            <span className="font-mono text-text-primary">${grossSubtotal.toFixed(2)}</span>
           </div>
-          {discountApplied > 0 && (
+          {totalDiscount > 0 && (
             <div className="flex items-center justify-between text-sm">
-              <span className="text-green-600">Loyalty Discount</span>
-              <span className="font-mono text-green-600">-${discountApplied.toFixed(2)}</span>
+              <span className="text-green-600">Discount</span>
+              <span className="font-mono text-green-600">-${totalDiscount.toFixed(2)}</span>
             </div>
           )}
           <div className="flex items-center justify-between text-sm">
@@ -200,13 +221,32 @@ const Cart: React.FC = () => {
         isOpen={isCheckoutOpen}
         onClose={() => setIsCheckoutOpen(false)}
         cart={cart}
-        subtotal={subtotal}
+        subtotal={grossSubtotal}
         tax={tax}
         total={total}
         paymentMethod={paymentMethod}
         orderNumber={orderNumber}
         customerId={selectedCustomerId ?? undefined}
-        discountApplied={discountApplied}
+        discountApplied={totalDiscount}
+      />
+
+      <DiscountModal
+        isOpen={showItemDiscountModal}
+        onClose={() => setShowItemDiscountModal(false)}
+        onSuccess={(_, discountAmount) => {
+          if (itemDiscountTarget) {
+            const item = cart.find(i => i.lineId === itemDiscountTarget);
+            const itemTotal = item ? item.product.price * item.quantity : 0;
+            const discountPct = itemTotal > 0 ? Math.round((discountAmount / itemTotal) * 10000) / 100 : 0;
+            setItemDiscounts(prev => ({ ...prev, [itemDiscountTarget]: discountPct }));
+          }
+          setShowItemDiscountModal(false);
+          setItemDiscountTarget(null);
+        }}
+        subtotal={(() => {
+          const item = cart.find(i => i.lineId === itemDiscountTarget);
+          return item ? item.product.price * item.quantity : 0;
+        })()}
       />
     </div>
   );

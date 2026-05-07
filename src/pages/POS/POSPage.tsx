@@ -9,12 +9,14 @@ import CustomerSelector from '../../features/customers/CustomerSelector';
 import SearchInput from '../../features/pos/SearchInput';
 import EmployeeSelector from '../../features/pos/EmployeeSelector';
 import CashBoxOpenModal from '../../features/pos/CashBoxOpenModal';
+import DiscountModal from '../../features/pos/DiscountModal';
 import { useI18n } from '../../i18n/I18nProvider';
-import { addCustomProductToCart, updateQuantity, removeFromCart, setPaymentMethod, startNewSale, selectIsCashBoxOpen, closeCashBox } from '../../features/pos/posSlice';
+import { addCustomProductToCart, updateQuantity, removeFromCart, splitLine, setPaymentMethod, startNewSale, selectIsCashBoxOpen, closeCashBox } from '../../features/pos/posSlice';
 import { selectEnableManualProduct, selectFormattedOrderNumber, selectTaxRate, selectTaxLabel, selectTaxIncludedInPrice, selectLoyaltyTiers } from '../../features/settings/settingsSlice';
 import { selectCustomerById } from '../../features/customers/customersSlice';
+import { calculateCart } from '../../features/pos/calculation';
 import Fuse from 'fuse.js';
-import type { PaymentMethod } from '../../types';
+import type { PaymentMethod, Employee } from '../../types';
 
 const POSPage: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -38,6 +40,12 @@ const POSPage: React.FC = () => {
   const [showCloseBoxConfirm, setShowCloseBoxConfirm] = useState(false);
   const [showCashBoxModal, setShowCashBoxModal] = useState(false);
   const [closedBoxCount, setClosedBoxCount] = useState(0);
+  const [showDiscountModal, setShowDiscountModal] = useState(false);
+  const [showItemDiscountModal, setShowItemDiscountModal] = useState(false);
+  const [itemDiscountTarget, setItemDiscountTarget] = useState<string | null>(null);
+  const [manualDiscount, setManualDiscount] = useState(0);
+  const [itemDiscounts, setItemDiscounts] = useState<Record<string, number>>({});
+  const [authorizedBy, setAuthorizedBy] = useState<Employee | null>(null);
 
   const filtered = selectedCategory === 'All Items'
     ? products
@@ -60,22 +68,23 @@ const POSPage: React.FC = () => {
   };
 
   const rawSubtotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-  const tierConfig = tiers.find(t => t.tier === selectedCustomer?.tier);
-  const discountApplied = selectedCustomer && tierConfig
-    ? Math.round(rawSubtotal * tierConfig.discountPct * 100) / 100
-    : 0;
-  const subtotal = rawSubtotal - discountApplied;
 
-  let tax: number;
-  let total: number;
-  if (taxIncludedInPrice) {
-    const basePrice = subtotal / (1 + taxRate);
-    tax = subtotal - basePrice;
-    total = subtotal;
-  } else {
-    tax = subtotal * taxRate;
-    total = subtotal + tax;
-  }
+  const tierConfig = tiers.find(t => t.tier === selectedCustomer?.tier);
+
+  const calc = calculateCart(cart, {
+    taxRate,
+    taxIncludedInPrice,
+    itemDiscounts,
+    loyaltyTierConfig: selectedCustomer && tierConfig ? tierConfig : undefined,
+    manualDiscount,
+  });
+
+  const { grossSubtotal, totalDiscount, tax, total } = calc;
+  const loyaltyPct = selectedCustomer && tierConfig ? tierConfig.discountPct : 0;
+  const itemDiscountTotal = calc.lines.reduce((sum, l) => sum + l.itemDiscountAmount, 0);
+  const loyaltyTotal = calc.lines.reduce((sum, l) => sum + (l.discountSource === 'loyalty' ? l.appliedDiscount : 0), 0);
+  const appliedGlobalDiscount = loyaltyTotal;
+  const isLoyaltyGlobal = loyaltyTotal > 0;
 
   const handleCheckout = () => {
     setIsCartOpen(false);
@@ -201,7 +210,7 @@ const POSPage: React.FC = () => {
           <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl max-h-[85vh] flex flex-col">
             {/* Header */}
             <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-              <h2 className="font-bold text-lg">Cart</h2>
+              <h2 className="font-bold text-lg">{t.pos.cart}</h2>
               <div className="flex items-center gap-2">
                 {cart.length > 0 && (
                   <button
@@ -234,31 +243,59 @@ const POSPage: React.FC = () => {
               ) : (
                 <div className="flex flex-col gap-3">
                   {cart.map(item => (
-                    <div key={item.product.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
+                    <div key={item.lineId} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
                       <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center text-gray-500 font-bold flex-shrink-0">
                         {(item.product.name || item.product.category).charAt(0)}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-text-primary truncate">{item.product.name || item.product.category}</p>
-                        <p className="text-xs text-text-muted">€{item.product.price.toFixed(2)} each</p>
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-xs text-text-muted">€{(item.product.price * item.quantity).toFixed(2)}</p>
+                          {itemDiscounts[item.lineId] && (
+                            <span className="text-xs font-mono text-green-600">-€{(item.product.price * item.quantity * (itemDiscounts[item.lineId] || 0) / 100).toFixed(2)}</span>
+                          )}
+                        </div>
                       </div>
                       <div className="flex items-center gap-1">
                         <button
-                          onClick={() => dispatch(updateQuantity({ productId: item.product.id, quantity: item.quantity - 1 }))}
+                          onClick={() => dispatch(updateQuantity({ lineId: item.lineId, quantity: item.quantity - 1 }))}
                           className="w-6 h-6 rounded border border-border text-text-muted hover:border-error hover:text-error flex items-center justify-center"
                         >
                           −
                         </button>
                         <span className="w-6 text-center text-sm font-semibold font-mono">{item.quantity}</span>
                         <button
-                          onClick={() => dispatch(updateQuantity({ productId: item.product.id, quantity: item.quantity + 1 }))}
+                          onClick={() => dispatch(updateQuantity({ lineId: item.lineId, quantity: item.quantity + 1 }))}
                           className="w-6 h-6 rounded border border-border text-text-muted hover:border-primary hover:text-primary flex items-center justify-center"
                         >
                           +
                         </button>
+                        {item.quantity > 1 && (
+                          <button
+                            onClick={() => dispatch(splitLine(item.lineId))}
+                            className="w-6 h-6 rounded text-blue-500 hover:text-blue-600 flex items-center justify-center"
+                            title="Split line"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                            </svg>
+                          </button>
+                        )}
                         <button
-                          onClick={() => dispatch(removeFromCart(item.product.id))}
-                          className="ml-1 w-6 h-6 rounded text-text-muted hover:text-error flex items-center justify-center"
+                          onClick={() => {
+                            setItemDiscountTarget(item.lineId);
+                            setShowItemDiscountModal(true);
+                          }}
+                          className="w-6 h-6 rounded text-amber-500 hover:text-amber-600 flex items-center justify-center"
+                          title={t.pos.itemDiscount || 'Discount'}
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => dispatch(removeFromCart(item.lineId))}
+                          className="w-6 h-6 rounded text-text-muted hover:text-error flex items-center justify-center"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -274,21 +311,69 @@ const POSPage: React.FC = () => {
             {/* Footer with totals and checkout */}
             {cart.length > 0 && (
               <div className="p-4 border-t border-border bg-gray-50">
-                {/* Discount if applies */}
-                {discountApplied > 0 && (
+                {itemDiscountTotal > 0 && (
                   <div className="flex items-center justify-between text-sm mb-2">
-                    <span className="text-green-600">Loyalty Discount ({selectedCustomer?.tier})</span>
-                    <span className="font-mono text-green-600">-${discountApplied.toFixed(2)}</span>
+                    <span className="text-green-600">Item Discounts</span>
+                    <span className="font-mono text-green-600">-${itemDiscountTotal.toFixed(2)}</span>
+                  </div>
+                )}
+                {appliedGlobalDiscount > 0 && (
+                  <div className="flex items-center justify-between text-sm mb-2">
+                    <span className={isLoyaltyGlobal ? 'text-blue-600' : 'text-green-600'}>
+                      {isLoyaltyGlobal ? `Loyalty (${selectedCustomer?.tier})` : 'Manual Discount'}
+                    </span>
+                    <span className={`font-mono ${isLoyaltyGlobal ? 'text-blue-600' : 'text-green-600'}`}>-${appliedGlobalDiscount.toFixed(2)}</span>
                   </div>
                 )}
                 <div className="flex items-center justify-between text-sm mb-2">
                   <span className="text-text-muted">{t.pos.subtotal}</span>
-                  <span className="font-mono text-text-primary">${rawSubtotal.toFixed(2)}</span>
+                  <span className="font-mono text-text-primary">${grossSubtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm mb-3">
                   <span className="text-text-muted">{taxLabel}</span>
                   <span className="font-mono text-text-muted">${tax.toFixed(2)}</span>
                 </div>
+
+                {manualDiscount === 0 && loyaltyPct === 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowDiscountModal(true)}
+                    className="w-full py-2 mb-3 bg-amber-50 border border-amber-200 text-amber-700 rounded-lg text-xs font-semibold hover:bg-amber-100 transition-colors"
+                  >
+                    {t.pos.manualDiscount || 'Apply Discount'}
+                  </button>
+                ) : (
+                  <div className="flex flex-col gap-2 mb-3">
+                    {manualDiscount > 0 && (
+                      <div className="flex items-center gap-2 p-2 bg-green-50 border border-green-200 rounded-lg">
+                        <svg className="w-4 h-4 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="text-xs text-green-700 flex-1">
+                          Authorized by {authorizedBy?.name}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => { setManualDiscount(0); setAuthorizedBy(null); }}
+                          className="text-xs text-green-600 hover:text-green-800 font-medium"
+                        >
+                          {t.common.cancel}
+                        </button>
+                      </div>
+                    )}
+                    {loyaltyPct > 0 && (
+                      <div className="flex items-center gap-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                        <svg className="w-4 h-4 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="text-xs text-blue-700 flex-1">
+                          Loyalty {((selectedCustomer?.tier || '') as string).charAt(0).toUpperCase() + ((selectedCustomer?.tier || '') as string).slice(1)}: {loyaltyPct * 100}%
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between mb-3">
                   <span className="font-bold text-text-primary">{t.pos.total}</span>
                   <span className="font-bold text-xl text-primary">${total.toFixed(2)}</span>
@@ -336,16 +421,47 @@ const POSPage: React.FC = () => {
         isOpen={isCheckoutOpen}
         onClose={() => setIsCheckoutOpen(false)}
         cart={cart}
-        subtotal={subtotal}
+        subtotal={grossSubtotal}
         tax={tax}
         total={total}
         paymentMethod={paymentMethod}
         orderNumber={orderNumber}
         customerId={selectedCustomerId ?? undefined}
-        discountApplied={discountApplied}
+        discountApplied={totalDiscount}
       />
 
       <CashBoxOpenModal isOpen={showCashBoxModal} closedBoxCount={closedBoxCount} onClose={() => setShowCashBoxModal(false)} />
+
+      <DiscountModal
+        isOpen={showDiscountModal}
+        onClose={() => setShowDiscountModal(false)}
+        onSuccess={(employee, discountAmount) => {
+          setAuthorizedBy(employee);
+          setManualDiscount(discountAmount);
+          setShowDiscountModal(false);
+        }}
+        subtotal={rawSubtotal}
+      />
+
+      <DiscountModal
+        isOpen={showItemDiscountModal}
+        onClose={() => setShowItemDiscountModal(false)}
+        onSuccess={(employee, discountAmount) => {
+          if (itemDiscountTarget) {
+            const item = cart.find(i => i.lineId === itemDiscountTarget);
+            const itemTotal = item ? item.product.price * item.quantity : 0;
+            const discountPct = itemTotal > 0 ? Math.round((discountAmount / itemTotal) * 10000) / 100 : 0;
+            setItemDiscounts(prev => ({ ...prev, [itemDiscountTarget]: discountPct }));
+          }
+          setAuthorizedBy(employee);
+          setShowItemDiscountModal(false);
+          setItemDiscountTarget(null);
+        }}
+        subtotal={(() => {
+          const item = cart.find(i => i.lineId === itemDiscountTarget);
+          return item ? item.product.price * item.quantity : 0;
+        })()}
+      />
 
       {showCloseBoxConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">

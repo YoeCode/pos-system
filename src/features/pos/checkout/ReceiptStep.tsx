@@ -95,6 +95,12 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, 
             <span className="text-text-muted">Subtotal</span>
             <span className="text-text-primary">${order.subtotal.toFixed(2)}</span>
           </div>
+          {order.discount > 0 && (
+            <div className="flex justify-between text-green-600">
+              <span>Discount</span>
+              <span>-${order.discount.toFixed(2)}</span>
+            </div>
+          )}
           <div className="flex justify-between">
             <span className="text-text-muted">{taxLabel}</span>
             <span className="text-text-muted">${order.tax.toFixed(2)}</span>
