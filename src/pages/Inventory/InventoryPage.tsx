@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { useAppSelector } from '../../app/store';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useAppDispatch, useAppSelector } from '../../app/store';
+import { selectProduct } from '../../features/products/productsSlice';
 import { useI18n } from '../../i18n/I18nProvider';
 import type { Product } from '../../types';
 
@@ -22,6 +23,8 @@ const getProductMinStock = (product: Product): number => {
 
 const InventoryPage: React.FC = () => {
   const t = useI18n();
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const [searchParams] = useSearchParams();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const products = useAppSelector(state => state.products.items);
@@ -73,6 +76,11 @@ const InventoryPage: React.FC = () => {
     setSelectedCategory(null);
   };
 
+  const handleProductClick = (product: Product) => {
+    dispatch(selectProduct(product));
+    navigate('/products');
+  };
+
   const renderCategoryProducts = () => (
     <div className="bg-white rounded-xl border border-border overflow-hidden">
       <table className="w-full">
@@ -91,7 +99,11 @@ const InventoryPage: React.FC = () => {
             const minStock = getProductMinStock(product);
             const hasSizes = product.sizes && product.sizes.length > 0;
             return (
-              <tr key={product.id} className="border-b border-border last:border-0">
+              <tr 
+                key={product.id} 
+                className="border-b border-border last:border-0 cursor-pointer hover:bg-gray-50 transition-colors"
+                onClick={() => handleProductClick(product)}
+              >
                 <td className="px-5 py-3">
                   <p className="text-sm font-medium text-text-primary">{product.name}</p>
                   {hasSizes && (
@@ -237,7 +249,11 @@ const InventoryPage: React.FC = () => {
                     const minStock = getProductMinStock(product);
                     const hasSizes = product.sizes && product.sizes.length > 0;
                     return (
-                      <tr key={product.id} className="border-b border-border last:border-0">
+                      <tr 
+                        key={product.id} 
+                        className="border-b border-border last:border-0 cursor-pointer hover:bg-gray-50 transition-colors"
+                        onClick={() => handleProductClick(product)}
+                      >
                         <td className="px-5 py-3">
                           <p className="text-sm font-medium text-text-primary">{product.name}</p>
                           {hasSizes && (
@@ -307,7 +323,11 @@ const InventoryPage: React.FC = () => {
                       const reorderQty = Math.max(10, minStock * 2 - stock);
                       const estimated = reorderQty * product.costPrice;
                       return (
-                        <tr key={product.id} className="border-b border-border last:border-0">
+                        <tr 
+                          key={product.id} 
+                          className="border-b border-border last:border-0 cursor-pointer hover:bg-gray-50 transition-colors"
+                          onClick={() => handleProductClick(product)}
+                        >
                           <td className="px-5 py-3">
                             <p className="text-sm font-medium text-text-primary">{product.name}</p>
                             <p className="text-xs text-text-muted">{product.sku}</p>
