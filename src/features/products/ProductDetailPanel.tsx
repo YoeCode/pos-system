@@ -27,6 +27,7 @@ const ProductDetailPanel: React.FC = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   const [form, setForm] = useState<FormState>({
     id: '',
@@ -44,9 +45,11 @@ const ProductDetailPanel: React.FC = () => {
     image: '',
   });
 
+  const [snapshot, setSnapshot] = useState<FormState | null>(null);
+
   useEffect(() => {
     if (product) {
-      setForm({
+      const data = {
         id: product.id,
         name: product.name,
         sku: product.sku,
@@ -60,7 +63,10 @@ const ProductDetailPanel: React.FC = () => {
         status: product.status,
         version: product.version ?? '',
         image: product.image ?? '',
-      });
+      };
+      setForm(data);
+      setSnapshot(data);
+      setIsEditing(false);
     }
   }, [product]);
 
@@ -110,162 +116,229 @@ const ProductDetailPanel: React.FC = () => {
       image: form.image || undefined,
     };
     dispatch(updateProduct(updated));
+    setIsEditing(false);
   };
+
+  const handleCancel = () => {
+    if (snapshot) setForm(snapshot);
+    setIsEditing(false);
+  };
+
+  const handleEdit = () => {
+    setSnapshot({ ...form });
+    setIsEditing(true);
+  };
+
+  const statusLabel = form.status === 'active' ? 'Active' : form.status === 'inactive' ? 'Inactive' : 'Draft';
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-y-auto bg-white rounded-xl border border-border">
-      {/* Header */}
       <div className="px-6 py-5 border-b border-border flex items-center justify-between">
         <h3 className="text-xl font-bold text-text-primary">Product Details</h3>
+        {isEditing ? (
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={handleCancel}>Cancel</Button>
+            <Button variant="primary" onClick={handleSave}>Save</Button>
+          </div>
+        ) : (
+          <button
+            onClick={handleEdit}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary border border-primary rounded-lg hover:bg-primary/5 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            Edit
+          </button>
+        )}
       </div>
 
-      {/* Content */}
       <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
-        {/* Image upload */}
         <div>
           <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Product Image</p>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={e => {
-              const file = e.target.files?.[0];
-              if (file) processFile(file);
-            }}
-          />
-          <div
-            onClick={() => fileInputRef.current?.click()}
-            onDrop={handleDrop}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            className={`border-2 border-dashed rounded-xl h-32 flex flex-col items-center justify-center gap-2 transition-colors cursor-pointer ${
-              isDragging
-                ? 'border-primary bg-primary/5 text-primary'
-                : 'border-border text-text-muted hover:border-primary hover:text-primary'
-            }`}
-          >
-            {form.image ? (
-              <div className="relative w-full h-full">
-                <img src={form.image} alt="Product" className="w-full h-full object-contain rounded-xl" />
-                <button
-                  type="button"
-                  onClick={e => {
-                    e.stopPropagation();
-                    setForm(prev => ({ ...prev, image: '' }));
-                  }}
-                  className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
-                >
-                  ✕
-                </button>
+          {isEditing ? (
+            <>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={e => {
+                  const file = e.target.files?.[0];
+                  if (file) processFile(file);
+                }}
+              />
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                onDrop={handleDrop}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                className={`border-2 border-dashed rounded-xl h-32 flex flex-col items-center justify-center gap-2 transition-colors cursor-pointer ${
+                  isDragging
+                    ? 'border-primary bg-primary/5 text-primary'
+                    : 'border-border text-text-muted hover:border-primary hover:text-primary'
+                }`}
+              >
+                {form.image ? (
+                  <div className="relative w-full h-full">
+                    <img src={form.image} alt="Product" className="w-full h-full object-contain rounded-xl" />
+                    <button
+                      type="button"
+                      onClick={e => {
+                        e.stopPropagation();
+                        setForm(prev => ({ ...prev, image: '' }));
+                      }}
+                      className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <p className="text-xs">Click or drag to upload</p>
+                  </>
+                )}
               </div>
+            </>
+          ) : form.image ? (
+            <div className="h-32 rounded-xl overflow-hidden bg-gray-100">
+              <img src={form.image} alt="Product" className="w-full h-full object-contain" />
+            </div>
+          ) : (
+            <div className="h-32 rounded-xl border border-border bg-gray-50 flex items-center justify-center text-text-muted">
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Product Name</label>
+          {isEditing ? (
+            <input
+              value={form.name}
+              onChange={e => setForm(prev => ({ ...prev, name: e.target.value }))}
+              className="w-full px-3 py-2.5 text-sm border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+            />
+          ) : (
+            <p className="text-sm text-text-primary py-2">{form.name}</p>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Description</label>
+          {isEditing ? (
+            <textarea
+              value={form.description}
+              onChange={e => setForm(prev => ({ ...prev, description: e.target.value }))}
+              rows={3}
+              className="w-full px-3 py-2.5 text-sm border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors resize-none"
+            />
+          ) : (
+            <p className="text-sm text-text-muted py-2">{form.description || '—'}</p>
+          )}
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">SKU</label>
+            {isEditing ? (
+              <input
+                value={form.sku}
+                onChange={e => setForm(prev => ({ ...prev, sku: e.target.value }))}
+                className="w-full px-3 py-2.5 text-sm border border-border rounded-lg text-text-primary font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+              />
             ) : (
-              <>
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                <p className="text-xs">Click or drag to upload</p>
-              </>
+              <p className="text-sm font-mono text-text-primary py-2">{form.sku}</p>
+            )}
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Category</label>
+            {isEditing ? (
+              <select
+                value={form.category}
+                onChange={e => setForm(prev => ({ ...prev, category: e.target.value }))}
+                className="w-full px-3 py-2.5 text-sm border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors bg-white"
+              >
+                {DEFAULT_CATEGORIES.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+            ) : (
+              <p className="text-sm text-text-primary py-2">{form.category}</p>
             )}
           </div>
         </div>
 
-        {/* Name */}
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Product Name</label>
-          <input
-            value={form.name}
-            onChange={e => setForm(prev => ({ ...prev, name: e.target.value }))}
-            className="w-full px-3 py-2.5 text-sm border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
-          />
-        </div>
-
-        {/* Description */}
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Description</label>
-          <textarea
-            value={form.description}
-            onChange={e => setForm(prev => ({ ...prev, description: e.target.value }))}
-            rows={3}
-            className="w-full px-3 py-2.5 text-sm border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors resize-none"
-          />
-        </div>
-
-        {/* SKU + Category */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">SKU</label>
-            <input
-              value={form.sku}
-              onChange={e => setForm(prev => ({ ...prev, sku: e.target.value }))}
-              className="w-full px-3 py-2.5 text-sm border border-border rounded-lg text-text-primary font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Category</label>
-            <select
-              value={form.category}
-              onChange={e => setForm(prev => ({ ...prev, category: e.target.value }))}
-              className="w-full px-3 py-2.5 text-sm border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors bg-white"
-            >
-              {DEFAULT_CATEGORIES.map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Prices */}
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Sale Price</label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-sm font-mono">$</span>
-              <input
-                type="number"
-                step="0.01"
-                value={form.price}
-                onChange={e => setForm(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
-                className="w-full pl-7 pr-3 py-2.5 text-sm border border-border rounded-lg text-text-primary font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
-              />
-            </div>
+            {isEditing ? (
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-sm font-mono">$</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={form.price}
+                  onChange={e => setForm(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
+                  className="w-full pl-7 pr-3 py-2.5 text-sm border border-border rounded-lg text-text-primary font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+                />
+              </div>
+            ) : (
+              <p className="text-sm font-mono text-text-primary py-2">${form.price.toFixed(2)}</p>
+            )}
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Cost Price</label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-sm font-mono">$</span>
-              <input
-                type="number"
-                step="0.01"
-                value={form.costPrice}
-                onChange={e => setForm(prev => ({ ...prev, costPrice: parseFloat(e.target.value) || 0 }))}
-                className="w-full pl-7 pr-3 py-2.5 text-sm border border-border rounded-lg text-text-primary font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
-              />
-            </div>
+            {isEditing ? (
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-sm font-mono">$</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={form.costPrice}
+                  onChange={e => setForm(prev => ({ ...prev, costPrice: parseFloat(e.target.value) || 0 }))}
+                  className="w-full pl-7 pr-3 py-2.5 text-sm border border-border rounded-lg text-text-primary font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+                />
+              </div>
+            ) : (
+              <p className="text-sm font-mono text-text-primary py-2">${form.costPrice.toFixed(2)}</p>
+            )}
           </div>
         </div>
 
-        {/* Stock */}
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Stock Level</label>
-            <input
-              type="number"
-              value={form.stock}
-              onChange={e => setForm(prev => ({ ...prev, stock: parseInt(e.target.value) || 0 }))}
-              className="w-full px-3 py-2.5 text-sm border border-border rounded-lg text-text-primary font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
-            />
+            {isEditing ? (
+              <input
+                type="number"
+                value={form.stock}
+                onChange={e => setForm(prev => ({ ...prev, stock: parseInt(e.target.value) || 0 }))}
+                className="w-full px-3 py-2.5 text-sm border border-border rounded-lg text-text-primary font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+              />
+            ) : (
+              <p className="text-sm font-mono text-text-primary py-2">{form.stock}</p>
+            )}
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Min. Stock</label>
-            <input
-              type="number"
-              min="0"
-              value={form.minStock}
-              onChange={e => setForm(prev => ({ ...prev, minStock: parseInt(e.target.value) || 0 }))}
-              className="w-full px-3 py-2.5 text-sm border border-border rounded-lg text-text-primary font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
-            />
+            {isEditing ? (
+              <input
+                type="number"
+                min="0"
+                value={form.minStock}
+                onChange={e => setForm(prev => ({ ...prev, minStock: parseInt(e.target.value) || 0 }))}
+                className="w-full px-3 py-2.5 text-sm border border-border rounded-lg text-text-primary font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+              />
+            ) : (
+              <p className="text-sm font-mono text-text-primary py-2">{form.minStock}</p>
+            )}
           </div>
         </div>
 
@@ -297,22 +370,40 @@ const ProductDetailPanel: React.FC = () => {
           </div>
         )}
 
-        {/* Toggle */}
-        <div className="p-3 rounded-lg border border-border bg-background">
-          <Toggle
-            checked={form.publishedOnline}
-            onChange={val => setForm(prev => ({ ...prev, publishedOnline: val }))}
-            label="Publish to online store"
-            description="Make this product visible in the online catalog"
-          />
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Status</label>
+          {isEditing ? (
+            <select
+              value={form.status}
+              onChange={e => setForm(prev => ({ ...prev, status: e.target.value as Product['status'] }))}
+              className="w-full px-3 py-2.5 text-sm border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors bg-white"
+            >
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+              <option value="draft">Draft</option>
+            </select>
+          ) : (
+            <p className="text-sm text-text-primary py-2">{statusLabel}</p>
+          )}
         </div>
-      </div>
 
-      {/* Footer */}
-      <div className="px-6 py-5 border-t border-border">
-        <Button variant="primary" fullWidth onClick={handleSave}>
-          Save Changes
-        </Button>
+        <div className="p-3 rounded-lg border border-border bg-background">
+          {isEditing ? (
+            <Toggle
+              checked={form.publishedOnline}
+              onChange={val => setForm(prev => ({ ...prev, publishedOnline: val }))}
+              label="Publish to online store"
+              description="Make this product visible in the online catalog"
+            />
+          ) : (
+            <div className="flex items-center gap-2">
+              <span className={`w-2 h-2 rounded-full ${form.publishedOnline ? 'bg-green-500' : 'bg-gray-400'}`} />
+              <span className="text-sm text-text-primary">
+                {form.publishedOnline ? 'Published to online store' : 'Not published'}
+              </span>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
