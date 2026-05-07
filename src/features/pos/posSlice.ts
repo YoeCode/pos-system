@@ -72,25 +72,33 @@ const posSlice = createSlice({
   name: 'pos',
   initialState,
   reducers: {
-    addToCart: (state, action: PayloadAction<Product>) => {
-      const existing = state.cart.find(item => item.product.id === action.payload.id);
+    addToCart: (state, action: PayloadAction<{ product: Product; size?: string }>) => {
+      const { product, size } = action.payload;
+      const existing = state.cart.find(item => item.product.id === product.id && item.selectedSize === size);
       if (existing) {
         existing.quantity += 1;
       } else {
-        state.cart.push({ product: action.payload, quantity: 1 });
+        state.cart.push({ product, quantity: 1, lineId: crypto.randomUUID(), selectedSize: size });
       }
     },
     removeFromCart: (state, action: PayloadAction<string>) => {
-      state.cart = state.cart.filter(item => item.product.id !== action.payload);
+      state.cart = state.cart.filter(item => item.lineId !== action.payload);
     },
-    updateQuantity: (state, action: PayloadAction<{ productId: string; quantity: number }>) => {
-      const item = state.cart.find(i => i.product.id === action.payload.productId);
+    updateQuantity: (state, action: PayloadAction<{ lineId: string; quantity: number }>) => {
+      const item = state.cart.find(i => i.lineId === action.payload.lineId);
       if (item) {
         if (action.payload.quantity <= 0) {
-          state.cart = state.cart.filter(i => i.product.id !== action.payload.productId);
+          state.cart = state.cart.filter(i => i.lineId !== action.payload.lineId);
         } else {
           item.quantity = action.payload.quantity;
         }
+      }
+    },
+    splitLine: (state, action: PayloadAction<string>) => {
+      const item = state.cart.find(i => i.lineId === action.payload);
+      if (item && item.quantity > 1) {
+        item.quantity -= 1;
+        state.cart.push({ product: item.product, quantity: 1, lineId: crypto.randomUUID() });
       }
     },
     clearCart: (state) => {
@@ -131,7 +139,7 @@ const posSlice = createSlice({
       if (existing) {
         existing.quantity += 1;
       } else {
-        state.cart.push({ product: customProduct, quantity: 1 });
+        state.cart.push({ product: customProduct, quantity: 1, lineId: crypto.randomUUID() });
       }
     },
     setCurrentEmployee: (state, action: PayloadAction<string | null>) => {
@@ -160,7 +168,7 @@ const posSlice = createSlice({
   },
 });
 
-export const { addToCart, removeFromCart, updateQuantity, clearCart, setPaymentMethod, setCategory, addCustomProductToCart, setSelectedCustomer, startNewSale, setSearchQuery, setCurrentEmployee, openCashBox, closeCashBox } = posSlice.actions;
+export const { addToCart, removeFromCart, updateQuantity, splitLine, clearCart, setPaymentMethod, setCategory, addCustomProductToCart, setSelectedCustomer, startNewSale, setSearchQuery, setCurrentEmployee, openCashBox, closeCashBox } = posSlice.actions;
 export default posSlice.reducer;
 
 export const selectIsCashBoxOpen = (state: RootState): boolean => state.pos.isCashBoxOpen;

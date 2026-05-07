@@ -136,6 +136,8 @@ export const en = {
     checkout: 'Checkout',
     payment: 'Payment',
     paymentMethod: 'Payment Method',
+    manualDiscount: 'Apply Discount',
+    itemDiscount: 'Discount',
     cash: 'Cash',
     card: 'Card',
     bizum: 'Bizum',
@@ -309,6 +311,22 @@ export const en = {
     clear: 'Clear',
     category: 'Category',
     loyalty: 'Loyalty Program',
+  },
+  pinAuth: {
+    title: 'Authorization Required',
+    description: 'Enter a supervisor or admin PIN to proceed',
+    enterPin: 'Authorization PIN',
+    authorize: 'Authorize',
+    invalidPin: 'Invalid PIN or insufficient permissions',
+  },
+  discount: {
+    percent: 'Percentage',
+    fixed: 'Fixed',
+    enterPercent: 'Discount percentage',
+    enterFixed: 'Discount amount (€)',
+    invalidAmount: 'Enter a valid amount',
+    maxPercent: 'Percentage cannot exceed 100%',
+    maxFixed: 'Discount cannot exceed subtotal',
   },
 };
 

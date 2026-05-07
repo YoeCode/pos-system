@@ -269,6 +269,34 @@ const ProductDetailPanel: React.FC = () => {
           </div>
         </div>
 
+        {product.sizes && product.sizes.length > 0 && (
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Stock by Size</label>
+            <div className="grid grid-cols-4 gap-2">
+              {product.sizes.map(sizeOption => {
+                const minStock = sizeOption.minStock ?? 0;
+                const isLow = sizeOption.stock <= minStock;
+                return (
+                  <div
+                    key={sizeOption.size}
+                    className={`p-3 rounded-lg border text-center ${
+                      isLow
+                        ? 'border-amber-200 bg-amber-50'
+                        : 'border-border bg-background'
+                    }`}
+                  >
+                    <p className="text-sm font-semibold text-text-primary">{sizeOption.size}</p>
+                    <p className={`text-lg font-mono font-bold mt-1 ${isLow ? 'text-amber-600' : 'text-text-primary'}`}>
+                      {sizeOption.stock}
+                    </p>
+                    <p className="text-xs text-text-muted mt-0.5">min: {minStock}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Toggle */}
         <div className="p-3 rounded-lg border border-border bg-background">
           <Toggle
