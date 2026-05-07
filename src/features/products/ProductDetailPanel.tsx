@@ -46,10 +46,17 @@ const ProductDetailPanel: React.FC = () => {
     image: '',
   });
 
+  const [sizeStocks, setSizeStocks] = useState<Record<string, number>>({});
+  const [sizeMinStocks, setSizeMinStocks] = useState<Record<string, number>>({});
+
   const [snapshot, setSnapshot] = useState<FormState | null>(null);
+  const [sizeSnapshot, setSizeSnapshot] = useState<Record<string, number> | null>(null);
   const [stockUnlocked, setStockUnlocked] = useState(false);
   const [authorizedBy, setAuthorizedBy] = useState<Employee | null>(null);
   const [showPinModal, setShowPinModal] = useState(false);
+
+  const hasSizes = product ? !!(product.sizes && product.sizes.length > 0) : false;
+  const totalSizeStock = hasSizes ? product!.sizes!.reduce((s, sz) => s + sz.stock, 0) : form.stock;
 
   useEffect(() => {
     if (product) {
@@ -70,7 +77,20 @@ const ProductDetailPanel: React.FC = () => {
       };
       setForm(data);
       setSnapshot(data);
+
+      const stocks: Record<string, number> = {};
+      const minStocks: Record<string, number> = {};
+      product.sizes?.forEach(sz => {
+        stocks[sz.size] = sz.stock;
+        minStocks[sz.size] = sz.minStock ?? 0;
+      });
+      setSizeStocks(stocks);
+      setSizeMinStocks(minStocks);
+      setSizeSnapshot({ ...stocks });
+
       setIsEditing(false);
+      setStockUnlocked(false);
+      setAuthorizedBy(null);
     }
   }, [product]);
 
@@ -104,6 +124,14 @@ const ProductDetailPanel: React.FC = () => {
   if (!product) return null;
 
   const handleSave = () => {
+    const updatedSizes = hasSizes
+      ? product.sizes!.map(sz => ({
+          ...sz,
+          stock: sizeStocks[sz.size] ?? sz.stock,
+          minStock: sizeMinStocks[sz.size] ?? sz.minStock ?? 0,
+        }))
+      : undefined;
+
     const updated: Product = {
       ...product,
       name: form.name,
@@ -111,13 +139,14 @@ const ProductDetailPanel: React.FC = () => {
       category: form.category,
       price: form.price,
       costPrice: form.costPrice,
-      stock: form.stock,
+      stock: hasSizes ? totalSizeStock : form.stock,
       minStock: form.minStock,
       description: form.description,
       publishedOnline: form.publishedOnline,
       status: form.status,
       version: form.version,
       image: form.image || undefined,
+      sizes: updatedSizes,
     };
     dispatch(updateProduct(updated));
     setIsEditing(false);
@@ -127,6 +156,7 @@ const ProductDetailPanel: React.FC = () => {
 
   const handleCancel = () => {
     if (snapshot) setForm(snapshot);
+    if (sizeSnapshot) setSizeStocks(sizeSnapshot);
     setIsEditing(false);
     setStockUnlocked(false);
     setAuthorizedBy(null);
@@ -134,6 +164,7 @@ const ProductDetailPanel: React.FC = () => {
 
   const handleEdit = () => {
     setSnapshot({ ...form });
+    setSizeSnapshot({ ...sizeStocks });
     setIsEditing(true);
     setStockUnlocked(false);
     setAuthorizedBy(null);
@@ -146,6 +177,8 @@ const ProductDetailPanel: React.FC = () => {
   };
 
   const statusLabel = form.status === 'active' ? 'Active' : form.status === 'inactive' ? 'Inactive' : 'Draft';
+
+  const stockLabel = hasSizes ? 'Total Stock (by size)' : 'Stock Level';
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-y-auto bg-white rounded-xl border border-border">
@@ -328,101 +361,153 @@ const ProductDetailPanel: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Stock Level</label>
-              {isEditing && !stockUnlocked && (
-                <button
-                  onClick={() => setShowPinModal(true)}
-                  className="flex items-center gap-1 text-xs text-amber-600 hover:text-amber-700 font-medium"
-                >
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        {hasSizes ? (
+          <>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">{stockLabel}</label>
+              <p className="text-lg font-mono font-bold text-text-primary py-2">{totalSizeStock}</p>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Stock by Size</label>
+                {isEditing && !stockUnlocked && (
+                  <button
+                    onClick={() => setShowPinModal(true)}
+                    className="flex items-center gap-1 text-xs text-amber-600 hover:text-amber-700 font-medium"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    Unlock
+                  </button>
+                )}
+              </div>
+              {authorizedBy && (
+                <p className="text-xs text-green-600 flex items-center gap-1">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  Unlock
-                </button>
+                  Authorized by {authorizedBy.name}
+                </p>
+              )}
+              <div className="grid grid-cols-4 gap-2">
+                {product.sizes!.map(sizeOption => {
+                  const minStock = sizeMinStocks[sizeOption.size] ?? sizeOption.minStock ?? 0;
+                  const currentStock = sizeStocks[sizeOption.size] ?? sizeOption.stock;
+                  const isLow = currentStock <= minStock;
+                  const isEditable = isEditing && stockUnlocked;
+
+                  return (
+                    <div
+                      key={sizeOption.size}
+                      className={`p-3 rounded-lg border text-center ${
+                        isLow
+                          ? 'border-amber-200 bg-amber-50'
+                          : 'border-border bg-background'
+                      }`}
+                    >
+                      <p className="text-sm font-semibold text-text-primary">{sizeOption.size}</p>
+                      {isEditable ? (
+                        <input
+                          type="number"
+                          min="0"
+                          value={currentStock}
+                          onChange={e => setSizeStocks(prev => ({ ...prev, [sizeOption.size]: parseInt(e.target.value) || 0 }))}
+                          className="w-full mt-1 px-2 py-1 text-center text-lg font-mono font-bold border border-primary rounded bg-white focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        />
+                      ) : (
+                        <p className={`text-lg font-mono font-bold mt-1 ${isLow ? 'text-amber-600' : 'text-text-primary'}`}>
+                          {currentStock}
+                        </p>
+                      )}
+                      {isEditable ? (
+                        <input
+                          type="number"
+                          min="0"
+                          value={minStock}
+                          onChange={e => setSizeMinStocks(prev => ({ ...prev, [sizeOption.size]: parseInt(e.target.value) || 0 }))}
+                          className="w-full mt-1 px-2 py-0.5 text-center text-xs font-mono border border-border rounded bg-white focus:outline-none focus:ring-1 focus:ring-primary/20"
+                          placeholder="min"
+                        />
+                      ) : (
+                        <p className="text-xs text-text-muted mt-0.5">min: {minStock}</p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">{stockLabel}</label>
+                {isEditing && !stockUnlocked && (
+                  <button
+                    onClick={() => setShowPinModal(true)}
+                    className="flex items-center gap-1 text-xs text-amber-600 hover:text-amber-700 font-medium"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    Unlock
+                  </button>
+                )}
+              </div>
+              {isEditing ? (
+                stockUnlocked ? (
+                  <div className="flex flex-col gap-1">
+                    <input
+                      type="number"
+                      value={form.stock}
+                      onChange={e => setForm(prev => ({ ...prev, stock: parseInt(e.target.value) || 0 }))}
+                      className="w-full px-3 py-2.5 text-sm border border-primary rounded-lg text-text-primary font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+                    />
+                    {authorizedBy && (
+                      <p className="text-xs text-green-600 flex items-center gap-1">
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Authorized by {authorizedBy.name}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="px-3 py-2.5 text-sm border border-border rounded-lg bg-gray-50 text-text-muted font-mono flex items-center gap-2">
+                    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    {form.stock}
+                  </div>
+                )
+              ) : (
+                <p className="text-sm font-mono text-text-primary py-2">{form.stock}</p>
               )}
             </div>
-            {isEditing ? (
-              stockUnlocked ? (
-                <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Min. Stock</label>
+              {isEditing ? (
+                stockUnlocked ? (
                   <input
                     type="number"
-                    value={form.stock}
-                    onChange={e => setForm(prev => ({ ...prev, stock: parseInt(e.target.value) || 0 }))}
+                    min="0"
+                    value={form.minStock}
+                    onChange={e => setForm(prev => ({ ...prev, minStock: parseInt(e.target.value) || 0 }))}
                     className="w-full px-3 py-2.5 text-sm border border-primary rounded-lg text-text-primary font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
                   />
-                  {authorizedBy && (
-                    <p className="text-xs text-green-600 flex items-center gap-1">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      Authorized by {authorizedBy.name}
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <div className="px-3 py-2.5 text-sm border border-border rounded-lg bg-gray-50 text-text-muted font-mono flex items-center gap-2">
-                  <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                  {form.stock}
-                </div>
-              )
-            ) : (
-              <p className="text-sm font-mono text-text-primary py-2">{form.stock}</p>
-            )}
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Min. Stock</label>
-            {isEditing ? (
-              stockUnlocked ? (
-                <input
-                  type="number"
-                  min="0"
-                  value={form.minStock}
-                  onChange={e => setForm(prev => ({ ...prev, minStock: parseInt(e.target.value) || 0 }))}
-                  className="w-full px-3 py-2.5 text-sm border border-primary rounded-lg text-text-primary font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
-                />
-              ) : (
-                <div className="px-3 py-2.5 text-sm border border-border rounded-lg bg-gray-50 text-text-muted font-mono flex items-center gap-2">
-                  <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                  {form.minStock}
-                </div>
-              )
-            ) : (
-              <p className="text-sm font-mono text-text-primary py-2">{form.minStock}</p>
-            )}
-          </div>
-        </div>
-
-        {product.sizes && product.sizes.length > 0 && (
-          <div className="flex flex-col gap-2">
-            <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Stock by Size</label>
-            <div className="grid grid-cols-4 gap-2">
-              {product.sizes.map(sizeOption => {
-                const minStock = sizeOption.minStock ?? 0;
-                const isLow = sizeOption.stock <= minStock;
-                return (
-                  <div
-                    key={sizeOption.size}
-                    className={`p-3 rounded-lg border text-center ${
-                      isLow
-                        ? 'border-amber-200 bg-amber-50'
-                        : 'border-border bg-background'
-                    }`}
-                  >
-                    <p className="text-sm font-semibold text-text-primary">{sizeOption.size}</p>
-                    <p className={`text-lg font-mono font-bold mt-1 ${isLow ? 'text-amber-600' : 'text-text-primary'}`}>
-                      {sizeOption.stock}
-                    </p>
-                    <p className="text-xs text-text-muted mt-0.5">min: {minStock}</p>
+                ) : (
+                  <div className="px-3 py-2.5 text-sm border border-border rounded-lg bg-gray-50 text-text-muted font-mono flex items-center gap-2">
+                    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    {form.minStock}
                   </div>
-                );
-              })}
+                )
+              ) : (
+                <p className="text-sm font-mono text-text-primary py-2">{form.minStock}</p>
+              )}
             </div>
           </div>
         )}
