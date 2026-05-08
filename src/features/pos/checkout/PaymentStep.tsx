@@ -4,7 +4,7 @@ import { completeSale } from '../../sales/salesSlice';
 import { reduceStock } from '../../products/productsSlice';
 import { selectTaxLabel, selectPointsPerEuro, selectLoyaltyTiers, selectMultiTerminalMode, selectTerminalId } from '../../settings/settingsSlice';
 import { addLoyaltyPoints } from '../../customers/customersSlice';
-import { clearCart } from '../posSlice';
+import { startNewSale } from '../posSlice';
 import { selectActiveEmployees } from '../../employees/employeesSlice';
 import type { CartItem, Order, PaymentMethod, Sale } from '../../../types';
 
@@ -101,7 +101,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
       dispatch(addLoyaltyPoints({ customerId, points: loyaltyPointsEarned, amountSpent: total, tiers }));
     }
 
-    dispatch(clearCart());
+    dispatch(startNewSale());
     onComplete(sale.id, loyaltyPointsEarned);
   };
 

@@ -33,6 +33,7 @@ const PosSettingsSection: React.FC = () => {
   const [enableManualProduct, setEnableManualProduct] = useState(reduxPos.enableManualProduct);
   const [multiTerminalMode, setMultiTerminalMode] = useState(reduxPos.multiTerminalMode);
   const [terminalId, setTerminalId] = useState(reduxPos.terminalId || '');
+  const [maxSaleWindows, setMaxSaleWindows] = useState(String(reduxPos.maxSaleWindows));
   const [savedFeedback, setSavedFeedback] = useState(false);
   const [showLogo, setShowLogo] = useState(reduxPos.ticketConfig?.showLogo ?? false);
   const [logoUrl, setLogoUrl] = useState(reduxPos.ticketConfig?.logoUrl || '');
@@ -51,6 +52,7 @@ const PosSettingsSection: React.FC = () => {
     setEnableManualProduct(reduxPos.enableManualProduct);
     setMultiTerminalMode(reduxPos.multiTerminalMode);
     setTerminalId(reduxPos.terminalId || '');
+    setMaxSaleWindows(String(reduxPos.maxSaleWindows));
     setShowLogo(reduxPos.ticketConfig?.showLogo ?? false);
     setLogoUrl(reduxPos.ticketConfig?.logoUrl || '');
     setShowEmployee(reduxPos.ticketConfig?.showEmployee ?? true);
@@ -65,7 +67,13 @@ const PosSettingsSection: React.FC = () => {
       ? `${t.settings.orderNumberSeed} must be an integer of 1 or more`
       : undefined;
 
-  const hasErrors = !!seedError;
+  const parsedMaxWindows = parseInt(maxSaleWindows, 10);
+  const maxWindowsError =
+    isNaN(parsedMaxWindows) || parsedMaxWindows < 1 || parsedMaxWindows > 20 || !Number.isInteger(parsedMaxWindows) || String(parsedMaxWindows) !== maxSaleWindows.trim()
+      ? `${t.settings.maxSaleWindows} must be an integer between 1 and 20`
+      : undefined;
+
+  const hasErrors = !!seedError || !!maxWindowsError;
 
   const isDirty =
     defaultPaymentMethod !== reduxPos.defaultPaymentMethod ||
@@ -75,6 +83,7 @@ const PosSettingsSection: React.FC = () => {
     orderNumberSeed !== String(reduxPos.orderNumberSeed) ||
     enableManualProduct !== reduxPos.enableManualProduct ||
     multiTerminalMode !== reduxPos.multiTerminalMode ||
+    maxSaleWindows !== String(reduxPos.maxSaleWindows) ||
     (multiTerminalMode && terminalId !== reduxPos.terminalId) ||
     showLogo !== (reduxPos.ticketConfig?.showLogo ?? false) ||
     logoUrl !== (reduxPos.ticketConfig?.logoUrl || '') ||
@@ -113,6 +122,7 @@ const PosSettingsSection: React.FC = () => {
         orderNumberSeed: parsedSeed,
         enableManualProduct,
         multiTerminalMode,
+        maxSaleWindows: parsedMaxWindows,
         terminalId: multiTerminalMode ? terminalId.trim() || undefined : undefined,
         ticketConfig: {
           showLogo,
@@ -191,6 +201,18 @@ const PosSettingsSection: React.FC = () => {
           onChange={e => setOrderNumberSeed(e.target.value)}
           error={seedError}
           placeholder="1042"
+        />
+
+        <Input
+          label={t.settings.maxSaleWindows}
+          type="number"
+          min={1}
+          max={20}
+          step={1}
+          value={maxSaleWindows}
+          onChange={e => setMaxSaleWindows(e.target.value)}
+          error={maxWindowsError}
+          placeholder="5"
         />
 
         <Toggle

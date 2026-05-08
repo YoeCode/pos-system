@@ -55,6 +55,7 @@ const defaultPosSettings: PosSettings = {
     customHeader: undefined,
     customFooter: undefined,
   },
+  maxSaleWindows: 5,
 };
 
 const defaultLanguageSettings: LanguageSettings = {
@@ -240,6 +241,7 @@ export const selectEnableManualProduct = (state: RootState): boolean => state.se
 export const selectMultiTerminalMode = (state: RootState): boolean => state.settings.pos.multiTerminalMode;
 export const selectTerminalId = (state: RootState): string | undefined => state.settings.pos.terminalId;
 export const selectTicketConfig = (state: RootState): TicketConfig => state.settings.pos.ticketConfig;
+export const selectMaxSaleWindows = (state: RootState): number => state.settings.pos.maxSaleWindows;
 
 // ─── Cross-slice Composed Selector ────────────────────────────────────────────
 // Uses type-only import of RootState to avoid circular runtime dependency.

@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/store';
-import { removeFromCart, setPaymentMethod, updateQuantity, splitLine, startNewSale } from './posSlice';
+import {
+  removeFromCart, setPaymentMethod, updateQuantity, splitLine, startNewSale,
+  selectActiveWindowCart, selectActiveWindowPaymentMethod, selectActiveWindowCustomerId,
+  selectActiveWindowItemDiscounts, selectActiveWindowManualDiscount,
+  setWindowItemDiscounts, setWindowManualDiscount,
+} from './posSlice';
 import {
   selectTaxRate,
   selectTaxLabel,
@@ -18,7 +23,11 @@ import type { PaymentMethod } from '../../types';
 
 const Cart: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { cart, paymentMethod, selectedCustomerId } = useAppSelector(state => state.pos);
+  const cart = useAppSelector(selectActiveWindowCart);
+  const paymentMethod = useAppSelector(selectActiveWindowPaymentMethod);
+  const selectedCustomerId = useAppSelector(selectActiveWindowCustomerId);
+  const itemDiscounts = useAppSelector(selectActiveWindowItemDiscounts);
+  const manualDiscount = useAppSelector(selectActiveWindowManualDiscount);
   const orderNumber = useAppSelector(selectFormattedOrderNumber);
   const taxRate = useAppSelector(selectTaxRate);
   const taxIncludedInPrice = useAppSelector(selectTaxIncludedInPrice);
@@ -30,7 +39,6 @@ const Cart: React.FC = () => {
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [showItemDiscountModal, setShowItemDiscountModal] = useState(false);
   const [itemDiscountTarget, setItemDiscountTarget] = useState<string | null>(null);
-  const [itemDiscounts, setItemDiscounts] = useState<Record<string, number>>({});
   const t = useI18n();
 
   const tierConfig = tiers.find(t => t.tier === selectedCustomer?.tier);
@@ -40,6 +48,7 @@ const Cart: React.FC = () => {
     taxIncludedInPrice,
     itemDiscounts,
     loyaltyTierConfig: selectedCustomer && tierConfig ? tierConfig : undefined,
+    manualDiscount,
   });
 
   const { grossSubtotal, totalDiscount, tax, total } = calc;
@@ -241,7 +250,7 @@ const Cart: React.FC = () => {
             const item = cart.find(i => i.lineId === itemDiscountTarget);
             const itemTotal = item ? item.product.price * item.quantity : 0;
             const discountPct = itemTotal > 0 ? Math.round((discountAmount / itemTotal) * 10000) / 100 : 0;
-            setItemDiscounts(prev => ({ ...prev, [itemDiscountTarget]: discountPct }));
+            dispatch(setWindowItemDiscounts({ ...itemDiscounts, [itemDiscountTarget]: discountPct }));
           }
           setShowItemDiscountModal(false);
           setItemDiscountTarget(null);

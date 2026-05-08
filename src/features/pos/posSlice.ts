@@ -1,9 +1,11 @@
 import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import type { CartItem, PaymentMethod, Product } from '../../types';
+import type { CartItem, PaymentMethod, Product, SaleWindow } from '../../types';
 import type { RootState } from '../../app/store';
 
 const CASH_BOX_KEY = 'nexopos_cash_box';
+const WINDOWS_KEY = 'nexopos_sale_windows';
+const WINDOWS_TTL_HOURS = 24;
 
 interface CashBoxState {
   isOpen: boolean;
@@ -28,7 +30,7 @@ const loadCashBoxFromStorage = (): CashBoxState => {
         }
       }
     }
-  } catch { /* localStorage unavailable */ }
+  } catch { return { isOpen: false, employeeIds: [], openDate: null }; }
   return { isOpen: false, employeeIds: [], openDate: null };
 };
 
@@ -39,16 +41,77 @@ const saveCashBoxToStorage = (state: CashBoxState): void => {
     } else {
       localStorage.removeItem(CASH_BOX_KEY);
     }
-  } catch { /* localStorage unavailable */ }
+  } catch {}
+};
+
+interface StoredWindows {
+  windows: SaleWindow[];
+  activeWindowId: string | null;
+  nextWindowNumber: number;
+  savedAt: string;
+}
+
+const loadWindowsFromStorage = (): { windows: SaleWindow[]; activeWindowId: string | null; nextWindowNumber: number } => {
+  try {
+    const stored = localStorage.getItem(WINDOWS_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored) as StoredWindows;
+      const savedAt = new Date(parsed.savedAt);
+      const now = new Date();
+      const hoursDiff = (now.getTime() - savedAt.getTime()) / (1000 * 60 * 60);
+      if (hoursDiff < WINDOWS_TTL_HOURS && parsed.windows && parsed.windows.length > 0) {
+        return {
+          windows: parsed.windows,
+          activeWindowId: parsed.activeWindowId,
+          nextWindowNumber: parsed.nextWindowNumber,
+        };
+      }
+    }
+  } catch {}
+  return { windows: [], activeWindowId: null, nextWindowNumber: 1 };
+};
+
+const saveWindowsToStorage = (state: { windows: SaleWindow[]; activeWindowId: string | null; nextWindowNumber: number }): void => {
+  try {
+    if (state.windows.length > 0) {
+      const toStore: StoredWindows = {
+        windows: state.windows,
+        activeWindowId: state.activeWindowId,
+        nextWindowNumber: state.nextWindowNumber,
+        savedAt: new Date().toISOString(),
+      };
+      localStorage.setItem(WINDOWS_KEY, JSON.stringify(toStore));
+    } else {
+      localStorage.removeItem(WINDOWS_KEY);
+    }
+  } catch {}
 };
 
 const storedCashBox = loadCashBoxFromStorage();
+const storedWindows = loadWindowsFromStorage();
+
+const createDefaultWindow = (num: number): SaleWindow => ({
+  id: crypto.randomUUID(),
+  name: `Venta ${num}`,
+  cart: [],
+  selectedCustomerId: null,
+  paymentMethod: 'cash',
+  itemDiscounts: {},
+  manualDiscount: 0,
+  createdAt: new Date().toISOString(),
+});
+
+const initialWindows = storedWindows.windows.length > 0
+  ? storedWindows.windows
+  : [createDefaultWindow(1)];
+
+const initialActiveWindowId = storedWindows.activeWindowId ?? initialWindows[0].id;
 
 interface PosState {
-  cart: CartItem[];
-  paymentMethod: PaymentMethod;
+  windows: SaleWindow[];
+  activeWindowId: string | null;
+  nextWindowNumber: number;
   selectedCategory: string;
-  selectedCustomerId: string | null;
   searchQuery: string;
   currentEmployeeId: string | null;
   isCashBoxOpen: boolean;
@@ -57,10 +120,10 @@ interface PosState {
 }
 
 const initialState: PosState = {
-  cart: [],
-  paymentMethod: 'cash',
+  windows: initialWindows,
+  activeWindowId: initialActiveWindowId,
+  nextWindowNumber: storedWindows.windows.length > 0 ? storedWindows.nextWindowNumber : 2,
   selectedCategory: 'All Items',
-  selectedCustomerId: null,
   searchQuery: '',
   currentEmployeeId: null,
   isCashBoxOpen: storedCashBox.isOpen,
@@ -68,57 +131,109 @@ const initialState: PosState = {
   cashBoxOpenTime: storedCashBox.openDate,
 };
 
+const getActiveWindow = (state: PosState): SaleWindow | undefined => {
+  if (!state.activeWindowId) return undefined;
+  return state.windows.find(w => w.id === state.activeWindowId);
+};
+
+const updateActiveWindow = (state: PosState, updater: (window: SaleWindow) => void): void => {
+  const window = getActiveWindow(state);
+  if (window) {
+    updater(window);
+    saveWindowsToStorage({ windows: state.windows, activeWindowId: state.activeWindowId, nextWindowNumber: state.nextWindowNumber });
+  }
+};
+
 const posSlice = createSlice({
   name: 'pos',
   initialState,
   reducers: {
+    createWindow: (state) => {
+      const newWindow = createDefaultWindow(state.nextWindowNumber);
+      state.windows.push(newWindow);
+      state.activeWindowId = newWindow.id;
+      state.nextWindowNumber += 1;
+      saveWindowsToStorage({ windows: state.windows, activeWindowId: state.activeWindowId, nextWindowNumber: state.nextWindowNumber });
+    },
+    closeWindow: (state, action: PayloadAction<string>) => {
+      const windowId = action.payload;
+      state.windows = state.windows.filter(w => w.id !== windowId);
+      if (state.activeWindowId === windowId) {
+        state.activeWindowId = state.windows.length > 0 ? state.windows[state.windows.length - 1].id : null;
+      }
+      if (state.windows.length === 0) {
+        const newWindow = createDefaultWindow(state.nextWindowNumber);
+        state.windows.push(newWindow);
+        state.activeWindowId = newWindow.id;
+        state.nextWindowNumber += 1;
+      }
+      saveWindowsToStorage({ windows: state.windows, activeWindowId: state.activeWindowId, nextWindowNumber: state.nextWindowNumber });
+    },
+    setActiveWindow: (state, action: PayloadAction<string>) => {
+      if (state.windows.find(w => w.id === action.payload)) {
+        state.activeWindowId = action.payload;
+        saveWindowsToStorage({ windows: state.windows, activeWindowId: state.activeWindowId, nextWindowNumber: state.nextWindowNumber });
+      }
+    },
     addToCart: (state, action: PayloadAction<{ product: Product; size?: string }>) => {
       const { product, size } = action.payload;
-      const existing = state.cart.find(item => item.product.id === product.id && item.selectedSize === size);
-      if (existing) {
-        existing.quantity += 1;
-      } else {
-        state.cart.push({ product, quantity: 1, lineId: crypto.randomUUID(), selectedSize: size });
-      }
+      updateActiveWindow(state, (window) => {
+        const existing = window.cart.find(item => item.product.id === product.id && item.selectedSize === size);
+        if (existing) {
+          existing.quantity += 1;
+        } else {
+          window.cart.push({ product, quantity: 1, lineId: crypto.randomUUID(), selectedSize: size });
+        }
+      });
     },
     removeFromCart: (state, action: PayloadAction<string>) => {
-      state.cart = state.cart.filter(item => item.lineId !== action.payload);
+      updateActiveWindow(state, (window) => {
+        window.cart = window.cart.filter(item => item.lineId !== action.payload);
+      });
     },
     updateQuantity: (state, action: PayloadAction<{ lineId: string; quantity: number }>) => {
-      const item = state.cart.find(i => i.lineId === action.payload.lineId);
-      if (item) {
-        if (action.payload.quantity <= 0) {
-          state.cart = state.cart.filter(i => i.lineId !== action.payload.lineId);
-        } else {
-          item.quantity = action.payload.quantity;
+      updateActiveWindow(state, (window) => {
+        const item = window.cart.find(i => i.lineId === action.payload.lineId);
+        if (item) {
+          if (action.payload.quantity <= 0) {
+            window.cart = window.cart.filter(i => i.lineId !== action.payload.lineId);
+          } else {
+            item.quantity = action.payload.quantity;
+          }
         }
-      }
+      });
     },
     splitLine: (state, action: PayloadAction<string>) => {
-      const item = state.cart.find(i => i.lineId === action.payload);
-      if (item && item.quantity > 1) {
-        item.quantity -= 1;
-        state.cart.push({ product: item.product, quantity: 1, lineId: crypto.randomUUID() });
-      }
+      updateActiveWindow(state, (window) => {
+        const item = window.cart.find(i => i.lineId === action.payload);
+        if (item && item.quantity > 1) {
+          item.quantity -= 1;
+          window.cart.push({ product: item.product, quantity: 1, lineId: crypto.randomUUID() });
+        }
+      });
     },
     clearCart: (state) => {
-      state.cart = [];
+      updateActiveWindow(state, (window) => {
+        window.cart = [];
+      });
     },
     setPaymentMethod: (state, action: PayloadAction<PaymentMethod>) => {
-      state.paymentMethod = action.payload;
-    },
-    setCategory: (state, action: PayloadAction<string>) => {
-      state.selectedCategory = action.payload;
+      updateActiveWindow(state, (window) => {
+        window.paymentMethod = action.payload;
+      });
     },
     setSelectedCustomer: (state, action: PayloadAction<string | null>) => {
-      state.selectedCustomerId = action.payload;
-    },
-    setSearchQuery: (state, action: PayloadAction<string>) => {
-      state.searchQuery = action.payload;
+      updateActiveWindow(state, (window) => {
+        window.selectedCustomerId = action.payload;
+      });
     },
     startNewSale: (state) => {
-      state.cart = [];
-      state.selectedCustomerId = null;
+      updateActiveWindow(state, (window) => {
+        window.cart = [];
+        window.selectedCustomerId = null;
+        window.itemDiscounts = {};
+        window.manualDiscount = 0;
+      });
     },
     addCustomProductToCart: (state, action: PayloadAction<{ name: string; category: string; brand?: string; price: number }>) => {
       const { name, category, brand, price } = action.payload;
@@ -135,12 +250,30 @@ const posSlice = createSlice({
         status: 'active',
         publishedOnline: false,
       };
-      const existing = state.cart.find(item => item.product.id === customProduct.id);
-      if (existing) {
-        existing.quantity += 1;
-      } else {
-        state.cart.push({ product: customProduct, quantity: 1, lineId: crypto.randomUUID() });
-      }
+      updateActiveWindow(state, (window) => {
+        const existing = window.cart.find(item => item.product.id === customProduct.id);
+        if (existing) {
+          existing.quantity += 1;
+        } else {
+          window.cart.push({ product: customProduct, quantity: 1, lineId: crypto.randomUUID() });
+        }
+      });
+    },
+    setWindowItemDiscounts: (state, action: PayloadAction<Record<string, number>>) => {
+      updateActiveWindow(state, (window) => {
+        window.itemDiscounts = action.payload;
+      });
+    },
+    setWindowManualDiscount: (state, action: PayloadAction<number>) => {
+      updateActiveWindow(state, (window) => {
+        window.manualDiscount = action.payload;
+      });
+    },
+    setCategory: (state, action: PayloadAction<string>) => {
+      state.selectedCategory = action.payload;
+    },
+    setSearchQuery: (state, action: PayloadAction<string>) => {
+      state.searchQuery = action.payload;
     },
     setCurrentEmployee: (state, action: PayloadAction<string | null>) => {
       state.currentEmployeeId = action.payload;
@@ -180,18 +313,62 @@ const posSlice = createSlice({
       state.isCashBoxOpen = false;
       state.cashBoxEmployeeIds = [];
       state.cashBoxOpenTime = null;
+      state.currentEmployeeId = null;
+      const newWindow = createDefaultWindow(1);
+      state.windows = [newWindow];
+      state.activeWindowId = newWindow.id;
+      state.nextWindowNumber = 2;
       saveCashBoxToStorage({
         isOpen: false,
         employeeIds: [],
         openDate: null,
       });
+      saveWindowsToStorage({ windows: state.windows, activeWindowId: state.activeWindowId, nextWindowNumber: state.nextWindowNumber });
     },
   },
 });
 
-export const { addToCart, removeFromCart, updateQuantity, splitLine, clearCart, setPaymentMethod, setCategory, addCustomProductToCart, setSelectedCustomer, startNewSale, setSearchQuery, setCurrentEmployee, openCashBox, addCashBoxEmployee, removeCashBoxEmployee, closeCashBox } = posSlice.actions;
+export const {
+  addToCart, removeFromCart, updateQuantity, splitLine, clearCart,
+  setPaymentMethod, setCategory, addCustomProductToCart, setSelectedCustomer,
+  startNewSale, setSearchQuery, setCurrentEmployee, openCashBox,
+  addCashBoxEmployee, removeCashBoxEmployee, closeCashBox,
+  createWindow, closeWindow, setActiveWindow,
+  setWindowItemDiscounts, setWindowManualDiscount,
+} = posSlice.actions;
 export default posSlice.reducer;
 
 export const selectIsCashBoxOpen = (state: RootState): boolean => state.pos.isCashBoxOpen;
 export const selectCashBoxEmployeeIds = (state: RootState): string[] => state.pos.cashBoxEmployeeIds;
 export const selectWorkingEmployees = (state: RootState): string[] => state.pos.cashBoxEmployeeIds;
+
+export const selectWindows = (state: RootState): SaleWindow[] => state.pos.windows;
+export const selectActiveWindowId = (state: RootState): string | null => state.pos.activeWindowId;
+export const selectActiveWindow = (state: RootState): SaleWindow | undefined => {
+  if (!state.pos.activeWindowId) return undefined;
+  return state.pos.windows.find(w => w.id === state.pos.activeWindowId);
+};
+export const selectActiveWindowCart = (state: RootState): CartItem[] => {
+  const window = selectActiveWindow(state);
+  return window?.cart ?? [];
+};
+export const selectActiveWindowPaymentMethod = (state: RootState): PaymentMethod => {
+  const window = selectActiveWindow(state);
+  return window?.paymentMethod ?? 'cash';
+};
+export const selectActiveWindowCustomerId = (state: RootState): string | null => {
+  const window = selectActiveWindow(state);
+  return window?.selectedCustomerId ?? null;
+};
+export const selectActiveWindowItemDiscounts = (state: RootState): Record<string, number> => {
+  const window = selectActiveWindow(state);
+  return window?.itemDiscounts ?? {};
+};
+export const selectActiveWindowManualDiscount = (state: RootState): number => {
+  const window = selectActiveWindow(state);
+  return window?.manualDiscount ?? 0;
+};
+export const selectCanCreateWindow = (state: RootState): boolean => {
+  const max = state.settings.pos.maxSaleWindows;
+  return state.pos.windows.length < max;
+};

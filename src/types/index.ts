@@ -163,6 +163,18 @@ export interface PosSettings {
   multiTerminalMode: boolean;
   terminalId?: string;
   ticketConfig: TicketConfig;
+  maxSaleWindows: number;
+}
+
+export interface SaleWindow {
+  id: string;
+  name: string;
+  cart: CartItem[];
+  selectedCustomerId: string | null;
+  paymentMethod: PaymentMethod;
+  itemDiscounts: Record<string, number>;
+  manualDiscount: number;
+  createdAt: string;
 }
 
 export interface TicketConfig {

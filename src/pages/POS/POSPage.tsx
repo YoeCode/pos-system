@@ -10,9 +10,16 @@ import SearchInput from '../../features/pos/SearchInput';
 import EmployeeSelector from '../../features/pos/EmployeeSelector';
 import CashBoxOpenModal from '../../features/pos/CashBoxOpenModal';
 import AddEmployeeToCashBoxModal from '../../features/pos/AddEmployeeToCashBoxModal';
+import SaleWindowsTabs from '../../features/pos/SaleWindowsTabs';
 import DiscountModal from '../../features/pos/DiscountModal';
 import { useI18n } from '../../i18n/I18nProvider';
-import { addCustomProductToCart, updateQuantity, removeFromCart, splitLine, setPaymentMethod, startNewSale, selectIsCashBoxOpen, closeCashBox } from '../../features/pos/posSlice';
+import {
+  addCustomProductToCart, updateQuantity, removeFromCart, splitLine, setPaymentMethod,
+  startNewSale, selectIsCashBoxOpen, closeCashBox,
+  selectActiveWindowCart, selectActiveWindowPaymentMethod, selectActiveWindowCustomerId,
+  selectActiveWindowItemDiscounts, selectActiveWindowManualDiscount,
+  setWindowItemDiscounts, setWindowManualDiscount,
+} from '../../features/pos/posSlice';
 import { selectEnableManualProduct, selectFormattedOrderNumber, selectTaxRate, selectTaxLabel, selectTaxIncludedInPrice, selectLoyaltyTiers } from '../../features/settings/settingsSlice';
 import { selectCustomerById } from '../../features/customers/customersSlice';
 import { calculateCart } from '../../features/pos/calculation';
@@ -21,7 +28,12 @@ import type { PaymentMethod, Employee } from '../../types';
 
 const POSPage: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { selectedCategory, cart, paymentMethod, selectedCustomerId, searchQuery } = useAppSelector(state => state.pos);
+  const { selectedCategory, searchQuery } = useAppSelector(state => state.pos);
+  const cart = useAppSelector(selectActiveWindowCart);
+  const paymentMethod = useAppSelector(selectActiveWindowPaymentMethod);
+  const selectedCustomerId = useAppSelector(selectActiveWindowCustomerId);
+  const itemDiscounts = useAppSelector(selectActiveWindowItemDiscounts);
+  const manualDiscount = useAppSelector(selectActiveWindowManualDiscount);
   const products = useAppSelector(state => state.products.items);
   const enableManualProduct = useAppSelector(selectEnableManualProduct);
   const orderNumber = useAppSelector(selectFormattedOrderNumber);
@@ -45,8 +57,6 @@ const POSPage: React.FC = () => {
   const [showItemDiscountModal, setShowItemDiscountModal] = useState(false);
   const [showAddEmployeeModal, setShowAddEmployeeModal] = useState(false);
   const [itemDiscountTarget, setItemDiscountTarget] = useState<string | null>(null);
-  const [manualDiscount, setManualDiscount] = useState(0);
-  const [itemDiscounts, setItemDiscounts] = useState<Record<string, number>>({});
   const [authorizedBy, setAuthorizedBy] = useState<Employee | null>(null);
 
   const filtered = selectedCategory === 'All Items'
@@ -139,6 +149,9 @@ const POSPage: React.FC = () => {
           </div>
           {isCashBoxOpen && (
             <>
+              <div className="mb-3">
+                <SaleWindowsTabs />
+              </div>
               <div className="flex items-center justify-between gap-2 mb-3">
                 <div className="flex-1 min-w-0">
                   <CategoryPills />
@@ -370,7 +383,7 @@ const POSPage: React.FC = () => {
                         </span>
                         <button
                           type="button"
-                          onClick={() => { setManualDiscount(0); setAuthorizedBy(null); }}
+                          onClick={() => { dispatch(setWindowManualDiscount(0)); setAuthorizedBy(null); }}
                           className="text-xs text-green-600 hover:text-green-800 font-medium"
                         >
                           {t.common.cancel}
@@ -455,7 +468,7 @@ const POSPage: React.FC = () => {
         onClose={() => setShowDiscountModal(false)}
         onSuccess={(employee, discountAmount) => {
           setAuthorizedBy(employee);
-          setManualDiscount(discountAmount);
+          dispatch(setWindowManualDiscount(discountAmount));
           setShowDiscountModal(false);
         }}
         subtotal={rawSubtotal}
@@ -469,7 +482,7 @@ const POSPage: React.FC = () => {
             const item = cart.find(i => i.lineId === itemDiscountTarget);
             const itemTotal = item ? item.product.price * item.quantity : 0;
             const discountPct = itemTotal > 0 ? Math.round((discountAmount / itemTotal) * 10000) / 100 : 0;
-            setItemDiscounts(prev => ({ ...prev, [itemDiscountTarget]: discountPct }));
+            dispatch(setWindowItemDiscounts({ ...itemDiscounts, [itemDiscountTarget]: discountPct }));
           }
           setAuthorizedBy(employee);
           setShowItemDiscountModal(false);
