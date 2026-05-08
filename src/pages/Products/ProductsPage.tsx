@@ -5,6 +5,7 @@ import ProductsTable from '../../features/products/ProductsTable';
 import ProductDetailPanel from '../../features/products/ProductDetailPanel';
 import ProductCreateModal from '../../features/products/ProductCreateModal';
 import Button from '../../components/ui/Button';
+import { usePermission } from '../../hooks/usePermission';
 import { useI18n } from '../../i18n/I18nProvider';
 
 const CATEGORIES = ['All', 'Electronics', 'Food', 'Drinks', 'Apparel', 'Bakery', 'Merchandise'];
@@ -15,6 +16,7 @@ const ProductsPage: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
+  const { hasPermission } = usePermission();
   const t = useI18n();
 
   const handleCloseProduct = () => {
@@ -65,12 +67,14 @@ return (
                 <h1 className="text-xl font-bold text-text-primary">{t.products.title}</h1>
                 <p className="text-sm text-text-muted mt-0.5">{t.products.title}</p>
               </div>
-              <Button variant="primary" size="sm" onClick={() => setIsCreateModalOpen(true)}>
-                <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                {t.products.addProduct}
-              </Button>
+              {hasPermission('product:create') && (
+                <Button variant="primary" size="sm" onClick={() => setIsCreateModalOpen(true)}>
+                  <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  {t.products.addProduct}
+                </Button>
+              )}
             </div>
 
             <div className="flex items-center gap-3">

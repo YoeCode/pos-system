@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/store';
 import { updateProduct, DEFAULT_CATEGORIES } from './productsSlice';
+import { usePermission } from '../../hooks/usePermission';
 import type { Product, Employee } from '../../types';
 import Toggle from '../../components/ui/Toggle';
 import Button from '../../components/ui/Button';
@@ -25,6 +26,7 @@ interface FormState {
 const ProductDetailPanel: React.FC = () => {
   const dispatch = useAppDispatch();
   const product = useAppSelector(state => state.products.selectedProduct);
+  const { hasPermission } = usePermission();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -200,13 +202,16 @@ const ProductDetailPanel: React.FC = () => {
         {isEditing ? (
           <div className="flex gap-2">
             <Button variant="secondary" onClick={handleCancel}>Cancel</Button>
-            <Button variant="primary" onClick={handleSave}>Save</Button>
+            {hasPermission('product:edit') && (
+              <Button variant="primary" onClick={handleSave}>Save</Button>
+            )}
           </div>
         ) : (
-          <button
-            onClick={handleEdit}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary border border-primary rounded-lg hover:bg-primary/5 transition-colors"
-          >
+          hasPermission('product:edit') && (
+            <button
+              onClick={handleEdit}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary border border-primary rounded-lg hover:bg-primary/5 transition-colors"
+            >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>

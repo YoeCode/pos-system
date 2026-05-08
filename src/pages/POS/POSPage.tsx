@@ -25,6 +25,7 @@ import { selectEnableManualProduct, selectFormattedOrderNumber, selectTaxRate, s
 import { selectCustomerById } from '../../features/customers/customersSlice';
 import { calculateCart } from '../../features/pos/calculation';
 import Fuse from 'fuse.js';
+import { usePermission } from '../../hooks/usePermission';
 import type { PaymentMethod, Employee } from '../../types';
 
 const POSPage: React.FC = () => {
@@ -60,6 +61,7 @@ const POSPage: React.FC = () => {
   const [showRefundModal, setShowRefundModal] = useState(false);
   const [itemDiscountTarget, setItemDiscountTarget] = useState<string | null>(null);
   const [authorizedBy, setAuthorizedBy] = useState<Employee | null>(null);
+  const { hasPermission } = usePermission();
 
   const filtered = selectedCategory === 'All Items'
     ? products
@@ -116,45 +118,53 @@ const POSPage: React.FC = () => {
               <>
                 <EmployeeSelector />
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setShowAddEmployeeModal(true)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 border border-blue-200 rounded-full hover:bg-blue-50 transition-colors"
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                    </svg>
-                    Añadir vendedor
-                  </button>
-                  <button
-                    onClick={() => setShowRefundModal(true)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-600 border border-amber-200 rounded-full hover:bg-amber-50 transition-colors"
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                    </svg>
-                    Devolución
-                  </button>
-                  <button
-                    onClick={() => setShowCashBoxCloseModal(true)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 border border-red-200 rounded-full hover:bg-red-50 transition-colors"
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m0 0v2m0-2h2m-2 0H8m13-6a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Cerrar caja
-                  </button>
+                  {hasPermission('cashbox:add_employee') && (
+                    <button
+                      onClick={() => setShowAddEmployeeModal(true)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 border border-blue-200 rounded-full hover:bg-blue-50 transition-colors"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                      </svg>
+                      Añadir vendedor
+                    </button>
+                  )}
+                  {hasPermission('pos:refund') && (
+                    <button
+                      onClick={() => setShowRefundModal(true)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-600 border border-amber-200 rounded-full hover:bg-amber-50 transition-colors"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                      </svg>
+                      Devolución
+                    </button>
+                  )}
+                  {hasPermission('cashbox:close') && (
+                    <button
+                      onClick={() => setShowCashBoxCloseModal(true)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 border border-red-200 rounded-full hover:bg-red-50 transition-colors"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m0 0v2m0-2h2m-2 0H8m13-6a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Cerrar caja
+                    </button>
+                  )}
                 </div>
               </>
             ) : (
-              <button
-                onClick={() => setShowCashBoxModal(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 border border-green-200 bg-green-50 rounded-full hover:bg-green-100 transition-colors"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Abrir caja
-              </button>
+              hasPermission('cashbox:open') && (
+                <button
+                  onClick={() => setShowCashBoxModal(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 border border-green-200 bg-green-50 rounded-full hover:bg-green-100 transition-colors"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Abrir caja
+                </button>
+              )
             )}
           </div>
         </div>
@@ -165,7 +175,7 @@ const POSPage: React.FC = () => {
               <div className="flex-1 min-w-0">
                 <CategoryPills />
               </div>
-              {enableManualProduct && (
+              {enableManualProduct && hasPermission('pos:manual_product') && (
                 <button
                   onClick={() => setIsManualModalOpen(true)}
                   className="hidden sm:flex px-3 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors items-center gap-2 whitespace-nowrap"
@@ -371,7 +381,7 @@ const POSPage: React.FC = () => {
                   <span className="font-mono text-text-muted">${tax.toFixed(2)}</span>
                 </div>
 
-                {manualDiscount === 0 && loyaltyPct === 0 ? (
+                {hasPermission('pos:discount') && manualDiscount === 0 && loyaltyPct === 0 ? (
                   <button
                     type="button"
                     onClick={() => setShowDiscountModal(true)}

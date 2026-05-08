@@ -4,11 +4,13 @@ import { toggleModal } from '../../features/employees/employeesSlice';
 import EmployeeCard from '../../features/employees/EmployeeCard';
 import EmployeeModal from '../../features/employees/EmployeeModal';
 import Button from '../../components/ui/Button';
+import { usePermission } from '../../hooks/usePermission';
 import { useI18n } from '../../i18n/I18nProvider';
 
 const EmployeesPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const employees = useAppSelector(state => state.employees.employees);
+  const { hasPermission } = usePermission();
   const t = useI18n();
 
   const activeCount = employees.filter(e => e.active).length;
@@ -26,12 +28,14 @@ const EmployeesPage: React.FC = () => {
           <h1 className="text-xl font-bold text-text-primary">{t.nav.employees}</h1>
           <p className="text-sm text-text-muted mt-0.5">{t.nav.employees}</p>
         </div>
-        <Button variant="primary" size="sm" onClick={() => dispatch(toggleModal())}>
-          <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          {t.employees.addEmployee}
-        </Button>
+        {hasPermission('employee:manage') && (
+          <Button variant="primary" size="sm" onClick={() => dispatch(toggleModal())}>
+            <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            {t.employees.addEmployee}
+          </Button>
+        )}
       </div>
 
       {/* Stats */}

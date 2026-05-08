@@ -159,14 +159,14 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const lowStockCount = useAppSelector(selectLowStockCount);
 
   const navItems = [
-    { to: '/dashboard', icon: <DashboardIcon />, label: t.nav.dashboard, permission: 'dashboard' },
-    { to: '/pos', icon: <SalesIcon />, label: t.nav.pos, permission: 'pos' },
-    { to: '/products', icon: <ProductsIcon />, label: t.nav.products, permission: 'products' },
-    { 
-      to: '/inventory', 
-      icon: <InventoryIcon />, 
-      label: t.nav.inventory, 
-      permission: 'inventory',
+    { to: '/dashboard', icon: <DashboardIcon />, label: t.nav.dashboard, permission: 'dashboard:view' as const },
+    { to: '/pos', icon: <SalesIcon />, label: t.nav.pos, permission: 'pos:sale' as const },
+    { to: '/products', icon: <ProductsIcon />, label: t.nav.products, permission: 'product:view' as const },
+    {
+      to: '/inventory',
+      icon: <InventoryIcon />,
+      label: t.nav.inventory,
+      permission: 'inventory:view' as const,
       badge: lowStockCount,
       submenus: [
         { to: '/inventory', label: t.inventory.summary },
@@ -174,10 +174,10 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
         { to: '/inventory?tab=reorder', label: t.inventory.reorder },
       ]
     },
-    { to: '/customers', icon: <CustomersIcon />, label: t.nav.customers, permission: 'customers' },
-    { to: '/employees', icon: <TeamIcon />, label: t.nav.employees, permission: 'employees' },
-    { to: '/reports', icon: <ReportsIcon />, label: t.nav.reports, permission: 'reports' },
-    { to: '/settings', icon: <SettingsIcon />, label: t.nav.settings, permission: 'settings' },
+    { to: '/customers', icon: <CustomersIcon />, label: t.nav.customers, permission: 'customer:view' as const },
+    { to: '/employees', icon: <TeamIcon />, label: t.nav.employees, permission: 'employee:view' as const },
+    { to: '/reports', icon: <ReportsIcon />, label: t.nav.reports, permission: 'report:view' as const },
+    { to: '/settings', icon: <SettingsIcon />, label: t.nav.settings, permission: 'setting:view' as const },
   ].filter(item => userPermissions.includes(item.permission));
 
   const openSidebar = () => {

@@ -1,5 +1,30 @@
 export type UserRole = 'cashier' | 'supervisor' | 'manager' | 'admin';
 
+export type Permission =
+  | 'pos:sale'
+  | 'pos:refund'
+  | 'pos:discount'
+  | 'pos:manual_product'
+  | 'pos:checkout'
+  | 'cashbox:open'
+  | 'cashbox:close'
+  | 'cashbox:add_employee'
+  | 'cashbox:remove_employee'
+  | 'product:view'
+  | 'product:create'
+  | 'product:edit'
+  | 'product:delete'
+  | 'inventory:view'
+  | 'report:view'
+  | 'report:export'
+  | 'employee:view'
+  | 'employee:manage'
+  | 'customer:view'
+  | 'customer:manage'
+  | 'setting:view'
+  | 'setting:edit'
+  | 'dashboard:view';
+
 export interface AuthUser {
   id: string;
   name: string;
@@ -10,11 +35,88 @@ export interface AuthUser {
   avatar?: string;
 }
 
-export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
-  cashier: ['pos'],
-  supervisor: ['pos', 'products', 'reports', 'customers', 'inventory'],
-  manager: ['pos', 'products', 'reports', 'employees', 'dashboard', 'customers', 'inventory'],
-  admin: ['pos', 'products', 'reports', 'employees', 'dashboard', 'settings', 'customers', 'inventory'],
+export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
+  cashier: [
+    'pos:sale',
+    'pos:checkout',
+    'cashbox:open',
+    'customer:view',
+  ],
+  supervisor: [
+    'pos:sale',
+    'pos:checkout',
+    'pos:refund',
+    'pos:discount',
+    'pos:manual_product',
+    'cashbox:open',
+    'cashbox:close',
+    'cashbox:add_employee',
+    'cashbox:remove_employee',
+    'product:view',
+    'inventory:view',
+    'report:view',
+    'customer:view',
+    'customer:manage',
+    'dashboard:view',
+  ],
+  manager: [
+    'pos:sale',
+    'pos:checkout',
+    'pos:refund',
+    'pos:discount',
+    'pos:manual_product',
+    'cashbox:open',
+    'cashbox:close',
+    'cashbox:add_employee',
+    'cashbox:remove_employee',
+    'product:view',
+    'product:create',
+    'product:edit',
+    'inventory:view',
+    'report:view',
+    'report:export',
+    'employee:view',
+    'customer:view',
+    'customer:manage',
+    'setting:view',
+    'dashboard:view',
+  ],
+  admin: [
+    'pos:sale',
+    'pos:checkout',
+    'pos:refund',
+    'pos:discount',
+    'pos:manual_product',
+    'cashbox:open',
+    'cashbox:close',
+    'cashbox:add_employee',
+    'cashbox:remove_employee',
+    'product:view',
+    'product:create',
+    'product:edit',
+    'product:delete',
+    'inventory:view',
+    'report:view',
+    'report:export',
+    'employee:view',
+    'employee:manage',
+    'customer:view',
+    'customer:manage',
+    'setting:view',
+    'setting:edit',
+    'dashboard:view',
+  ],
+};
+
+export const PAGE_PERMISSIONS: Record<string, Permission> = {
+  '/pos': 'pos:sale',
+  '/products': 'product:view',
+  '/inventory': 'inventory:view',
+  '/employees': 'employee:view',
+  '/reports': 'report:view',
+  '/settings': 'setting:view',
+  '/customers': 'customer:view',
+  '/dashboard': 'dashboard:view',
 };
 
 export interface ProductSize {
