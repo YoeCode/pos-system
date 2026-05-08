@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../app/store';
-import { login, loginSuccess, loginFailure, clearError } from '../../features/auth/authSlice';
-import { authenticateUser } from '../../features/auth/authSlice';
+import { loginUser, clearError } from '../../features/auth/authSlice';
 import { useI18n } from '../../i18n/I18nProvider';
 
 const LoginPage: React.FC = () => {
@@ -11,22 +10,19 @@ const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
-  const { error, isLoading } = useAppSelector(state => state.auth);
+  const { error, isLoading, isAuthenticated } = useAppSelector(state => state.auth);
   const t = useI18n();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/pos');
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    dispatch(login());
-
     const trimmedEmail = email.trim().toLowerCase();
-    const user = authenticateUser(trimmedEmail, password);
-
-    if (user) {
-      dispatch(loginSuccess(user));
-      navigate('/pos');
-    } else {
-      dispatch(loginFailure(t.auth.invalidCredentials));
-    }
+    dispatch(loginUser({ email: trimmedEmail, password }));
   };
 
   return (

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../app/store';
-import { logout } from '../features/auth/authSlice';
+import { logoutUser } from '../features/auth/authSlice';
 import { ROLE_PERMISSIONS } from '../types';
 import { selectStoreName } from '../features/settings/settingsSlice';
 import { selectLowStockCount } from '../features/products/productsSlice';
@@ -191,7 +191,7 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
   };
 
   const handleLogout = () => {
-    dispatch(logout());
+    dispatch(logoutUser());
     navigate('/login');
   };
 
