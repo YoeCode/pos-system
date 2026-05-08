@@ -49,7 +49,7 @@ const SaleWindowsTabs: React.FC = () => {
                 relative flex items-center gap-2 px-4 py-2.5 text-sm font-medium cursor-pointer select-none
                 transition-all duration-200 min-w-[120px] max-w-[180px]
                 ${isActive
-                  ? 'bg-background text-text-primary rounded-t-xl z-10 -mb-px border-t-2 border-l border-r border-border border-t-primary shadow-[0_-2px_8px_rgba(0,0,0,0.04)]'
+                  ? 'bg-background text-text-primary rounded-t-xl z-10 -mb-px border-t-2 border-l border-r border-b border-background border-t-primary shadow-[0_-2px_8px_rgba(0,0,0,0.04)]'
                   : 'bg-gray-100 text-text-muted hover:bg-gray-200 hover:text-text-primary rounded-t-lg -mb-0 border border-transparent hover:border-gray-300'
                 }
               `}
