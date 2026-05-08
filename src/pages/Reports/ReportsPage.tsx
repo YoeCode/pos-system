@@ -4,6 +4,7 @@ import { useI18n } from '../../i18n/I18nProvider';
 import { selectFilteredSales } from '../../features/dashboard/dashboardSlice';
 import Modal from '../../components/ui/Modal';
 import PrintableReceipt from '../../features/pos/PrintableReceipt';
+import { exportTableToExcel } from '../../utils/exportUtils';
 
 type ReportTab = 'sales' | 'products' | 'employees';
 type DateRange = 'today' | 'week' | 'month' | 'year' | 'custom';
@@ -145,7 +146,7 @@ const ReportsPage: React.FC = () => {
     link.click();
   };
 
-  const handleExportSales = () => {
+  const handleExportSales = (format: 'csv' | 'excel' = 'csv') => {
     const data = filteredSales.map(sale => ({
       order: sale.order.orderNumber,
       date: formatDate(sale.completedAt),
@@ -155,26 +156,38 @@ const ReportsPage: React.FC = () => {
       total: sale.order.total.toFixed(2),
       payment: sale.paymentMethod
     }));
-    exportToCSV(data, 'sales_report');
+    if (format === 'excel') {
+      exportTableToExcel(data, 'sales_report');
+    } else {
+      exportToCSV(data, 'sales_report');
+    }
   };
 
-  const handleExportProducts = () => {
+  const handleExportProducts = (format: 'csv' | 'excel' = 'csv') => {
     const data = filteredTopProducts.map(p => ({
       name: p.name,
       category: p.category,
       quantity: p.qty,
       revenue: p.revenue.toFixed(2)
     }));
-    exportToCSV(data, 'products_report');
+    if (format === 'excel') {
+      exportTableToExcel(data, 'products_report');
+    } else {
+      exportToCSV(data, 'products_report');
+    }
   };
 
-  const handleExportEmployees = () => {
+  const handleExportEmployees = (format: 'csv' | 'excel' = 'csv') => {
     const data = employees.map(emp => ({
       name: emp.name,
       role: emp.role,
       active: emp.active ? 'Yes' : 'No'
     }));
-    exportToCSV(data, 'employees_report');
+    if (format === 'excel') {
+      exportTableToExcel(data, 'employees_report');
+    } else {
+      exportToCSV(data, 'employees_report');
+    }
   };
 
   return (
@@ -224,16 +237,29 @@ const ReportsPage: React.FC = () => {
               <div className="flex gap-2 ml-auto">
                 <button
                   onClick={() => {
-                    if (activeTab === 'sales') handleExportSales();
-                    else if (activeTab === 'products') handleExportProducts();
-                    else handleExportEmployees();
+                    if (activeTab === 'sales') handleExportSales('csv');
+                    else if (activeTab === 'products') handleExportProducts('csv');
+                    else handleExportEmployees('csv');
+                  }}
+                  className="px-3 py-1.5 text-sm bg-white border border-border text-text-primary rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-1"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  CSV
+                </button>
+                <button
+                  onClick={() => {
+                    if (activeTab === 'sales') handleExportSales('excel');
+                    else if (activeTab === 'products') handleExportProducts('excel');
+                    else handleExportEmployees('excel');
                   }}
                   className="px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-1"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                  {t.reports.exportExcel}
+                  Excel
                 </button>
               </div>
               

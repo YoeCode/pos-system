@@ -12,12 +12,17 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@emailjs/browser": "^4.4.1",
     "@reduxjs/toolkit": "^2.11.2",
+    "emailjs-com": "^3.2.0",
     "fuse.js": "^7.3.0",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-redux": "^9.2.0",
-    "react-router-dom": "^7.14.0"
+    "react-router-dom": "^7.14.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",

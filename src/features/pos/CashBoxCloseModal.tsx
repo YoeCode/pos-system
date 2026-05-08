@@ -1,8 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/store';
 import { selectAllSales } from '../../features/sales/salesSlice';
 import { selectActiveEmployees } from '../../features/employees/employeesSlice';
 import { selectCashBoxEmployeeIds, selectWorkingEmployees, closeCashBoxWithClosure, selectCashBoxOpenTime } from './posSlice';
+import { exportElementToPDF } from '../../utils/exportUtils';
+import { useToast } from '../../components/ToastProvider';
 import Modal from '../../components/ui/Modal';
 import type { PaymentMethod, CashBoxClosure } from '../../types';
 
@@ -37,6 +39,8 @@ const CashBoxCloseModal: React.FC<CashBoxCloseModalProps> = ({ isOpen, onClose }
   const [pin, setPin] = useState('');
   const [pinError, setPinError] = useState('');
   const [completed, setCompleted] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const { addToast } = useToast();
 
   const openTime = cashBoxOpenTime ? new Date(cashBoxOpenTime) : null;
 
@@ -129,8 +133,8 @@ const CashBoxCloseModal: React.FC<CashBoxCloseModalProps> = ({ isOpen, onClose }
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="Arqueo de Caja">
       {completed ? (
-        <div className="p-6 text-center">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+        <div className="p-6 flex flex-col items-center text-center gap-4">
+          <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
             <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
@@ -141,9 +145,24 @@ const CashBoxCloseModal: React.FC<CashBoxCloseModalProps> = ({ isOpen, onClose }
               ? `Diferencia: ${totalDifference >= 0 ? '+' : ''}${totalDifference.toFixed(2)}€`
               : 'Cuadre perfecto'}
           </p>
+          <button
+            onClick={async () => {
+              if (!contentRef.current) return;
+              try {
+                await exportElementToPDF(contentRef.current, `cierre-caja-${new Date().toISOString().split('T')[0]}.pdf`);
+                addToast('PDF descargado', 'success');
+              } catch {
+                addToast('Error al generar PDF', 'error');
+              }
+            }}
+            className="px-4 py-2 text-sm bg-white border border-border text-text-primary rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            Descargar PDF
+          </button>
         </div>
       ) : step === 'summary' ? (
-        <div className="p-6 flex flex-col gap-4">
+        <div ref={contentRef} className="p-6 flex flex-col gap-4">
           <div className="bg-gray-50 rounded-lg p-4 flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <span className="text-sm text-text-muted">Apertura</span>
