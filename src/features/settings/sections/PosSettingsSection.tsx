@@ -45,6 +45,7 @@ const PosSettingsSection: React.FC = () => {
   const [showStoreName, setShowStoreName] = useState(reduxPos.ticketConfig?.showStoreName ?? true);
   const [customHeader, setCustomHeader] = useState(reduxPos.ticketConfig?.customHeader || '');
   const [customFooter, setCustomFooter] = useState(reduxPos.ticketConfig?.customFooter || '');
+  const [ticketSize, setTicketSize] = useState<'58mm' | '80mm'>(reduxPos.ticketSize || '58mm');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -67,6 +68,7 @@ const PosSettingsSection: React.FC = () => {
     setShowStoreName(reduxPos.ticketConfig?.showStoreName ?? true);
     setCustomHeader(reduxPos.ticketConfig?.customHeader || '');
     setCustomFooter(reduxPos.ticketConfig?.customFooter || '');
+    setTicketSize(reduxPos.ticketSize || '58mm');
   }, [reduxPos]);
 
   const parsedSeed = parseInt(orderNumberSeed, 10);
@@ -113,7 +115,9 @@ const PosSettingsSection: React.FC = () => {
     logoUrl !== (reduxPos.ticketConfig?.logoUrl || '') ||
     showEmployee !== (reduxPos.ticketConfig?.showEmployee ?? true) ||
     showStoreName !== (reduxPos.ticketConfig?.showStoreName ?? true) ||
-    customHeader !== (reduxPos.ticketConfig?.customFooter || '');
+    customHeader !== (reduxPos.ticketConfig?.customHeader || '') ||
+    customFooter !== (reduxPos.ticketConfig?.customFooter || '') ||
+    ticketSize !== (reduxPos.ticketSize || '58mm');
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -154,6 +158,7 @@ const PosSettingsSection: React.FC = () => {
           pinThreshold: parsedPinThreshold,
           maxRefundDays: parsedMaxDays,
         },
+        ticketSize,
         ticketConfig: {
           showLogo,
           logoUrl: logoUrl || undefined,
@@ -362,6 +367,16 @@ const PosSettingsSection: React.FC = () => {
               label={t.settings.showStoreName}
               checked={showStoreName}
               onChange={setShowStoreName}
+            />
+
+            <Select
+              label="Tamaño de ticket"
+              options={[
+                { value: '58mm', label: '58 mm (térmica estándar)' },
+                { value: '80mm', label: '80 mm (térmica ancha)' },
+              ]}
+              value={ticketSize}
+              onChange={e => setTicketSize(e.target.value as '58mm' | '80mm')}
             />
 
             <Input

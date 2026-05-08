@@ -167,6 +167,7 @@ export interface PosSettings {
   ticketConfig: TicketConfig;
   maxSaleWindows: number;
   refundSettings: RefundSettings;
+  ticketSize: '58mm' | '80mm';
 }
 
 export interface SaleWindow {

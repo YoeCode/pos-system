@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '../../../app/store';
 import { startNewSale } from '../posSlice';
 import { selectSaleById } from '../../sales/salesSlice';
@@ -9,6 +9,7 @@ import {
   selectTaxLabel,
   selectTicketConfig,
 } from '../../settings/settingsSlice';
+import PrintableReceipt from '../PrintableReceipt';
 
 interface ReceiptStepProps {
   saleId: string;
@@ -31,6 +32,36 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, 
   const allEmployees = useAppSelector(selectActiveEmployees);
   const ticketConfig = useAppSelector(selectTicketConfig);
   const [showGiftTicket, setShowGiftTicket] = useState(false);
+  const printRef = useRef<HTMLDivElement>(null);
+
+  const handlePrint = () => {
+    if (!printRef.current) return;
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Ticket ${order.orderNumber}</title>
+          <style>
+            @media print {
+              body { margin: 0; padding: 0; }
+              .no-print { display: none !important; }
+            }
+            body { font-family: monospace; background: white; }
+          </style>
+          <script src="https://cdn.tailwindcss.com"></script>
+        </head>
+        <body>
+          ${printRef.current.innerHTML}
+          <div class="no-print flex justify-center gap-3 p-6">
+            <button onclick="window.print()" class="px-5 py-2.5 bg-primary text-white rounded-lg font-bold">Imprimir</button>
+            <button onclick="window.close()" class="px-5 py-2.5 border border-border rounded-lg font-medium">Cerrar</button>
+          </div>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
 
   if (!sale) return null;
 
@@ -145,18 +176,23 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, 
         </p>
       </div>
 
-      {/* Gift ticket toggle button */}
-      <button
-        onClick={() => setShowGiftTicket(prev => !prev)}
-        className="flex items-center justify-between w-full px-4 py-3 rounded-lg border transition-all duration-150 text-sm bg-white border-border text-text-primary hover:border-text-primary"
-      >
-        <span className="font-medium">
-          {showGiftTicket ? 'Ocultar Ticket Regalo' : '🎁 Imprimir Ticket Regalo'}
-        </span>
-        <span className="text-xs font-semibold uppercase tracking-wider opacity-75">
-          {showGiftTicket ? 'ON' : 'OFF'}
-        </span>
-      </button>
+      <div className="flex gap-3">
+        <button
+          onClick={handlePrint}
+          className="flex-1 py-3 bg-primary hover:bg-primary-dark text-white font-bold rounded-xl text-sm transition-all duration-150 active:scale-[0.98] flex items-center justify-center gap-2"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          Imprimir Ticket
+        </button>
+        <button
+          onClick={() => setShowGiftTicket(prev => !prev)}
+          className="flex items-center justify-center px-4 py-3 rounded-xl border transition-all duration-150 text-sm bg-white border-border text-text-primary hover:border-text-primary"
+        >
+          <span className="font-medium">
+            {showGiftTicket ? 'Ocultar Regalo' : '🎁 Regalo'}
+          </span>
+        </button>
+      </div>
 
       {/* Gift ticket */}
       {showGiftTicket && (
@@ -201,6 +237,10 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, 
       >
         DONE
       </button>
+
+      <div ref={printRef} className="hidden">
+        <PrintableReceipt saleId={saleId} loyaltyPointsEarned={loyaltyPointsEarned} />
+      </div>
     </div>
   );
 };

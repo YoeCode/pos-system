@@ -62,6 +62,7 @@ const defaultPosSettings: PosSettings = {
     pinThreshold: 50,
     maxRefundDays: 30,
   },
+  ticketSize: '58mm',
 };
 
 const defaultLanguageSettings: LanguageSettings = {
@@ -249,6 +250,7 @@ export const selectTerminalId = (state: RootState): string | undefined => state.
 export const selectTicketConfig = (state: RootState): TicketConfig => state.settings.pos.ticketConfig;
 export const selectMaxSaleWindows = (state: RootState): number => state.settings.pos.maxSaleWindows;
 export const selectRefundSettings = (state: RootState) => state.settings.pos.refundSettings;
+export const selectTicketSize = (state: RootState): '58mm' | '80mm' => state.settings.pos.ticketSize;
 
 // ─── Cross-slice Composed Selector ────────────────────────────────────────────
 // Uses type-only import of RootState to avoid circular runtime dependency.

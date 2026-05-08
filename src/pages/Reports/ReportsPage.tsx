@@ -3,6 +3,7 @@ import { useAppSelector } from '../../app/store';
 import { useI18n } from '../../i18n/I18nProvider';
 import { selectFilteredSales } from '../../features/dashboard/dashboardSlice';
 import Modal from '../../components/ui/Modal';
+import PrintableReceipt from '../../features/pos/PrintableReceipt';
 
 type ReportTab = 'sales' | 'products' | 'employees';
 type DateRange = 'today' | 'week' | 'month' | 'year' | 'custom';
@@ -18,6 +19,7 @@ const ReportsPage: React.FC = () => {
   const [customEndDate, setCustomEndDate] = useState('');
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
   const [selectedProductCategory, setSelectedProductCategory] = useState<string>('all');
+  const [selectedTicketSaleId, setSelectedTicketSaleId] = useState<string | null>(null);
 
   const tabs: { id: ReportTab; label: string }[] = [
     { id: 'sales', label: t.reports.salesReport },
@@ -319,6 +321,7 @@ const ReportsPage: React.FC = () => {
                         <th className="text-right text-xs font-semibold text-text-muted uppercase tracking-wider py-3">{t.pos.total}</th>
                         <th className="text-right text-xs font-semibold text-text-muted uppercase tracking-wider py-3">{t.pos.paymentMethod}</th>
                         <th className="text-right text-xs font-semibold text-text-muted uppercase tracking-wider py-3">{t.products.status}</th>
+                        <th className="text-right text-xs font-semibold text-text-muted uppercase tracking-wider py-3">Ticket</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -329,6 +332,15 @@ const ReportsPage: React.FC = () => {
                           <td className="py-3 text-sm font-mono text-text-primary text-right">{formatCurrency(sale.order.total)}</td>
                           <td className="py-3 text-sm text-text-muted text-right capitalize">{t.pos[sale.paymentMethod as 'cash' | 'card' | 'bizum']}</td>
                           <td className="py-3 text-sm text-text-muted text-right">{formatDate(sale.completedAt)}</td>
+                          <td className="py-3 text-right">
+                            <button
+                              onClick={() => setSelectedTicketSaleId(sale.id)}
+                              className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-primary/10 text-primary rounded hover:bg-primary/20 transition-colors"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                              Ver
+                            </button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -435,6 +447,17 @@ const ReportsPage: React.FC = () => {
           )}
         </div>
       </div>
+
+      <Modal
+        isOpen={!!selectedTicketSaleId}
+        onClose={() => setSelectedTicketSaleId(null)}
+        title="Ticket"
+        subtitle={selectedTicketSaleId ? allSales.find(s => s.id === selectedTicketSaleId)?.order.orderNumber : ''}
+      >
+        {selectedTicketSaleId && (
+          <PrintableReceipt saleId={selectedTicketSaleId} />
+        )}
+      </Modal>
 
       <Modal
         isOpen={!!selectedEmployeeId}
