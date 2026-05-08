@@ -49,7 +49,7 @@ const SaleWindowsTabs: React.FC = () => {
                 relative flex items-center gap-2 px-4 py-2.5 text-sm font-medium cursor-pointer select-none
                 transition-all duration-200 min-w-[120px] max-w-[180px]
                 ${isActive
-                  ? 'bg-background text-text-primary rounded-t-xl z-10 shadow-[0_-2px_8px_rgba(0,0,0,0.04)]'
+                  ? 'bg-background text-green-600 rounded-t-xl z-10 shadow-[0_-2px_8px_rgba(0,0,0,0.04)]'
                   : 'bg-gray-100 text-text-muted hover:bg-gray-200 hover:text-text-primary rounded-t-lg'
                 }
               `}
@@ -59,10 +59,7 @@ const SaleWindowsTabs: React.FC = () => {
               }}
             >
               {isActive && (
-                <>
-                  <div className="absolute -top-0 left-0 right-0 h-0.5 bg-primary rounded-t-xl" />
-                  <div className="absolute -left-px -right-px top-full h-[2px] bg-background" />
-                </>
+                <div className="absolute -left-px -right-px top-full h-[2px] bg-background" />
               )}
               <span className="truncate flex-1">{window.name}</span>
               {itemCount > 0 && (
