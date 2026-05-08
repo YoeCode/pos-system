@@ -37,7 +37,7 @@ const SaleWindowsTabs: React.FC = () => {
 
   return (
     <>
-      <div className="flex items-end gap-0.5 overflow-x-auto scrollbar-hide bg-gray-100/80 px-2 border-b border-gray-300">
+      <div className="flex items-end gap-0.5 flex-wrap bg-gray-100/80 px-2 border-b border-gray-300">
         {windows.map((window, index) => {
           const isActive = window.id === activeWindowId;
           const itemCount = window.cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -46,8 +46,8 @@ const SaleWindowsTabs: React.FC = () => {
               key={window.id}
               onClick={() => dispatch(setActiveWindow(window.id))}
               className={`
-                flex-shrink-0 flex items-center gap-2 px-3.5 py-2 text-sm font-medium cursor-pointer select-none
-                transition-all duration-150 min-w-[100px] max-w-[180px]
+                flex items-center gap-2 px-3.5 py-2 text-sm font-medium cursor-pointer select-none
+                transition-all duration-150 min-w-[80px] max-w-[160px]
                 ${isActive
                   ? 'bg-white text-text-primary rounded-t-lg shadow-[0_-1px_2px_rgba(0,0,0,0.05)] relative z-10 border-t border-l border-r border-gray-200 translate-y-[1px] pb-[9px]'
                   : 'bg-gray-200/70 text-text-muted hover:bg-gray-300/60 hover:text-text-primary rounded-t-md border-t border-l border-r border-transparent'
