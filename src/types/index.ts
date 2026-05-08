@@ -225,6 +225,20 @@ export interface RefundSettings {
   maxRefundDays: number;
 }
 
+export interface CashBoxClosure {
+  id: string;
+  openedAt: string;
+  closedAt: string;
+  employeeIds: string[];
+  salesByMethod: Record<PaymentMethod, number>;
+  totalSales: number;
+  countedByMethod: Record<PaymentMethod, number>;
+  totalCounted: number;
+  differences: Record<PaymentMethod, number>;
+  totalDifference: number;
+  authorizedBy?: string;
+}
+
 export interface SettingsState {
   tax: TaxSettings;
   store: StoreSettings;

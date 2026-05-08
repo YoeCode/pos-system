@@ -9,6 +9,7 @@ import CustomerSelector from '../../features/customers/CustomerSelector';
 import SearchInput from '../../features/pos/SearchInput';
 import EmployeeSelector from '../../features/pos/EmployeeSelector';
 import CashBoxOpenModal from '../../features/pos/CashBoxOpenModal';
+import CashBoxCloseModal from '../../features/pos/CashBoxCloseModal';
 import AddEmployeeToCashBoxModal from '../../features/pos/AddEmployeeToCashBoxModal';
 import RefundModal from '../../features/refunds/RefundModal';
 import DiscountModal from '../../features/pos/DiscountModal';
@@ -50,9 +51,8 @@ const POSPage: React.FC = () => {
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
-  const [showCloseBoxConfirm, setShowCloseBoxConfirm] = useState(false);
   const [showCashBoxModal, setShowCashBoxModal] = useState(false);
-  const [closedBoxCount, setClosedBoxCount] = useState(0);
+  const [showCashBoxCloseModal, setShowCashBoxCloseModal] = useState(false);
   const [showDiscountModal, setShowDiscountModal] = useState(false);
   const [showItemDiscountModal, setShowItemDiscountModal] = useState(false);
   const [showAddEmployeeModal, setShowAddEmployeeModal] = useState(false);
@@ -133,7 +133,7 @@ const POSPage: React.FC = () => {
                     Devolución
                   </button>
                   <button
-                    onClick={() => setShowCloseBoxConfirm(true)}
+                    onClick={() => setShowCashBoxCloseModal(true)}
                     className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 border border-red-200 rounded-full hover:bg-red-50 transition-colors"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -156,6 +156,10 @@ const POSPage: React.FC = () => {
             )}
           </div>
         </div>
+      </>
+    )}
+  </>);
+};
 
         {isCashBoxOpen && (
           <div className="px-3 lg:px-6 pt-2 pb-2 flex-shrink-0">
@@ -465,7 +469,7 @@ const POSPage: React.FC = () => {
         discountApplied={totalDiscount}
       />
 
-      <CashBoxOpenModal isOpen={showCashBoxModal} closedBoxCount={closedBoxCount} onClose={() => setShowCashBoxModal(false)} />
+      <CashBoxOpenModal isOpen={showCashBoxModal} onClose={() => setShowCashBoxModal(false)} />
 
       <AddEmployeeToCashBoxModal isOpen={showAddEmployeeModal} onClose={() => setShowAddEmployeeModal(false)} />
 
@@ -502,42 +506,7 @@ const POSPage: React.FC = () => {
         })()}
       />
 
-      {showCloseBoxConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowCloseBoxConfirm(false)} />
-          <div className="relative z-10 bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4 p-6">
-            <div className="text-center mb-6">
-              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-              </div>
-              <h3 className="font-bold text-text-primary">¿Cerrar caja?</h3>
-              <p className="text-sm text-text-muted mt-1">
-                Esto.finalizará el turno actual
-              </p>
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowCloseBoxConfirm(false)}
-                className="flex-1 py-3 text-sm font-medium border border-border rounded-lg hover:bg-gray-50"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => {
-                  setClosedBoxCount(c => c + 1);
-                  dispatch(closeCashBox());
-                  setShowCloseBoxConfirm(false);
-                }}
-                className="flex-1 py-3 text-sm font-bold bg-red-600 text-white rounded-lg hover:bg-red-700"
-              >
-                Cerrar caja
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <CashBoxCloseModal isOpen={showCashBoxCloseModal} onClose={() => setShowCashBoxCloseModal(false)} />
     </div>
   );
 };

@@ -1,6 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import type { CartItem, PaymentMethod, Product, SaleWindow } from '../../types';
+import type { CartItem, PaymentMethod, Product, SaleWindow, CashBoxClosure } from '../../types';
 import type { RootState } from '../../app/store';
 
 const CASH_BOX_KEY = 'nexopos_cash_box';
@@ -87,8 +87,25 @@ const saveWindowsToStorage = (state: { windows: SaleWindow[]; activeWindowId: st
   } catch {}
 };
 
+const CLOSURES_KEY = 'nexopos_closures';
+
+const loadClosuresFromStorage = (): CashBoxClosure[] => {
+  try {
+    const stored = localStorage.getItem(CLOSURES_KEY);
+    if (stored) return JSON.parse(stored) as CashBoxClosure[];
+  } catch {}
+  return [];
+};
+
+const saveClosuresToStorage = (closures: CashBoxClosure[]): void => {
+  try {
+    localStorage.setItem(CLOSURES_KEY, JSON.stringify(closures));
+  } catch {}
+};
+
 const storedCashBox = loadCashBoxFromStorage();
 const storedWindows = loadWindowsFromStorage();
+const storedClosures = loadClosuresFromStorage();
 
 const createDefaultWindow = (num: number): SaleWindow => ({
   id: crypto.randomUUID(),
@@ -117,6 +134,7 @@ interface PosState {
   isCashBoxOpen: boolean;
   cashBoxEmployeeIds: string[];
   cashBoxOpenTime: string | null;
+  closures: CashBoxClosure[];
 }
 
 const initialState: PosState = {
@@ -129,6 +147,7 @@ const initialState: PosState = {
   isCashBoxOpen: storedCashBox.isOpen,
   cashBoxEmployeeIds: storedCashBox.employeeIds,
   cashBoxOpenTime: storedCashBox.openDate,
+  closures: storedClosures,
 };
 
 const getActiveWindow = (state: PosState): SaleWindow | undefined => {
@@ -325,6 +344,24 @@ const posSlice = createSlice({
       });
       saveWindowsToStorage({ windows: state.windows, activeWindowId: state.activeWindowId, nextWindowNumber: state.nextWindowNumber });
     },
+    closeCashBoxWithClosure: (state, action: PayloadAction<CashBoxClosure>) => {
+      state.closures.push(action.payload);
+      saveClosuresToStorage(state.closures);
+      state.isCashBoxOpen = false;
+      state.cashBoxEmployeeIds = [];
+      state.cashBoxOpenTime = null;
+      state.currentEmployeeId = null;
+      const newWindow = createDefaultWindow(1);
+      state.windows = [newWindow];
+      state.activeWindowId = newWindow.id;
+      state.nextWindowNumber = 2;
+      saveCashBoxToStorage({
+        isOpen: false,
+        employeeIds: [],
+        openDate: null,
+      });
+      saveWindowsToStorage({ windows: state.windows, activeWindowId: state.activeWindowId, nextWindowNumber: state.nextWindowNumber });
+    },
   },
 });
 
@@ -332,7 +369,7 @@ export const {
   addToCart, removeFromCart, updateQuantity, splitLine, clearCart,
   setPaymentMethod, setCategory, addCustomProductToCart, setSelectedCustomer,
   startNewSale, setSearchQuery, setCurrentEmployee, openCashBox,
-  addCashBoxEmployee, removeCashBoxEmployee, closeCashBox,
+  addCashBoxEmployee, removeCashBoxEmployee, closeCashBox, closeCashBoxWithClosure,
   createWindow, closeWindow, setActiveWindow,
   setWindowItemDiscounts, setWindowManualDiscount,
 } = posSlice.actions;
@@ -341,6 +378,7 @@ export default posSlice.reducer;
 export const selectIsCashBoxOpen = (state: RootState): boolean => state.pos.isCashBoxOpen;
 export const selectCashBoxEmployeeIds = (state: RootState): string[] => state.pos.cashBoxEmployeeIds;
 export const selectWorkingEmployees = (state: RootState): string[] => state.pos.cashBoxEmployeeIds;
+export const selectCashBoxOpenTime = (state: RootState): string | null => state.pos.cashBoxOpenTime;
 
 export const selectWindows = (state: RootState): SaleWindow[] => state.pos.windows;
 export const selectActiveWindowId = (state: RootState): string | null => state.pos.activeWindowId;
@@ -371,4 +409,11 @@ export const selectActiveWindowManualDiscount = (state: RootState): number => {
 export const selectCanCreateWindow = (state: RootState): boolean => {
   const max = state.settings.pos.maxSaleWindows;
   return state.pos.windows.length < max;
+};
+
+export const selectClosures = (state: RootState): CashBoxClosure[] => state.pos.closures;
+
+export const selectLastClosure = (state: RootState): CashBoxClosure | undefined => {
+  const closures = state.pos.closures;
+  return closures.length > 0 ? closures[closures.length - 1] : undefined;
 };
