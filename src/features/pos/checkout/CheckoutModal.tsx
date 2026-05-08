@@ -15,6 +15,7 @@ interface CheckoutModalProps {
   orderNumber: string;
   customerId?: string;
   discountApplied: number;
+  pointsToRedeem?: number;
 }
 
 const CheckoutModal: React.FC<CheckoutModalProps> = ({
@@ -28,6 +29,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   orderNumber,
   customerId,
   discountApplied,
+  pointsToRedeem = 0,
 }) => {
   const [step, setStep] = useState<'payment' | 'receipt'>('payment');
   const [completedSaleId, setCompletedSaleId] = useState<string | null>(null);
@@ -64,6 +66,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
           orderNumber={orderNumber}
           customerId={customerId}
           discountApplied={discountApplied}
+          pointsToRedeem={pointsToRedeem}
           onComplete={handleComplete}
         />
       ) : (

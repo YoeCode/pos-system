@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import posReducer, { setSelectedCustomer, startNewSale, clearCart, addToCart } from './posSlice';
+import posReducer, { setSelectedCustomer, startNewSale, clearCart, addToCart, setPointsToRedeem } from './posSlice';
 import type { Product } from '../../types';
 
 const MOCK_PRODUCT: Product = {
@@ -15,55 +15,74 @@ const MOCK_PRODUCT: Product = {
   publishedOnline: false,
 };
 
+const getActiveWindow = (state: ReturnType<typeof posReducer>) => {
+  const windowId = state.activeWindowId;
+  return state.windows.find(w => w.id === windowId);
+};
+
 const INITIAL_STATE = posReducer(undefined, { type: '@@INIT' });
 
 describe('posSlice — loyalty additions', () => {
-  // ── RF-02 selectedCustomerId ───────────────────────────────────────────────
-
   describe('setSelectedCustomer', () => {
-    it('sets selectedCustomerId', () => {
+    it('sets selectedCustomerId on active window', () => {
       const state = posReducer(INITIAL_STATE, setSelectedCustomer('cust-001'));
-      expect(state.selectedCustomerId).toBe('cust-001');
+      const window = getActiveWindow(state);
+      expect(window?.selectedCustomerId).toBe('cust-001');
     });
 
-    it('clears selectedCustomerId when null is dispatched — RF-02-B', () => {
+    it('clears selectedCustomerId when null is dispatched', () => {
       const withCustomer = posReducer(INITIAL_STATE, setSelectedCustomer('cust-001'));
       const cleared = posReducer(withCustomer, setSelectedCustomer(null));
-      expect(cleared.selectedCustomerId).toBeNull();
+      const window = getActiveWindow(cleared);
+      expect(window?.selectedCustomerId).toBeNull();
     });
 
-    it('initial selectedCustomerId is null', () => {
-      expect(INITIAL_STATE.selectedCustomerId).toBeNull();
+    it('initial selectedCustomerId is null on active window', () => {
+      const window = getActiveWindow(INITIAL_STATE);
+      expect(window?.selectedCustomerId).toBeNull();
     });
   });
 
-  describe('clearCart — RF-02-C', () => {
+  describe('clearCart', () => {
     it('clears cart items but does NOT reset selectedCustomerId', () => {
       const withCustomer = posReducer(INITIAL_STATE, setSelectedCustomer('cust-001'));
       const withItem = posReducer(withCustomer, addToCart({ product: MOCK_PRODUCT }));
       const cleared = posReducer(withItem, clearCart());
-      expect(cleared.cart).toHaveLength(0);
-      expect(cleared.selectedCustomerId).toBe('cust-001');
+      const window = getActiveWindow(cleared);
+      expect(window?.cart).toHaveLength(0);
+      expect(window?.selectedCustomerId).toBe('cust-001');
+    });
+
+    it('clears pointsToRedeem on clearCart', () => {
+      let state = posReducer(INITIAL_STATE, addToCart({ product: MOCK_PRODUCT }));
+      state = posReducer(state, setPointsToRedeem(50));
+      const cleared = posReducer(state, clearCart());
+      const clearedWindow = getActiveWindow(cleared);
+      expect(clearedWindow?.pointsToRedeem).toBe(0);
     });
   });
 
-  describe('startNewSale — RF-02-D', () => {
+  describe('startNewSale', () => {
     it('resets cart AND selectedCustomerId to null', () => {
       let state = posReducer(INITIAL_STATE, setSelectedCustomer('cust-002'));
       state = posReducer(state, addToCart({ product: MOCK_PRODUCT }));
-      expect(state.cart).toHaveLength(1);
-      expect(state.selectedCustomerId).toBe('cust-002');
+      const window = getActiveWindow(state);
+      expect(window?.cart).toHaveLength(1);
+      expect(window?.selectedCustomerId).toBe('cust-002');
 
       const reset = posReducer(state, startNewSale());
-      expect(reset.cart).toHaveLength(0);
-      expect(reset.selectedCustomerId).toBeNull();
+      const resetWindow = getActiveWindow(reset);
+      expect(resetWindow?.cart).toHaveLength(0);
+      expect(resetWindow?.selectedCustomerId).toBeNull();
     });
 
-    it('startNewSale on empty cart also clears selectedCustomerId', () => {
-      const withCustomer = posReducer(INITIAL_STATE, setSelectedCustomer('cust-003'));
-      const reset = posReducer(withCustomer, startNewSale());
-      expect(reset.selectedCustomerId).toBeNull();
-      expect(reset.cart).toHaveLength(0);
+    it('startNewSale clears pointsToRedeem', () => {
+      let state = posReducer(INITIAL_STATE, setSelectedCustomer('cust-003'));
+      state = posReducer(state, setPointsToRedeem(100));
+      const reset = posReducer(state, startNewSale());
+      const resetWindow = getActiveWindow(reset);
+      expect(resetWindow?.pointsToRedeem).toBe(0);
+      expect(resetWindow?.selectedCustomerId).toBeNull();
     });
   });
 });

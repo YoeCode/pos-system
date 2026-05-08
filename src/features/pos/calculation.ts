@@ -26,6 +26,7 @@ interface CalculationOptions {
   itemDiscounts: Record<string, number>;
   loyaltyTierConfig?: LoyaltyTierConfig;
   manualDiscount?: number;
+  pointsToRedeem?: number;
 }
 
 /**
@@ -42,7 +43,7 @@ export function calculateCart(
   cart: CartItem[],
   options: CalculationOptions,
 ): CartCalculation {
-  const { taxRate, taxIncludedInPrice, itemDiscounts, loyaltyTierConfig, manualDiscount = 0 } = options;
+  const { taxRate, taxIncludedInPrice, itemDiscounts, loyaltyTierConfig, manualDiscount = 0, pointsToRedeem = 0 } = options;
   const loyaltyPct = loyaltyTierConfig ? loyaltyTierConfig.discountPct : 0;
 
   const lines: LineCalculation[] = cart.map(item => {
@@ -73,10 +74,15 @@ export function calculateCart(
   const itemDiscountsTotal = lines.reduce((sum, l) => sum + l.itemDiscountAmount, 0);
   const loyaltyTotal = lines.reduce((sum, l) => sum + (l.discountSource === 'loyalty' ? l.appliedDiscount : 0), 0);
 
-  // Cart-level: manual discount competes with loyalty (max wins)
-  const appliedGlobalDiscount = Math.max(manualDiscount, loyaltyTotal);
+  const tierOrManualDiscount = Math.max(manualDiscount, loyaltyTotal);
+  const pointsDiscount = pointsToRedeem / 100;
+  const appliedGlobalDiscount = tierOrManualDiscount + pointsDiscount;
   const totalDiscount = itemDiscountsTotal + appliedGlobalDiscount;
-  const netSubtotal = grossSubtotal - totalDiscount;
+  let netSubtotal = grossSubtotal - totalDiscount;
+
+  if (netSubtotal < 0) {
+    netSubtotal = 0;
+  }
 
   let tax: number;
   let total: number;
@@ -92,7 +98,7 @@ export function calculateCart(
 
   return {
     grossSubtotal,
-    totalDiscount,
+    totalDiscount: grossSubtotal - netSubtotal,
     netSubtotal,
     tax,
     total,

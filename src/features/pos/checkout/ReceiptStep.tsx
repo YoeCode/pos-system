@@ -147,6 +147,12 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, 
               <span>+{loyaltyPointsEarned} pts</span>
             </div>
           )}
+          {sale.loyaltyPointsRedeemed > 0 && (
+            <div className="flex justify-between text-purple-600 mt-0.5">
+              <span>Points Used</span>
+              <span>-{sale.loyaltyPointsRedeemed} pts</span>
+            </div>
+          )}
         </div>
 
         <div className="border-t border-dashed border-gray-300 my-3" />

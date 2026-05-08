@@ -18,7 +18,7 @@ import {
   addCustomProductToCart, updateQuantity, removeFromCart, splitLine, setPaymentMethod,
   startNewSale, selectIsCashBoxOpen, closeCashBox,
   selectActiveWindowCart, selectActiveWindowPaymentMethod, selectActiveWindowCustomerId,
-  selectActiveWindowItemDiscounts, selectActiveWindowManualDiscount,
+  selectActiveWindowItemDiscounts, selectActiveWindowManualDiscount, selectActiveWindowPointsToRedeem,
   setWindowItemDiscounts, setWindowManualDiscount,
 } from '../../features/pos/posSlice';
 import { selectEnableManualProduct, selectFormattedOrderNumber, selectTaxRate, selectTaxLabel, selectTaxIncludedInPrice, selectLoyaltyTiers } from '../../features/settings/settingsSlice';
@@ -35,6 +35,7 @@ const POSPage: React.FC = () => {
   const selectedCustomerId = useAppSelector(selectActiveWindowCustomerId);
   const itemDiscounts = useAppSelector(selectActiveWindowItemDiscounts);
   const manualDiscount = useAppSelector(selectActiveWindowManualDiscount);
+  const pointsToRedeem = useAppSelector(selectActiveWindowPointsToRedeem);
   const products = useAppSelector(state => state.products.items);
   const enableManualProduct = useAppSelector(selectEnableManualProduct);
   const orderNumber = useAppSelector(selectFormattedOrderNumber);
@@ -90,6 +91,7 @@ const POSPage: React.FC = () => {
     itemDiscounts,
     loyaltyTierConfig: selectedCustomer && tierConfig ? tierConfig : undefined,
     manualDiscount,
+    pointsToRedeem,
   });
 
   const { grossSubtotal, totalDiscount, tax, total } = calc;
@@ -463,6 +465,7 @@ const POSPage: React.FC = () => {
         orderNumber={orderNumber}
         customerId={selectedCustomerId ?? undefined}
         discountApplied={totalDiscount}
+        pointsToRedeem={pointsToRedeem}
       />
 
       <CashBoxOpenModal isOpen={showCashBoxModal} onClose={() => setShowCashBoxModal(false)} />

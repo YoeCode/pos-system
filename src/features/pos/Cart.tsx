@@ -3,8 +3,8 @@ import { useAppDispatch, useAppSelector } from '../../app/store';
 import {
   removeFromCart, setPaymentMethod, updateQuantity, splitLine, startNewSale,
   selectActiveWindowCart, selectActiveWindowPaymentMethod, selectActiveWindowCustomerId,
-  selectActiveWindowItemDiscounts, selectActiveWindowManualDiscount,
-  setWindowItemDiscounts, setWindowManualDiscount,
+  selectActiveWindowItemDiscounts, selectActiveWindowManualDiscount, selectActiveWindowPointsToRedeem,
+  setWindowItemDiscounts, setWindowManualDiscount, setPointsToRedeem,
 } from './posSlice';
 import {
   selectTaxRate,
@@ -28,6 +28,7 @@ const Cart: React.FC = () => {
   const selectedCustomerId = useAppSelector(selectActiveWindowCustomerId);
   const itemDiscounts = useAppSelector(selectActiveWindowItemDiscounts);
   const manualDiscount = useAppSelector(selectActiveWindowManualDiscount);
+  const pointsToRedeem = useAppSelector(selectActiveWindowPointsToRedeem);
   const orderNumber = useAppSelector(selectFormattedOrderNumber);
   const taxRate = useAppSelector(selectTaxRate);
   const taxIncludedInPrice = useAppSelector(selectTaxIncludedInPrice);
@@ -49,6 +50,7 @@ const Cart: React.FC = () => {
     itemDiscounts,
     loyaltyTierConfig: selectedCustomer && tierConfig ? tierConfig : undefined,
     manualDiscount,
+    pointsToRedeem,
   });
 
   const { grossSubtotal, totalDiscount, tax, total } = calc;
@@ -182,10 +184,22 @@ const Cart: React.FC = () => {
             <span className="text-text-muted">{t.pos.subtotal}</span>
             <span className="font-mono text-text-primary">${grossSubtotal.toFixed(2)}</span>
           </div>
-          {totalDiscount > 0 && (
+          {calc.lines.some(l => l.discountSource === 'loyalty') && (
             <div className="flex items-center justify-between text-sm">
-              <span className="text-green-600">Discount</span>
-              <span className="font-mono text-green-600">-${totalDiscount.toFixed(2)}</span>
+              <span className="text-purple-600">Desc. {selectedCustomer?.tier}</span>
+              <span className="font-mono text-purple-600">-${(calc.lines.reduce((sum, l) => sum + (l.discountSource === 'loyalty' ? l.appliedDiscount : 0), 0)).toFixed(2)}</span>
+            </div>
+          )}
+          {pointsToRedeem > 0 && (
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-purple-600">Puntos ({pointsToRedeem})</span>
+              <span className="font-mono text-purple-600">-${(pointsToRedeem / 100).toFixed(2)}</span>
+            </div>
+          )}
+          {calc.lines.some(l => l.discountSource === 'manual') && (
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-green-600">Desc. manual</span>
+              <span className="font-mono text-green-600">-${(calc.lines.reduce((sum, l) => sum + (l.discountSource === 'manual' ? l.appliedDiscount : 0), 0)).toFixed(2)}</span>
             </div>
           )}
           <div className="flex items-center justify-between text-sm">
@@ -198,6 +212,35 @@ const Cart: React.FC = () => {
             <span className="font-mono text-primary font-bold text-xl">${total.toFixed(2)}</span>
           </div>
         </div>
+
+        {selectedCustomer && selectedCustomer.loyaltyPoints > 0 && (
+          <div className="p-3 rounded-lg bg-purple-50 border border-purple-200">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-semibold text-purple-700">{selectedCustomer.tier.toUpperCase()} · {selectedCustomer.loyaltyPoints} pts</span>
+              <span className="text-xs text-purple-600">-{pointsToRedeem > 0 ? (pointsToRedeem / 100).toFixed(2) : '0.00'} €</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="range"
+                min={0}
+                max={selectedCustomer.loyaltyPoints}
+                step={1}
+                value={pointsToRedeem}
+                onChange={e => dispatch(setPointsToRedeem(parseInt(e.target.value, 10)))}
+                className="flex-1 accent-purple-600"
+              />
+              <span className="text-xs font-mono text-purple-700 w-12 text-right">{pointsToRedeem}</span>
+            </div>
+            {pointsToRedeem > 0 && (
+              <button
+                onClick={() => dispatch(setPointsToRedeem(0))}
+                className="mt-1.5 text-[10px] text-purple-600 underline"
+              >
+                Cancelar
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Payment method */}
         <div>
@@ -240,6 +283,7 @@ const Cart: React.FC = () => {
         orderNumber={orderNumber}
         customerId={selectedCustomerId ?? undefined}
         discountApplied={totalDiscount}
+        pointsToRedeem={pointsToRedeem}
       />
 
       <DiscountModal

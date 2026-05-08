@@ -125,6 +125,7 @@ export interface Sale {
   terminalId?: string;
   customerId?: string;
   loyaltyPointsEarned: number;
+  loyaltyPointsRedeemed: number;
   discountApplied: number;
   refundIds: string[];
   refundedAmount: number;
@@ -178,6 +179,7 @@ export interface SaleWindow {
   paymentMethod: PaymentMethod;
   itemDiscounts: Record<string, number>;
   manualDiscount: number;
+  pointsToRedeem: number;
   createdAt: string;
 }
 

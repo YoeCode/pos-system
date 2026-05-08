@@ -120,8 +120,14 @@ const PrintableReceipt: React.FC<PrintableReceiptProps> = ({ saleId, loyaltyPoin
           </div>
           {loyaltyPointsEarned > 0 && (
             <div className="flex justify-between text-purple-600 mt-0.5">
-              <span>Puntos</span>
+              <span>Puntos ganados</span>
               <span>+{loyaltyPointsEarned} pts</span>
+            </div>
+          )}
+          {sale.loyaltyPointsRedeemed > 0 && (
+            <div className="flex justify-between text-purple-600 mt-0.5">
+              <span>Puntos usados</span>
+              <span>-{sale.loyaltyPointsRedeemed} pts</span>
             </div>
           )}
         </div>

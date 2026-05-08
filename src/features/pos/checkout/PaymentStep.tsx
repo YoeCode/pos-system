@@ -3,7 +3,7 @@ import { useAppDispatch, useAppSelector } from '../../../app/store';
 import { completeSale } from '../../sales/salesSlice';
 import { reduceStock } from '../../products/productsSlice';
 import { selectTaxLabel, selectPointsPerEuro, selectLoyaltyTiers, selectMultiTerminalMode, selectTerminalId } from '../../settings/settingsSlice';
-import { addLoyaltyPoints } from '../../customers/customersSlice';
+import { addLoyaltyPoints, deductLoyaltyPoints } from '../../customers/customersSlice';
 import { startNewSale } from '../posSlice';
 import { selectActiveEmployees } from '../../employees/employeesSlice';
 import type { CartItem, Order, PaymentMethod, Sale } from '../../../types';
@@ -17,6 +17,7 @@ interface PaymentStepProps {
   orderNumber: string;
   customerId?: string;
   discountApplied: number;
+  pointsToRedeem?: number;
   onComplete: (saleId: string, pointsEarned: number) => void;
 }
 
@@ -35,6 +36,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
   orderNumber,
   customerId,
   discountApplied,
+  pointsToRedeem = 0,
   onComplete,
 }) => {
   const dispatch = useAppDispatch();
@@ -88,6 +90,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
       terminalId: multiTerminalMode ? terminalId : undefined,
       customerId,
       loyaltyPointsEarned,
+      loyaltyPointsRedeemed: pointsToRedeem,
       discountApplied,
       refundIds: [],
       refundedAmount: 0,
@@ -101,6 +104,9 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
 
     if (customerId) {
       dispatch(addLoyaltyPoints({ customerId, points: loyaltyPointsEarned, amountSpent: total, tiers }));
+      if (pointsToRedeem > 0) {
+        dispatch(deductLoyaltyPoints({ customerId, points: pointsToRedeem, amountSpent: 0, tiers }));
+      }
     }
 
     dispatch(startNewSale());

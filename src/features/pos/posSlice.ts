@@ -115,6 +115,7 @@ const createDefaultWindow = (num: number): SaleWindow => ({
   paymentMethod: 'cash',
   itemDiscounts: {},
   manualDiscount: 0,
+  pointsToRedeem: 0,
   createdAt: new Date().toISOString(),
 });
 
@@ -234,6 +235,7 @@ const posSlice = createSlice({
     clearCart: (state) => {
       updateActiveWindow(state, (window) => {
         window.cart = [];
+        window.pointsToRedeem = 0;
       });
     },
     setPaymentMethod: (state, action: PayloadAction<PaymentMethod>) => {
@@ -252,6 +254,12 @@ const posSlice = createSlice({
         window.selectedCustomerId = null;
         window.itemDiscounts = {};
         window.manualDiscount = 0;
+        window.pointsToRedeem = 0;
+      });
+    },
+    setPointsToRedeem: (state, action: PayloadAction<number>) => {
+      updateActiveWindow(state, (window) => {
+        window.pointsToRedeem = Math.max(0, action.payload);
       });
     },
     addCustomProductToCart: (state, action: PayloadAction<{ name: string; category: string; brand?: string; price: number }>) => {
@@ -372,6 +380,7 @@ export const {
   addCashBoxEmployee, removeCashBoxEmployee, closeCashBox, closeCashBoxWithClosure,
   createWindow, closeWindow, setActiveWindow,
   setWindowItemDiscounts, setWindowManualDiscount,
+  setPointsToRedeem,
 } = posSlice.actions;
 export default posSlice.reducer;
 
@@ -405,6 +414,10 @@ export const selectActiveWindowItemDiscounts = (state: RootState): Record<string
 export const selectActiveWindowManualDiscount = (state: RootState): number => {
   const window = selectActiveWindow(state);
   return window?.manualDiscount ?? 0;
+};
+export const selectActiveWindowPointsToRedeem = (state: RootState): number => {
+  const window = selectActiveWindow(state);
+  return window?.pointsToRedeem ?? 0;
 };
 export const selectCanCreateWindow = (state: RootState): boolean => {
   const max = state.settings.pos.maxSaleWindows;
