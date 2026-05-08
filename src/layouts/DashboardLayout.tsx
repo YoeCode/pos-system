@@ -4,6 +4,7 @@ import { useAppDispatch, useAppSelector } from '../app/store';
 import { logout } from '../features/auth/authSlice';
 import { ROLE_PERMISSIONS } from '../types';
 import { selectStoreName } from '../features/settings/settingsSlice';
+import { selectLowStockCount } from '../features/products/productsSlice';
 import { useI18n } from '../i18n/I18nProvider';
 import SaleWindowsTabs from '../features/pos/SaleWindowsTabs';
 
@@ -12,9 +13,10 @@ interface NavItemProps {
   icon: React.ReactNode;
   label: string;
   submenus?: { to: string; label: string }[];
+  badge?: number;
 }
 
-const NavItem: React.FC<NavItemProps> = ({ to, icon, label, submenus }) => {
+const NavItem: React.FC<NavItemProps> = ({ to, icon, label, submenus, badge }) => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const isThisActive = location.pathname === to;
@@ -50,6 +52,11 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, label, submenus }) => {
               <span className="w-5 h-5 lg:w-4 lg:h-4 flex-shrink-0">{icon}</span>
               <span className="hidden sm:inline">{label}</span>
             </div>
+            {badge > 0 && (
+              <span className="ml-auto bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                {badge}
+              </span>
+            )}
           </NavLink>
           {shouldShowDropdown && (
               <div className="ml-6 mt-1">
@@ -86,6 +93,11 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, label, submenus }) => {
         >
           <span className="w-5 h-5 lg:w-4 lg:h-4 flex-shrink-0">{icon}</span>
           <span className="hidden sm:inline">{label}</span>
+          {badge > 0 && (
+            <span className="ml-auto bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+              {badge}
+            </span>
+          )}
         </NavLink>
       )}
     </div>
@@ -144,6 +156,7 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const userPermissions = user ? ROLE_PERMISSIONS[user.role] || [] : [];
+  const lowStockCount = useAppSelector(selectLowStockCount);
 
   const navItems = [
     { to: '/dashboard', icon: <DashboardIcon />, label: t.nav.dashboard, permission: 'dashboard' },
@@ -154,6 +167,7 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
       icon: <InventoryIcon />, 
       label: t.nav.inventory, 
       permission: 'inventory',
+      badge: lowStockCount,
       submenus: [
         { to: '/inventory', label: t.inventory.summary },
         { to: '/inventory?tab=lowstock', label: t.inventory.lowStock },
@@ -219,6 +233,7 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
               icon={item.icon} 
               label={item.label} 
               submenus={item.submenus}
+              badge={item.badge}
             />
           ))}
         </nav>

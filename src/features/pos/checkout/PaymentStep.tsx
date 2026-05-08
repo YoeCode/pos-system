@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../../../app/store';
 import { completeSale } from '../../sales/salesSlice';
-import { reduceStock } from '../../products/productsSlice';
+import { reduceStock, selectAllProducts } from '../../products/productsSlice';
 import { selectTaxLabel, selectPointsPerEuro, selectLoyaltyTiers, selectMultiTerminalMode, selectTerminalId } from '../../settings/settingsSlice';
 import { addLoyaltyPoints, deductLoyaltyPoints } from '../../customers/customersSlice';
 import { startNewSale } from '../posSlice';
 import { selectActiveEmployees } from '../../employees/employeesSlice';
+import { useToast } from '../../../components/ToastProvider';
 import type { CartItem, Order, PaymentMethod, Sale } from '../../../types';
 
 interface PaymentStepProps {
@@ -48,6 +49,8 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
   const multiTerminalMode = useAppSelector(selectMultiTerminalMode);
   const terminalId = useAppSelector(selectTerminalId);
   const allEmployees = useAppSelector(selectActiveEmployees);
+  const products = useAppSelector(selectAllProducts);
+  const { addToast } = useToast();
   const [amountReceived, setAmountReceived] = useState<string>('');
 
   const isCash = paymentMethod === 'cash';
@@ -101,6 +104,40 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
     cart.forEach(item => {
       dispatch(reduceStock({ productId: item.product.id, quantity: item.quantity, size: item.selectedSize }));
     });
+
+    const lowStockItems: string[] = [];
+    cart.forEach(item => {
+      const product = products.find(p => p.id === item.product.id);
+      if (!product || product.status !== 'active') return;
+      if (product.sizes && product.sizes.length > 0 && item.selectedSize) {
+        const sizeEntry = product.sizes.find(s => s.size === item.selectedSize);
+        if (sizeEntry && sizeEntry.stock - item.quantity <= sizeEntry.minStock) {
+          lowStockItems.push(`${product.name} (${item.selectedSize})`);
+        }
+      } else if (product.stock - item.quantity <= product.minStock) {
+        lowStockItems.push(product.name);
+      }
+    });
+
+    if (lowStockItems.length > 0) {
+      const criticalCount = lowStockItems.filter((_, i) => {
+        const item = cart[i];
+        if (!item) return false;
+        const product = products.find(p => p.id === item.product.id);
+        if (!product) return false;
+        if (product.sizes && item.selectedSize) {
+          const sizeEntry = product.sizes.find(s => s.size === item.selectedSize);
+          return sizeEntry ? sizeEntry.stock - item.quantity === 0 : false;
+        }
+        return product.stock - item.quantity === 0;
+      }).length;
+
+      if (criticalCount > 0) {
+        addToast(`${criticalCount} producto${criticalCount > 1 ? 's' : ''} sin stock tras la venta`, 'error');
+      } else {
+        addToast(`${lowStockItems.length} producto${lowStockItems.length > 1 ? 's' : ''} con stock bajo tras la venta`, 'warning');
+      }
+    }
 
     if (customerId) {
       dispatch(addLoyaltyPoints({ customerId, points: loyaltyPointsEarned, amountSpent: total, tiers }));

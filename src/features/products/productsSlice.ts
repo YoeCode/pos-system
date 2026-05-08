@@ -331,3 +331,60 @@ const productsSlice = createSlice({
 
 export const { setProducts, selectProduct, addProduct, updateProduct, setSearchQuery, setSelectedCategory, setStatusFilter, setStockFilter, setPublishedFilter, reduceStock, restoreStock } = productsSlice.actions;
 export default productsSlice.reducer;
+
+export interface StockAlertItem {
+  productId: string;
+  productName: string;
+  sku: string;
+  stock: number;
+  minStock: number;
+  severity: 'critical' | 'warning';
+  sizes?: { size: string; stock: number; minStock: number }[];
+}
+
+export const selectAllProducts = (state: { products: ProductsState }): Product[] => state.products.items;
+
+export const selectLowStockAlerts = (state: { products: ProductsState }): StockAlertItem[] => {
+  const alerts: StockAlertItem[] = [];
+  state.products.items.forEach(product => {
+    if (product.status !== 'active') return;
+    if (product.sizes && product.sizes.length > 0) {
+      const lowSizes = product.sizes.filter(s => s.stock <= s.minStock);
+      if (lowSizes.length > 0) {
+        const totalStock = product.sizes.reduce((sum, s) => sum + s.stock, 0);
+        const totalMin = product.sizes.reduce((sum, s) => sum + s.minStock, 0);
+        alerts.push({
+          productId: product.id,
+          productName: product.name,
+          sku: product.sku,
+          stock: totalStock,
+          minStock: totalMin,
+          severity: totalStock === 0 ? 'critical' : 'warning',
+          sizes: lowSizes.map(s => ({ size: s.size, stock: s.stock, minStock: s.minStock })),
+        });
+      }
+    } else {
+      if (product.stock <= product.minStock) {
+        alerts.push({
+          productId: product.id,
+          productName: product.name,
+          sku: product.sku,
+          stock: product.stock,
+          minStock: product.minStock,
+          severity: product.stock === 0 ? 'critical' : 'warning',
+        });
+      }
+    }
+  });
+  return alerts.sort((a, b) => {
+    if (a.severity === 'critical' && b.severity !== 'critical') return -1;
+    if (b.severity === 'critical' && a.severity !== 'critical') return 1;
+    return (a.stock / a.minStock) - (b.stock / b.minStock);
+  });
+};
+
+export const selectLowStockCount = (state: { products: ProductsState }): number =>
+  selectLowStockAlerts(state).length;
+
+export const selectCriticalStockCount = (state: { products: ProductsState }): number =>
+  selectLowStockAlerts(state).filter(a => a.severity === 'critical').length;

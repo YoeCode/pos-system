@@ -5,6 +5,7 @@ import SalesChart from './SalesChart';
 import PaymentMethodChart from './PaymentMethodChart';
 import RecentSales from './RecentSales';
 import LowStockAlerts from './LowStockAlerts';
+import StockAlertBanner from '../../components/StockAlertBanner';
 import { useI18n } from '../../i18n/I18nProvider';
 
 const DashboardPage = () => {
@@ -29,15 +30,15 @@ const DashboardPage = () => {
 
   const topProduct = Object.values(productSales).sort((a, b) => b.revenue - a.revenue)[0];
 
-  const lowStockProducts = products.filter(p => p.stock <= p.minStock);
-
   return (
-    <div className="p-4 lg:p-6 flex flex-col gap-4 lg:gap-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-xl lg:text-2xl font-bold text-text-primary">{t.dashboard.title}</h1>
-        <p className="text-text-muted mt-1 text-sm lg:text-base">{t.dashboard.title}</p>
-      </div>
+    <div className="flex flex-col gap-4 lg:gap-6">
+      <StockAlertBanner />
+      <div className="p-4 lg:p-6 flex flex-col gap-4 lg:gap-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-xl lg:text-2xl font-bold text-text-primary">{t.dashboard.title}</h1>
+          <p className="text-text-muted mt-1 text-sm lg:text-base">{t.dashboard.title}</p>
+        </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
@@ -102,8 +103,9 @@ const DashboardPage = () => {
           <RecentSales sales={sales.slice(0, 5)} />
         </div>
         <div className="bg-white rounded-xl border border-border p-4 lg:p-5">
-          <LowStockAlerts products={lowStockProducts} />
+          <LowStockAlerts />
         </div>
+      </div>
       </div>
     </div>
   );
