@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/store';
-import { updateProduct, DEFAULT_CATEGORIES } from './productsSlice';
+import { updateProductAsync, DEFAULT_CATEGORIES } from './productsSlice';
 import { usePermission } from '../../hooks/usePermission';
 import type { Product, Employee } from '../../types';
 import Toggle from '../../components/ui/Toggle';
@@ -152,7 +152,7 @@ const ProductDetailPanel: React.FC = () => {
       image: form.image || undefined,
       sizes: updatedSizes,
     };
-    dispatch(updateProduct(updated));
+    dispatch(updateProductAsync(updated));
     setIsEditing(false);
     setUnlockedActions(new Set());
     setAuthorizedBy(null);

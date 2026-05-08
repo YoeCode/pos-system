@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../../../app/store';
 import { completeSale } from '../../sales/salesSlice';
-import { reduceStock, selectAllProducts } from '../../products/productsSlice';
+import { reduceStockAsync, selectAllProducts } from '../../products/productsSlice';
 import { selectTaxLabel, selectPointsPerEuro, selectLoyaltyTiers, selectMultiTerminalMode, selectTerminalId } from '../../settings/settingsSlice';
 import { addLoyaltyPoints, deductLoyaltyPoints } from '../../customers/customersSlice';
 import { startNewSale } from '../posSlice';
@@ -102,7 +102,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
     dispatch(completeSale(sale));
 
     cart.forEach(item => {
-      dispatch(reduceStock({ productId: item.product.id, quantity: item.quantity, size: item.selectedSize }));
+        dispatch(reduceStockAsync({ productId: item.product.id, quantity: item.quantity, size: item.selectedSize }));
     });
 
     const lowStockItems: string[] = [];

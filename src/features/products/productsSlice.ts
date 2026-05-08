@@ -1,6 +1,14 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
 import type { Product, ProductSize } from '../../types';
+import {
+  fetchProducts,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  reduceStock,
+  restoreStock,
+} from './productsService';
 
 export const DEFAULT_CATEGORIES = ['Electronics', 'Food', 'Drinks', 'Apparel', 'Lencería', 'Bakery', 'Merchandise'];
 
@@ -38,212 +46,6 @@ export const createEmptyForm = (): ProductFormState => ({
   sizeGroupId: '',
 });
 
-const mockProducts: Product[] = [
-  {
-    id: '1',
-    name: 'Summit Pro Watch',
-    sku: 'WT-992-SMT',
-    category: 'Electronics',
-    brand: 'TechFit',
-    price: 299,
-    costPrice: 180,
-    stock: 142,
-    minStock: 20,
-    status: 'active',
-    publishedOnline: true,
-    version: 'v2.1',
-    description: 'Premium smartwatch with advanced fitness tracking and GPS.',
-  },
-  {
-    id: '2',
-    name: 'AudioCore Wireless',
-    sku: 'AD-402-WRL',
-    category: 'Electronics',
-    brand: 'SoundPro',
-    price: 189,
-    costPrice: 95,
-    stock: 8,
-    minStock: 10,
-    status: 'active',
-    publishedOnline: true,
-    version: 'v1.4',
-    description: 'High-fidelity wireless headphones with active noise cancellation.',
-  },
-  {
-    id: '3',
-    name: 'Camiseta Básica',
-    sku: 'CB-001-BAS',
-    category: 'Apparel',
-    brand: 'Casa Lis',
-    price: 25,
-    costPrice: 12,
-    stock: 0,
-    minStock: 20,
-    status: 'active',
-    publishedOnline: true,
-    sizes: [
-      { size: 'S', stock: 15, minStock: 5 },
-      { size: 'M', stock: 8, minStock: 5 },
-      { size: 'L', stock: 3, minStock: 5 },
-      { size: 'XL', stock: 0, minStock: 5 },
-    ],
-    description: 'Camiseta básica de algodón.',
-  },
-  {
-    id: '3b',
-    name: 'Sujetador Everyday',
-    sku: 'SUJ-EVY-01',
-    category: 'Lencería',
-    brand: 'Casa Lis',
-    price: 35,
-    costPrice: 15,
-    stock: 0,
-    minStock: 30,
-    status: 'active',
-    publishedOnline: true,
-    sizes: [
-      { size: '80A', stock: 5, minStock: 3 },
-      { size: '80B', stock: 8, minStock: 3 },
-      { size: '85A', stock: 12, minStock: 3 },
-      { size: '85B', stock: 6, minStock: 3 },
-      { size: '90A', stock: 2, minStock: 3 },
-      { size: '90B', stock: 0, minStock: 3 },
-    ],
-    description: 'Sujetador everyday suave.',
-  },
-  {
-    id: '3c',
-    name: 'Pantalón Classic',
-    sku: 'PNT-CLS-01',
-    category: 'Apparel',
-    brand: 'Casa Lis',
-    price: 45,
-    costPrice: 20,
-    stock: 0,
-    minStock: 15,
-    status: 'active',
-    publishedOnline: true,
-    sizes: [
-      { size: '38', stock: 4, minStock: 3 },
-      { size: '40', stock: 6, minStock: 3 },
-      { size: '42', stock: 2, minStock: 3 },
-      { size: '44', stock: 0, minStock: 3 },
-    ],
-    description: 'Pantalón classic tela elástica.',
-  },
-  {
-    id: '3d',
-    name: 'Vestido Floral',
-    sku: 'VST-FLR-01',
-    category: 'Apparel',
-    brand: 'Casa Lis',
-    price: 55,
-    costPrice: 25,
-    stock: 0,
-    minStock: 10,
-    status: 'active',
-    publishedOnline: true,
-    sizes: [
-      { size: 'XS', stock: 3, minStock: 2 },
-      { size: 'S', stock: 7, minStock: 2 },
-      { size: 'M', stock: 10, minStock: 2 },
-      { size: 'L', stock: 5, minStock: 2 },
-      { size: 'XL', stock: 1, minStock: 2 },
-    ],
-    description: 'Vestido floral primavera.',
-  },
-  {
-    id: '3e',
-    name: 'Braguita Cotton',
-    sku: 'BRG-CTN-01',
-    category: 'Lencería',
-    brand: 'Casa Lis',
-    price: 12,
-    costPrice: 5,
-    stock: 0,
-    minStock: 50,
-    status: 'active',
-    publishedOnline: true,
-    sizes: [
-      { size: 'S', stock: 20, minStock: 10 },
-      { size: 'M', stock: 25, minStock: 10 },
-      { size: 'L', stock: 15, minStock: 10 },
-      { size: 'XL', stock: 8, minStock: 10 },
-    ],
-    description: 'Braguita algodón suave.',
-  },
-  {
-    id: '4',
-    name: 'Chocolate Glazed',
-    sku: 'CG-001',
-    category: 'Food',
-    brand: 'FreshBakery',
-    price: 4.50,
-    costPrice: 1.20,
-    stock: 200,
-    minStock: 30,
-    status: 'active',
-    publishedOnline: false,
-    description: 'Classic chocolate glazed donut, freshly baked daily.',
-  },
-  {
-    id: '5',
-    name: 'Caramel Iced Latte',
-    sku: 'CL-002',
-    category: 'Drinks',
-    brand: 'BeanHouse',
-    price: 5.25,
-    costPrice: 1.80,
-    stock: 150,
-    minStock: 20,
-    status: 'active',
-    publishedOnline: false,
-    description: 'Creamy caramel iced latte with oat milk option.',
-  },
-  {
-    id: '6',
-    name: 'Classic Cheeseburger',
-    sku: 'CB-003',
-    category: 'Food',
-    brand: 'GrillHouse',
-    price: 12.00,
-    costPrice: 4.50,
-    stock: 80,
-    minStock: 15,
-    status: 'active',
-    publishedOnline: false,
-    description: 'Juicy beef patty with cheddar cheese, lettuce, and tomato.',
-  },
-  {
-    id: '7',
-    name: 'Artisan Lime Soda',
-    sku: 'ALS-004',
-    category: 'Drinks',
-    brand: 'FizzCo',
-    price: 3.75,
-    costPrice: 0.90,
-    stock: 120,
-    minStock: 15,
-    status: 'active',
-    publishedOnline: false,
-    description: 'Refreshing artisan sparkling soda with natural lime flavor.',
-  },
-  {
-    id: '8',
-    name: 'Avocado Brunch',
-    sku: 'AVB-005',
-    category: 'Food',
-    brand: 'GreenKitchen',
-    price: 14.50,
-    costPrice: 6.00,
-    stock: 45,
-    minStock: 10,
-    status: 'active',
-    publishedOnline: false,
-    description: 'Toasted sourdough with smashed avocado, poached eggs, and chili flakes.',
-  },
-];
-
 interface ProductsState {
   items: Product[];
   selectedProduct: Product | null;
@@ -252,34 +54,78 @@ interface ProductsState {
   statusFilter: string;
   stockFilter: string;
   publishedFilter: string;
+  isLoading: boolean;
+  error: string | null;
 }
 
 const initialState: ProductsState = {
-  items: mockProducts,
+  items: [],
   selectedProduct: null,
   searchQuery: '',
   selectedCategory: 'All',
   statusFilter: 'all',
   stockFilter: 'all',
   publishedFilter: 'all',
+  isLoading: false,
+  error: null,
 };
+
+export const fetchProductsAsync = createAsyncThunk(
+  'products/fetchProductsAsync',
+  async () => {
+    return fetchProducts();
+  }
+);
+
+export const createProductAsync = createAsyncThunk(
+  'products/createProductAsync',
+  async (product: Product) => {
+    const result = await createProduct(product);
+    if (!result) throw new Error('Failed to create product');
+    return result;
+  }
+);
+
+export const updateProductAsync = createAsyncThunk(
+  'products/updateProductAsync',
+  async (product: Product) => {
+    const result = await updateProduct(product);
+    if (!result) throw new Error('Failed to update product');
+    return result;
+  }
+);
+
+export const deleteProductAsync = createAsyncThunk(
+  'products/deleteProductAsync',
+  async (id: string) => {
+    const result = await deleteProduct(id);
+    if (!result) throw new Error('Failed to delete product');
+    return id;
+  }
+);
+
+export const reduceStockAsync = createAsyncThunk(
+  'products/reduceStockAsync',
+  async ({ productId, quantity, size }: { productId: string; quantity: number; size?: string }) => {
+    await reduceStock(productId, quantity, size);
+    return { productId, quantity, size };
+  }
+);
+
+export const restoreStockAsync = createAsyncThunk(
+  'products/restoreStockAsync',
+  async ({ productId, quantity, size }: { productId: string; quantity: number; size?: string }) => {
+    await restoreStock(productId, quantity, size);
+    return { productId, quantity, size };
+  }
+);
 
 const productsSlice = createSlice({
   name: 'products',
   initialState,
   reducers: {
-    setProducts: (state, action: PayloadAction<Product[]>) => {
-      state.items = action.payload;
-    },
     selectProduct: (state, action: PayloadAction<Product | null>) => {
       state.selectedProduct = action.payload;
-    },
-    addProduct: (state, action: PayloadAction<Product>) => {
-      state.items.push(action.payload);
-    },
-    updateProduct: (state, action: PayloadAction<Product>) => {
-      const idx = state.items.findIndex(p => p.id === action.payload.id);
-      if (idx !== -1) state.items[idx] = action.payload;
     },
     setSearchQuery: (state, action: PayloadAction<string>) => {
       state.searchQuery = action.payload;
@@ -296,40 +142,72 @@ const productsSlice = createSlice({
     setPublishedFilter: (state, action: PayloadAction<string>) => {
       state.publishedFilter = action.payload;
     },
-    reduceStock: (state, action: PayloadAction<{ productId: string; quantity: number; size?: string }>) => {
-      const { productId, quantity, size } = action.payload;
-      const product = state.items.find(p => p.id === productId);
-      if (!product) return;
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchProductsAsync.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchProductsAsync.fulfilled, (state, action: PayloadAction<Product[]>) => {
+        state.isLoading = false;
+        state.items = action.payload;
+      })
+      .addCase(fetchProductsAsync.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.error.message || 'Failed to fetch products';
+      })
+      .addCase(createProductAsync.fulfilled, (state, action: PayloadAction<Product>) => {
+        state.items.push(action.payload);
+      })
+      .addCase(updateProductAsync.fulfilled, (state, action: PayloadAction<Product>) => {
+        const idx = state.items.findIndex(p => p.id === action.payload.id);
+        if (idx !== -1) state.items[idx] = action.payload;
+      })
+      .addCase(deleteProductAsync.fulfilled, (state, action: PayloadAction<string>) => {
+        state.items = state.items.filter(p => p.id !== action.payload);
+      })
+      .addCase(reduceStockAsync.fulfilled, (state, action) => {
+        const { productId, quantity, size } = action.payload;
+        const product = state.items.find(p => p.id === productId);
+        if (!product) return;
 
-      if (size && product.sizes) {
-        const sizeEntry = product.sizes.find(s => s.size === size);
-        if (sizeEntry) {
-          sizeEntry.stock = Math.max(0, sizeEntry.stock - quantity);
+        if (size && product.sizes) {
+          const sizeEntry = product.sizes.find(s => s.size === size);
+          if (sizeEntry) {
+            sizeEntry.stock = Math.max(0, sizeEntry.stock - quantity);
+          }
+          product.stock = product.sizes.reduce((sum, s) => sum + s.stock, 0);
+        } else {
+          product.stock = Math.max(0, product.stock - quantity);
         }
-        product.stock = product.sizes.reduce((sum, s) => sum + s.stock, 0);
-      } else {
-        product.stock = Math.max(0, product.stock - quantity);
-      }
-    },
-    restoreStock: (state, action: PayloadAction<{ productId: string; quantity: number; size?: string }>) => {
-      const { productId, quantity, size } = action.payload;
-      const product = state.items.find(p => p.id === productId);
-      if (!product) return;
+      })
+      .addCase(restoreStockAsync.fulfilled, (state, action) => {
+        const { productId, quantity, size } = action.payload;
+        const product = state.items.find(p => p.id === productId);
+        if (!product) return;
 
-      if (size && product.sizes) {
-        const sizeEntry = product.sizes.find(s => s.size === size);
-        if (sizeEntry) {
-          sizeEntry.stock += quantity;
+        if (size && product.sizes) {
+          const sizeEntry = product.sizes.find(s => s.size === size);
+          if (sizeEntry) {
+            sizeEntry.stock += quantity;
+          }
+          product.stock = product.sizes.reduce((sum, s) => sum + s.stock, 0);
+        } else {
+          product.stock += quantity;
         }
-        product.stock = product.sizes.reduce((sum, s) => sum + s.stock, 0);
-      } else {
-        product.stock += quantity;
-      }
-    },
+      });
   },
 });
 
-export const { setProducts, selectProduct, addProduct, updateProduct, setSearchQuery, setSelectedCategory, setStatusFilter, setStockFilter, setPublishedFilter, reduceStock, restoreStock } = productsSlice.actions;
+export const {
+  selectProduct,
+  setSearchQuery,
+  setSelectedCategory,
+  setStatusFilter,
+  setStockFilter,
+  setPublishedFilter,
+} = productsSlice.actions;
 export default productsSlice.reducer;
 
 export interface StockAlertItem {

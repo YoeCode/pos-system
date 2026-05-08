@@ -6,6 +6,7 @@ import { router } from './router';
 import { I18nProvider } from './i18n/I18nProvider';
 import { ToastProvider } from './components/ToastProvider';
 import { initializeAuth } from './features/auth/authSlice';
+import { fetchProductsAsync } from './features/products/productsSlice';
 import { useAppDispatch } from './app/store';
 
 function AppInner() {
@@ -13,6 +14,7 @@ function AppInner() {
 
   useEffect(() => {
     dispatch(initializeAuth());
+    dispatch(fetchProductsAsync());
   }, [dispatch]);
 
   return (

@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/store';
-import { addProduct, DEFAULT_CATEGORIES, createEmptyForm, type ProductFormState } from './productsSlice';
+import { createProductAsync, DEFAULT_CATEGORIES, createEmptyForm, type ProductFormState } from './productsSlice';
 import { selectSizeGroups } from '../settings/settingsSlice';
 import type { Product } from '../../types';
 import Modal from '../../components/ui/Modal';
@@ -52,7 +52,7 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
       sizeGroupId: form.sizeGroupId || undefined,
     };
 
-    dispatch(addProduct(newProduct));
+    dispatch(createProductAsync(newProduct));
     handleClose();
   };
 

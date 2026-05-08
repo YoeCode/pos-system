@@ -3,7 +3,7 @@ import { useAppDispatch, useAppSelector } from '../../app/store';
 import { selectAllSales } from '../../features/sales/salesSlice';
 import { selectRefundSettings } from '../../features/settings/settingsSlice';
 import { selectActiveEmployees } from '../../features/employees/employeesSlice';
-import { restoreStock } from '../../features/products/productsSlice';
+import { restoreStockAsync } from '../../features/products/productsSlice';
 import { deductLoyaltyPoints } from '../../features/customers/customersSlice';
 import { addRefund } from './refundsSlice';
 import Modal from '../../components/ui/Modal';
@@ -139,7 +139,7 @@ const RefundModal: React.FC<RefundModalProps> = ({ isOpen, onClose }) => {
     dispatch(addRefund(refund));
 
     items.forEach(item => {
-      dispatch(restoreStock({ productId: item.productId, quantity: item.quantity, size: item.selectedSize }));
+      dispatch(restoreStockAsync({ productId: item.productId, quantity: item.quantity, size: item.selectedSize }));
     });
 
     if (selectedSale.customerId && selectedSale.loyaltyPointsEarned > 0) {
