@@ -37,7 +37,7 @@ const SaleWindowsTabs: React.FC = () => {
 
   return (
     <>
-      <div className="flex items-end px-2 bg-surface border-b border-border">
+      <div className="flex items-end px-2 pt-1 bg-surface">
         {windows.map((window) => {
           const isActive = window.id === activeWindowId;
           const itemCount = window.cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -49,8 +49,8 @@ const SaleWindowsTabs: React.FC = () => {
                 relative flex items-center gap-2 px-4 py-2.5 text-sm font-medium cursor-pointer select-none
                 transition-all duration-200 min-w-[120px] max-w-[180px]
                 ${isActive
-                  ? 'bg-background text-text-primary rounded-t-xl z-10 -mb-px border-t-2 border-l border-r border-b border-background border-t-primary shadow-[0_-2px_8px_rgba(0,0,0,0.04)]'
-                  : 'bg-gray-100 text-text-muted hover:bg-gray-200 hover:text-text-primary rounded-t-lg -mb-0 border border-transparent hover:border-gray-300'
+                  ? 'bg-background text-text-primary rounded-t-xl z-10 shadow-[0_-2px_8px_rgba(0,0,0,0.04)]'
+                  : 'bg-gray-100 text-text-muted hover:bg-gray-200 hover:text-text-primary rounded-t-lg'
                 }
               `}
               style={{
@@ -58,6 +58,12 @@ const SaleWindowsTabs: React.FC = () => {
                 paddingLeft: isActive ? '16px' : '20px',
               }}
             >
+              {isActive && (
+                <>
+                  <div className="absolute -top-0 left-0 right-0 h-0.5 bg-primary rounded-t-xl" />
+                  <div className="absolute -left-px -right-px top-full h-[2px] bg-background" />
+                </>
+              )}
               <span className="truncate flex-1">{window.name}</span>
               {itemCount > 0 && (
                 <span className={`
