@@ -60,7 +60,7 @@ const EmployeeSelector: React.FC = () => {
           >
             {emp.name}
           </button>
-          {isCashBoxOpen && workingEmployeeIds.includes(emp.id) && (
+          {isCashBoxOpen && workingEmployeeIds.includes(emp.id) && !(loggedInUser && emp.email.toLowerCase() === loggedInUser.email.toLowerCase()) && (
             <button
               type="button"
               onClick={(e) => {
