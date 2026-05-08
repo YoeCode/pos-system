@@ -107,7 +107,11 @@ const POSPage: React.FC = () => {
     <div className="flex flex-col h-[calc(100vh-57px)] lg:flex-row w-full min-w-0 overflow-x-hidden">
       {/* Products area */}
       <div className="flex-1 flex flex-col overflow-hidden min-w-0 pb-20 lg:pb-0">
-        <div className="px-3 lg:px-6 pt-3 lg:pt-5 pb-2 flex-shrink-0">
+        {isCashBoxOpen && (
+          <SaleWindowsTabs />
+        )}
+
+        <div className="px-3 lg:px-6 pt-3 lg:pt-4 pb-2 flex-shrink-0">
           <div className="flex items-center justify-between">
             {isCashBoxOpen ? (
               <>
@@ -148,11 +152,7 @@ const POSPage: React.FC = () => {
         </div>
 
         {isCashBoxOpen && (
-          <SaleWindowsTabs />
-        )}
-
-        {isCashBoxOpen && (
-          <div className="px-3 lg:px-6 pt-3 pb-2 flex-shrink-0">
+          <div className="px-3 lg:px-6 pt-2 pb-2 flex-shrink-0">
             <div className="flex items-center justify-between gap-2 mb-3">
               <div className="flex-1 min-w-0">
                 <CategoryPills />

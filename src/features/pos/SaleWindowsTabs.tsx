@@ -37,7 +37,7 @@ const SaleWindowsTabs: React.FC = () => {
 
   return (
     <>
-      <div className="flex items-end gap-0.5 overflow-x-auto scrollbar-hide bg-gray-100/80 px-2 pt-1.5 border-b border-gray-300">
+      <div className="flex items-end gap-0.5 overflow-x-auto scrollbar-hide bg-gray-100/80 px-2 border-b border-gray-300">
         {windows.map((window, index) => {
           const isActive = window.id === activeWindowId;
           const itemCount = window.cart.reduce((sum, item) => sum + item.quantity, 0);
