@@ -78,25 +78,25 @@ const dashboardSlice = createSlice({
 export const { setDateRange } = dashboardSlice.actions;
 export default dashboardSlice.reducer;
 
-export const selectTodaySales = (state: { dashboard: DashboardState }) => {
+export const selectTodaySales = (state: { sales: { sales: Sale[] } }) => {
   const now = new Date();
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  return state.dashboard.sales.filter(s => new Date(s.completedAt) >= startOfDay);
+  return state.sales.sales.filter(s => new Date(s.completedAt) >= startOfDay);
 };
 
-export const selectWeekSales = (state: { dashboard: DashboardState }) => {
+export const selectWeekSales = (state: { sales: { sales: Sale[] } }) => {
   const weekAgo = new Date();
   weekAgo.setDate(weekAgo.getDate() - 7);
-  return state.dashboard.sales.filter(s => new Date(s.completedAt) >= weekAgo);
+  return state.sales.sales.filter(s => new Date(s.completedAt) >= weekAgo);
 };
 
-export const selectMonthSales = (state: { dashboard: DashboardState }) => {
+export const selectMonthSales = (state: { sales: { sales: Sale[] } }) => {
   const monthAgo = new Date();
   monthAgo.setMonth(monthAgo.getMonth() - 1);
-  return state.dashboard.sales.filter(s => new Date(s.completedAt) >= monthAgo);
+  return state.sales.sales.filter(s => new Date(s.completedAt) >= monthAgo);
 };
 
-export const selectFilteredSales = (state: { dashboard: DashboardState }) => {
+export const selectFilteredSales = (state: { sales: { sales: Sale[] }; dashboard: DashboardState }) => {
   const { dateRange } = state.dashboard;
   if (dateRange === 'today') return selectTodaySales(state);
   if (dateRange === 'week') return selectWeekSales(state);
