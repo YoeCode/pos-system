@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useAppSelector } from '../../app/store';
-import { selectLowStockAlerts } from '../../features/products/productsSlice';
+import { useAppSelector } from '../app/store';
+import { selectLowStockAlerts } from '../features/products/productsSlice';
 import { useNavigate } from 'react-router-dom';
 
 const StockAlertBanner: React.FC = () => {
