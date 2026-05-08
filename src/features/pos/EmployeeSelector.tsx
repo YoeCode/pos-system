@@ -44,41 +44,50 @@ const EmployeeSelector: React.FC = () => {
 
   return (
     <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-      {displayedEmployees.map(emp => (
-        <div
-          key={emp.id}
-          className={`flex-shrink-0 flex items-center gap-1 pl-3 pr-1 py-1.5 rounded-full text-sm font-medium transition-all duration-150 ${
-            currentEmployeeId === emp.id
-              ? 'bg-green-600 text-white shadow-sm'
-              : 'bg-white border border-border text-text-muted hover:border-green-600 hover:text-green-600'
-          }`}
-        >
-          <button
-            type="button"
-            onClick={() => dispatch(setCurrentEmployee(currentEmployeeId === emp.id ? null : emp.id))}
-            className="leading-none"
+      {displayedEmployees.map(emp => {
+        const isActive = currentEmployeeId === emp.id;
+        return (
+          <div
+            key={emp.id}
+            className={`
+              flex-shrink-0 flex items-center gap-1 pl-3.5 pr-1.5 py-2 rounded-full text-sm font-semibold
+              transition-all duration-150 border-2 shadow-sm
+              ${isActive
+                ? 'bg-green-600 border-green-700 text-white shadow-green-200'
+                : 'bg-white border-gray-200 text-gray-600 hover:border-green-400 hover:text-green-700 hover:shadow-md'
+              }
+            `}
           >
-            {emp.name}
-          </button>
-          {isCashBoxOpen && workingEmployeeIds.includes(emp.id) && !(loggedInUser && emp.email.toLowerCase() === loggedInUser.email.toLowerCase()) && (
             <button
               type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                dispatch(removeCashBoxEmployee(emp.id));
-              }}
-              className={`ml-1 w-5 h-5 flex items-center justify-center rounded-full text-xs transition-colors ${
-                currentEmployeeId === emp.id
-                  ? 'hover:bg-green-500 text-green-100'
-                  : 'hover:bg-gray-100 text-text-muted'
-              }`}
-              title="Eliminar de la caja"
+              onClick={() => dispatch(setCurrentEmployee(isActive ? null : emp.id))}
+              className="leading-none"
             >
-              ×
+              {emp.name}
             </button>
-          )}
-        </div>
-      ))}
+            {isCashBoxOpen && workingEmployeeIds.includes(emp.id) && !(loggedInUser && emp.email.toLowerCase() === loggedInUser.email.toLowerCase()) && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  dispatch(removeCashBoxEmployee(emp.id));
+                }}
+                className={`
+                  ml-1 w-5 h-5 flex items-center justify-center rounded-full text-xs
+                  transition-colors font-bold
+                  ${isActive
+                    ? 'hover:bg-green-500 text-green-100 hover:text-white'
+                    : 'hover:bg-gray-100 text-gray-400 hover:text-red-500'
+                  }
+                `}
+                title="Eliminar de la caja"
+              >
+                ×
+              </button>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 };

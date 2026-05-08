@@ -108,70 +108,70 @@ const POSPage: React.FC = () => {
       {/* Products area */}
       <div className="flex-1 flex flex-col overflow-hidden min-w-0 pb-20 lg:pb-0">
         <div className="px-3 lg:px-6 pt-3 lg:pt-5 pb-2 flex-shrink-0">
-          <div className="mb-3">
-            <div className="flex items-center justify-between">
-              {isCashBoxOpen ? (
-                <>
-                  <EmployeeSelector />
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setShowAddEmployeeModal(true)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 border border-blue-200 rounded-full hover:bg-blue-50 transition-colors"
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                      </svg>
-                      Añadir vendedor
-                    </button>
-                    <button
-                      onClick={() => setShowCloseBoxConfirm(true)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 border border-red-200 rounded-full hover:bg-red-50 transition-colors"
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m0 0v2m0-2h2m-2 0H8m13-6a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      Cerrar caja
-                    </button>
-                  </div>
-                </>
-              ) : (
+          <div className="flex items-center justify-between">
+            {isCashBoxOpen ? (
+              <>
+                <EmployeeSelector />
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowAddEmployeeModal(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 border border-blue-200 rounded-full hover:bg-blue-50 transition-colors"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                    </svg>
+                    Añadir vendedor
+                  </button>
+                  <button
+                    onClick={() => setShowCloseBoxConfirm(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 border border-red-200 rounded-full hover:bg-red-50 transition-colors"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m0 0v2m0-2h2m-2 0H8m13-6a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Cerrar caja
+                  </button>
+                </div>
+              </>
+            ) : (
+              <button
+                onClick={() => setShowCashBoxModal(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 border border-green-200 bg-green-50 rounded-full hover:bg-green-100 transition-colors"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Abrir caja
+              </button>
+            )}
+          </div>
+        </div>
+
+        {isCashBoxOpen && (
+          <SaleWindowsTabs />
+        )}
+
+        {isCashBoxOpen && (
+          <div className="px-3 lg:px-6 pt-3 pb-2 flex-shrink-0">
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <div className="flex-1 min-w-0">
+                <CategoryPills />
+              </div>
+              {enableManualProduct && (
                 <button
-                  onClick={() => setShowCashBoxModal(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 border border-green-200 bg-green-50 rounded-full hover:bg-green-100 transition-colors"
+                  onClick={() => setIsManualModalOpen(true)}
+                  className="hidden sm:flex px-3 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors items-center gap-2 whitespace-nowrap"
                 >
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </svg>
-                  Abrir caja
+                  <span className="hidden md:inline">{t.settings.addManualProduct}</span>
                 </button>
               )}
             </div>
+            <SearchInput />
           </div>
-          {isCashBoxOpen && (
-            <>
-              <div className="mb-3">
-                <SaleWindowsTabs />
-              </div>
-              <div className="flex items-center justify-between gap-2 mb-3">
-                <div className="flex-1 min-w-0">
-                  <CategoryPills />
-                </div>
-                {enableManualProduct && (
-                  <button
-                    onClick={() => setIsManualModalOpen(true)}
-                    className="hidden sm:flex px-3 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors items-center gap-2 whitespace-nowrap"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                    <span className="hidden md:inline">{t.settings.addManualProduct}</span>
-                  </button>
-                )}
-              </div>
-              <SearchInput />
-            </>
-          )}
-        </div>
+        )}
 
         {isCashBoxOpen ? (
           <div className="flex-1 overflow-y-auto px-3 lg:px-6 pb-4">
