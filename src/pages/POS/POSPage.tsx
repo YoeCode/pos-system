@@ -156,10 +156,6 @@ const POSPage: React.FC = () => {
             )}
           </div>
         </div>
-      </>
-    )}
-  </>);
-};
 
         {isCashBoxOpen && (
           <div className="px-3 lg:px-6 pt-2 pb-2 flex-shrink-0">
