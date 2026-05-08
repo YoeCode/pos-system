@@ -34,6 +34,10 @@ const PosSettingsSection: React.FC = () => {
   const [multiTerminalMode, setMultiTerminalMode] = useState(reduxPos.multiTerminalMode);
   const [terminalId, setTerminalId] = useState(reduxPos.terminalId || '');
   const [maxSaleWindows, setMaxSaleWindows] = useState(String(reduxPos.maxSaleWindows));
+  const [refundEnabled, setRefundEnabled] = useState(reduxPos.refundSettings?.enabled ?? true);
+  const [refundRequirePin, setRefundRequirePin] = useState(reduxPos.refundSettings?.requirePin ?? true);
+  const [refundPinThreshold, setRefundPinThreshold] = useState(String(reduxPos.refundSettings?.pinThreshold ?? 50));
+  const [refundMaxDays, setRefundMaxDays] = useState(String(reduxPos.refundSettings?.maxRefundDays ?? 30));
   const [savedFeedback, setSavedFeedback] = useState(false);
   const [showLogo, setShowLogo] = useState(reduxPos.ticketConfig?.showLogo ?? false);
   const [logoUrl, setLogoUrl] = useState(reduxPos.ticketConfig?.logoUrl || '');
@@ -53,6 +57,10 @@ const PosSettingsSection: React.FC = () => {
     setMultiTerminalMode(reduxPos.multiTerminalMode);
     setTerminalId(reduxPos.terminalId || '');
     setMaxSaleWindows(String(reduxPos.maxSaleWindows));
+    setRefundEnabled(reduxPos.refundSettings?.enabled ?? true);
+    setRefundRequirePin(reduxPos.refundSettings?.requirePin ?? true);
+    setRefundPinThreshold(String(reduxPos.refundSettings?.pinThreshold ?? 50));
+    setRefundMaxDays(String(reduxPos.refundSettings?.maxRefundDays ?? 30));
     setShowLogo(reduxPos.ticketConfig?.showLogo ?? false);
     setLogoUrl(reduxPos.ticketConfig?.logoUrl || '');
     setShowEmployee(reduxPos.ticketConfig?.showEmployee ?? true);
@@ -73,7 +81,19 @@ const PosSettingsSection: React.FC = () => {
       ? `${t.settings.maxSaleWindows} must be an integer between 1 and 20`
       : undefined;
 
-  const hasErrors = !!seedError || !!maxWindowsError;
+  const parsedPinThreshold = parseInt(refundPinThreshold, 10);
+  const pinThresholdError =
+    isNaN(parsedPinThreshold) || parsedPinThreshold < 0 || !Number.isInteger(parsedPinThreshold)
+      ? 'PIN threshold must be a positive integer'
+      : undefined;
+
+  const parsedMaxDays = parseInt(refundMaxDays, 10);
+  const maxDaysError =
+    isNaN(parsedMaxDays) || parsedMaxDays < 1 || parsedMaxDays > 365 || !Number.isInteger(parsedMaxDays)
+      ? 'Max refund days must be between 1 and 365'
+      : undefined;
+
+  const hasErrors = !!seedError || !!maxWindowsError || !!pinThresholdError || !!maxDaysError;
 
   const isDirty =
     defaultPaymentMethod !== reduxPos.defaultPaymentMethod ||
@@ -84,6 +104,10 @@ const PosSettingsSection: React.FC = () => {
     enableManualProduct !== reduxPos.enableManualProduct ||
     multiTerminalMode !== reduxPos.multiTerminalMode ||
     maxSaleWindows !== String(reduxPos.maxSaleWindows) ||
+    refundEnabled !== (reduxPos.refundSettings?.enabled ?? true) ||
+    refundRequirePin !== (reduxPos.refundSettings?.requirePin ?? true) ||
+    refundPinThreshold !== String(reduxPos.refundSettings?.pinThreshold ?? 50) ||
+    refundMaxDays !== String(reduxPos.refundSettings?.maxRefundDays ?? 30) ||
     (multiTerminalMode && terminalId !== reduxPos.terminalId) ||
     showLogo !== (reduxPos.ticketConfig?.showLogo ?? false) ||
     logoUrl !== (reduxPos.ticketConfig?.logoUrl || '') ||
@@ -124,6 +148,12 @@ const PosSettingsSection: React.FC = () => {
         multiTerminalMode,
         maxSaleWindows: parsedMaxWindows,
         terminalId: multiTerminalMode ? terminalId.trim() || undefined : undefined,
+        refundSettings: {
+          enabled: refundEnabled,
+          requirePin: refundRequirePin,
+          pinThreshold: parsedPinThreshold,
+          maxRefundDays: parsedMaxDays,
+        },
         ticketConfig: {
           showLogo,
           logoUrl: logoUrl || undefined,
@@ -214,6 +244,49 @@ const PosSettingsSection: React.FC = () => {
           error={maxWindowsError}
           placeholder="5"
         />
+
+        <div className="border-t border-border pt-4">
+          <h3 className="text-sm font-semibold text-text-primary mb-3">Devoluciones</h3>
+          <div className="space-y-3">
+            <Toggle
+              label="Permitir devoluciones"
+              checked={refundEnabled}
+              onChange={setRefundEnabled}
+            />
+            {refundEnabled && (
+              <>
+                <Toggle
+                  label="Requerir PIN para devoluciones"
+                  checked={refundRequirePin}
+                  onChange={setRefundRequirePin}
+                />
+                {refundRequirePin && (
+                  <Input
+                    label="Umbral para PIN (€)"
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={refundPinThreshold}
+                    onChange={e => setRefundPinThreshold(e.target.value)}
+                    error={pinThresholdError}
+                    placeholder="50"
+                  />
+                )}
+                <Input
+                  label="Días máximos para devolver"
+                  type="number"
+                  min={1}
+                  max={365}
+                  step={1}
+                  value={refundMaxDays}
+                  onChange={e => setRefundMaxDays(e.target.value)}
+                  error={maxDaysError}
+                  placeholder="30"
+                />
+              </>
+            )}
+          </div>
+        </div>
 
         <Toggle
           label={t.settings.enableManualProduct}

@@ -126,6 +126,8 @@ export interface Sale {
   customerId?: string;
   loyaltyPointsEarned: number;
   discountApplied: number;
+  refundIds: string[];
+  refundedAmount: number;
 }
 
 export interface TaxSettings {
@@ -164,6 +166,7 @@ export interface PosSettings {
   terminalId?: string;
   ticketConfig: TicketConfig;
   maxSaleWindows: number;
+  refundSettings: RefundSettings;
 }
 
 export interface SaleWindow {
@@ -190,6 +193,36 @@ export type Language = 'en' | 'es';
 
 export interface LanguageSettings {
   language: Language;
+}
+
+export interface RefundItem {
+  productId: string;
+  productName: string;
+  quantity: number;
+  unitPrice: number;
+  lineTotal: number;
+  selectedSize?: string;
+}
+
+export interface Refund {
+  id: string;
+  originalSaleId: string;
+  orderNumber: string;
+  items: RefundItem[];
+  totalAmount: number;
+  refundMethod: PaymentMethod;
+  reason: string;
+  createdAt: string;
+  employeeId?: string;
+  authorizedBy?: string;
+  customerId?: string;
+}
+
+export interface RefundSettings {
+  enabled: boolean;
+  requirePin: boolean;
+  pinThreshold: number;
+  maxRefundDays: number;
 }
 
 export interface SettingsState {

@@ -89,6 +89,8 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
       customerId,
       loyaltyPointsEarned,
       discountApplied,
+      refundIds: [],
+      refundedAmount: 0,
     };
 
     dispatch(completeSale(sale));

@@ -9,6 +9,7 @@ import salesReducer from '../features/sales/salesSlice';
 import dashboardReducer from '../features/dashboard/dashboardSlice';
 import settingsReducer from '../features/settings/settingsSlice';
 import customersReducer from '../features/customers/customersSlice';
+import refundsReducer from '../features/refunds/refundsSlice';
 
 export const store = configureStore({
   reducer: {
@@ -20,6 +21,7 @@ export const store = configureStore({
     dashboard: dashboardReducer,
     settings: settingsReducer,
     customers: customersReducer,
+    refunds: refundsReducer,
   },
 });
 

@@ -10,6 +10,7 @@ import SearchInput from '../../features/pos/SearchInput';
 import EmployeeSelector from '../../features/pos/EmployeeSelector';
 import CashBoxOpenModal from '../../features/pos/CashBoxOpenModal';
 import AddEmployeeToCashBoxModal from '../../features/pos/AddEmployeeToCashBoxModal';
+import RefundModal from '../../features/refunds/RefundModal';
 import DiscountModal from '../../features/pos/DiscountModal';
 import { useI18n } from '../../i18n/I18nProvider';
 import {
@@ -55,6 +56,7 @@ const POSPage: React.FC = () => {
   const [showDiscountModal, setShowDiscountModal] = useState(false);
   const [showItemDiscountModal, setShowItemDiscountModal] = useState(false);
   const [showAddEmployeeModal, setShowAddEmployeeModal] = useState(false);
+  const [showRefundModal, setShowRefundModal] = useState(false);
   const [itemDiscountTarget, setItemDiscountTarget] = useState<string | null>(null);
   const [authorizedBy, setAuthorizedBy] = useState<Employee | null>(null);
 
@@ -120,6 +122,15 @@ const POSPage: React.FC = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                     </svg>
                     Añadir vendedor
+                  </button>
+                  <button
+                    onClick={() => setShowRefundModal(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-600 border border-amber-200 rounded-full hover:bg-amber-50 transition-colors"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                    </svg>
+                    Devolución
                   </button>
                   <button
                     onClick={() => setShowCloseBoxConfirm(true)}
@@ -457,6 +468,8 @@ const POSPage: React.FC = () => {
       <CashBoxOpenModal isOpen={showCashBoxModal} closedBoxCount={closedBoxCount} onClose={() => setShowCashBoxModal(false)} />
 
       <AddEmployeeToCashBoxModal isOpen={showAddEmployeeModal} onClose={() => setShowAddEmployeeModal(false)} />
+
+      <RefundModal isOpen={showRefundModal} onClose={() => setShowRefundModal(false)} />
 
       <DiscountModal
         isOpen={showDiscountModal}

@@ -123,10 +123,27 @@ const customersSlice = createSlice({
         customer.tier = computeTier(customer.loyaltyPoints, tiers);
       }
     },
+    deductLoyaltyPoints: (
+      state,
+      action: PayloadAction<{
+        customerId: string;
+        points: number;
+        amountSpent: number;
+        tiers: LoyaltyTierConfig[];
+      }>
+    ) => {
+      const { customerId, points, amountSpent, tiers } = action.payload;
+      const customer = state.customers.find(c => c.id === customerId);
+      if (customer) {
+        customer.loyaltyPoints = Math.max(0, customer.loyaltyPoints - points);
+        customer.totalSpent = Math.max(0, customer.totalSpent - amountSpent);
+        customer.tier = computeTier(customer.loyaltyPoints, tiers);
+      }
+    },
   },
 });
 
-export const { addCustomer, updateCustomer, deactivateCustomer, addLoyaltyPoints } =
+export const { addCustomer, updateCustomer, deactivateCustomer, addLoyaltyPoints, deductLoyaltyPoints } =
   customersSlice.actions;
 export default customersSlice.reducer;
 
