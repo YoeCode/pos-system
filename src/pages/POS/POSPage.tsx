@@ -10,7 +10,6 @@ import SearchInput from '../../features/pos/SearchInput';
 import EmployeeSelector from '../../features/pos/EmployeeSelector';
 import CashBoxOpenModal from '../../features/pos/CashBoxOpenModal';
 import AddEmployeeToCashBoxModal from '../../features/pos/AddEmployeeToCashBoxModal';
-import SaleWindowsTabs from '../../features/pos/SaleWindowsTabs';
 import DiscountModal from '../../features/pos/DiscountModal';
 import { useI18n } from '../../i18n/I18nProvider';
 import {
@@ -107,10 +106,6 @@ const POSPage: React.FC = () => {
     <div className="flex flex-col h-[calc(100vh-57px)] lg:flex-row w-full min-w-0 overflow-x-hidden">
       {/* Products area */}
       <div className="flex-1 flex flex-col overflow-hidden min-w-0 pb-20 lg:pb-0">
-        {isCashBoxOpen && (
-          <SaleWindowsTabs />
-        )}
-
         <div className="px-3 lg:px-6 pt-3 lg:pt-4 pb-2 flex-shrink-0">
           <div className="flex items-center justify-between">
             {isCashBoxOpen ? (
