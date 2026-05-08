@@ -30,18 +30,16 @@ const CashBoxOpenModal: React.FC<CashBoxOpenModalProps> = ({ isOpen, closedBoxCo
   };
 
   const handleOpenCashBox = () => {
-    if (selectedIds.length > 0) {
-      const loggedInEmployee = loggedInUser 
-        ? employees.find(e => e.email.toLowerCase() === loggedInUser.email.toLowerCase())
-        : null;
-      
-      const finalIds = loggedInEmployee?.id 
-        ? [...new Set([...selectedIds, loggedInEmployee.id])]
-        : selectedIds;
-      
-      dispatch(openCashBox(finalIds));
-      onClose?.();
-    }
+    const loggedInEmployee = loggedInUser 
+      ? employees.find(e => e.email.toLowerCase() === loggedInUser.email.toLowerCase())
+      : null;
+    
+    const finalIds = loggedInEmployee?.id 
+      ? [...new Set([...selectedIds, loggedInEmployee.id])]
+      : selectedIds;
+    
+    dispatch(openCashBox(finalIds));
+    onClose?.();
   };
 
   const otherEmployees = employees.filter(e => 
@@ -118,14 +116,9 @@ const CashBoxOpenModal: React.FC<CashBoxOpenModalProps> = ({ isOpen, closedBoxCo
             <button
               type="button"
               onClick={handleOpenCashBox}
-              disabled={selectedIds.length === 0}
-              className={`flex-1 py-3 text-sm font-bold rounded-lg ${
-                selectedIds.length > 0
-                  ? 'bg-green-600 text-white hover:bg-green-700'
-                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-              }`}
+              className="flex-1 py-3 text-sm font-bold rounded-lg bg-green-600 text-white hover:bg-green-700"
             >
-              Abrir Caja ({selectedIds.length})
+              Abrir Caja ({(loggedInUser ? 1 : 0) + selectedIds.length})
             </button>
           </div>
         </div>

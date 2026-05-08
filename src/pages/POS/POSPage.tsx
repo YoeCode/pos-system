@@ -9,6 +9,7 @@ import CustomerSelector from '../../features/customers/CustomerSelector';
 import SearchInput from '../../features/pos/SearchInput';
 import EmployeeSelector from '../../features/pos/EmployeeSelector';
 import CashBoxOpenModal from '../../features/pos/CashBoxOpenModal';
+import AddEmployeeToCashBoxModal from '../../features/pos/AddEmployeeToCashBoxModal';
 import DiscountModal from '../../features/pos/DiscountModal';
 import { useI18n } from '../../i18n/I18nProvider';
 import { addCustomProductToCart, updateQuantity, removeFromCart, splitLine, setPaymentMethod, startNewSale, selectIsCashBoxOpen, closeCashBox } from '../../features/pos/posSlice';
@@ -42,6 +43,7 @@ const POSPage: React.FC = () => {
   const [closedBoxCount, setClosedBoxCount] = useState(0);
   const [showDiscountModal, setShowDiscountModal] = useState(false);
   const [showItemDiscountModal, setShowItemDiscountModal] = useState(false);
+  const [showAddEmployeeModal, setShowAddEmployeeModal] = useState(false);
   const [itemDiscountTarget, setItemDiscountTarget] = useState<string | null>(null);
   const [manualDiscount, setManualDiscount] = useState(0);
   const [itemDiscounts, setItemDiscounts] = useState<Record<string, number>>({});
@@ -101,15 +103,26 @@ const POSPage: React.FC = () => {
               {isCashBoxOpen ? (
                 <>
                   <EmployeeSelector />
-                  <button
-                    onClick={() => setShowCloseBoxConfirm(true)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 border border-red-200 rounded-full hover:bg-red-50 transition-colors"
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m0 0v2m0-2h2m-2 0H8m13-6a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Cerrar caja
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setShowAddEmployeeModal(true)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 border border-blue-200 rounded-full hover:bg-blue-50 transition-colors"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                      </svg>
+                      Añadir vendedor
+                    </button>
+                    <button
+                      onClick={() => setShowCloseBoxConfirm(true)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 border border-red-200 rounded-full hover:bg-red-50 transition-colors"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m0 0v2m0-2h2m-2 0H8m13-6a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Cerrar caja
+                    </button>
+                  </div>
                 </>
               ) : (
                 <button
@@ -434,6 +447,8 @@ const POSPage: React.FC = () => {
       />
 
       <CashBoxOpenModal isOpen={showCashBoxModal} closedBoxCount={closedBoxCount} onClose={() => setShowCashBoxModal(false)} />
+
+      <AddEmployeeToCashBoxModal isOpen={showAddEmployeeModal} onClose={() => setShowAddEmployeeModal(false)} />
 
       <DiscountModal
         isOpen={showDiscountModal}
