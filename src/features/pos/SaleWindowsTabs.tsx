@@ -37,8 +37,8 @@ const SaleWindowsTabs: React.FC = () => {
 
   return (
     <>
-      <div className="flex items-end gap-0.5 flex-wrap px-2 pt-1 border-b border-border bg-surface">
-        {windows.map((window, index) => {
+      <div className="flex items-end px-2 bg-surface border-b border-border">
+        {windows.map((window) => {
           const isActive = window.id === activeWindowId;
           const itemCount = window.cart.reduce((sum, item) => sum + item.quantity, 0);
           return (
@@ -46,21 +46,22 @@ const SaleWindowsTabs: React.FC = () => {
               key={window.id}
               onClick={() => dispatch(setActiveWindow(window.id))}
               className={`
-                flex items-center gap-2 px-3.5 py-2 text-sm font-medium cursor-pointer select-none
-                transition-all duration-150 min-w-[80px] max-w-[160px]
+                relative flex items-center gap-2 px-4 py-2.5 text-sm font-medium cursor-pointer select-none
+                transition-all duration-200 min-w-[120px] max-w-[180px]
                 ${isActive
-                  ? 'bg-background text-text-primary rounded-t-lg shadow-[0_-1px_2px_rgba(0,0,0,0.05)] relative z-10 border-t border-l border-r border-border translate-y-[1px] pb-[9px]'
-                  : 'bg-gray-100 text-text-muted hover:bg-gray-200 hover:text-text-primary rounded-t-md border-t border-l border-r border-transparent'
+                  ? 'bg-background text-text-primary rounded-t-xl z-10 -mb-px border-t-2 border-l border-r border-border border-t-primary shadow-[0_-2px_8px_rgba(0,0,0,0.04)]'
+                  : 'bg-gray-100 text-text-muted hover:bg-gray-200 hover:text-text-primary rounded-t-lg -mb-0 border border-transparent hover:border-gray-300'
                 }
               `}
+              style={{
+                marginLeft: '-8px',
+                paddingLeft: isActive ? '16px' : '20px',
+              }}
             >
-              {isActive && (
-                <div className="absolute left-0 right-0 bottom-0 h-[1px] bg-background" />
-              )}
               <span className="truncate flex-1">{window.name}</span>
               {itemCount > 0 && (
                 <span className={`
-                  flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded-full font-semibold
+                  flex-shrink-0 text-[10px] px-2 py-0.5 rounded-full font-bold
                   ${isActive ? 'bg-primary text-white' : 'bg-gray-300 text-gray-600'}
                 `}>
                   {itemCount}
@@ -75,7 +76,7 @@ const SaleWindowsTabs: React.FC = () => {
                   }}
                   className={`
                     flex-shrink-0 w-5 h-5 flex items-center justify-center rounded-full text-xs
-                    transition-colors ml-1
+                    transition-colors ml-1 opacity-60 hover:opacity-100
                     ${isActive
                       ? 'hover:bg-gray-100 text-gray-400 hover:text-gray-600'
                       : 'hover:bg-gray-400/30 text-gray-400 hover:text-gray-600'
@@ -92,7 +93,7 @@ const SaleWindowsTabs: React.FC = () => {
           <button
             type="button"
             onClick={() => dispatch(createWindow())}
-            className="flex-shrink-0 flex items-center justify-center w-7 h-7 mb-1.5 ml-1 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-200 transition-colors"
+            className="flex-shrink-0 flex items-center justify-center w-8 h-8 mb-2 ml-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-200 transition-colors"
             title="Nueva venta"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
