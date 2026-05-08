@@ -165,6 +165,17 @@ const posSlice = createSlice({
         });
       }
     },
+    removeCashBoxEmployee: (state, action: PayloadAction<string>) => {
+      state.cashBoxEmployeeIds = state.cashBoxEmployeeIds.filter(id => id !== action.payload);
+      if (state.currentEmployeeId === action.payload) {
+        state.currentEmployeeId = null;
+      }
+      saveCashBoxToStorage({
+        isOpen: true,
+        employeeIds: state.cashBoxEmployeeIds,
+        openDate: state.cashBoxOpenTime,
+      });
+    },
     closeCashBox: (state) => {
       state.isCashBoxOpen = false;
       state.cashBoxEmployeeIds = [];
@@ -178,7 +189,7 @@ const posSlice = createSlice({
   },
 });
 
-export const { addToCart, removeFromCart, updateQuantity, splitLine, clearCart, setPaymentMethod, setCategory, addCustomProductToCart, setSelectedCustomer, startNewSale, setSearchQuery, setCurrentEmployee, openCashBox, addCashBoxEmployee, closeCashBox } = posSlice.actions;
+export const { addToCart, removeFromCart, updateQuantity, splitLine, clearCart, setPaymentMethod, setCategory, addCustomProductToCart, setSelectedCustomer, startNewSale, setSearchQuery, setCurrentEmployee, openCashBox, addCashBoxEmployee, removeCashBoxEmployee, closeCashBox } = posSlice.actions;
 export default posSlice.reducer;
 
 export const selectIsCashBoxOpen = (state: RootState): boolean => state.pos.isCashBoxOpen;
