@@ -1,25 +1,11 @@
--- ============================================================
--- Schema Fixes for Casa Lis POS
--- Run this AFTER schema.sql if you already executed it
--- Or run both together if starting fresh
--- ============================================================
-
--- ============================================================
--- MISSING COLUMNS
--- ============================================================
-
 ALTER TABLE employees ADD COLUMN IF NOT EXISTS terminal_id TEXT;
 ALTER TABLE employees ADD COLUMN IF NOT EXISTS avatar_url TEXT;
 ALTER TABLE products ADD COLUMN IF NOT EXISTS size_group_id TEXT;
 ALTER TABLE sales ADD COLUMN IF NOT EXISTS refunded_amount NUMERIC(10,2) NOT NULL DEFAULT 0;
 
--- ============================================================
--- FIX RLS POLICIES (drop + recreate with correct scope)
--- ============================================================
-
 DROP POLICY IF EXISTS "employees_manage_admin" ON employees;
 CREATE POLICY "employees_manage_admin" ON employees
-  FOR INSERT, UPDATE, DELETE USING (
+  FOR ALL USING (
     EXISTS (
       SELECT 1 FROM employees e
       WHERE e.user_id = auth.uid() AND e.role IN ('manager', 'admin')
@@ -28,7 +14,7 @@ CREATE POLICY "employees_manage_admin" ON employees
 
 DROP POLICY IF EXISTS "products_manage" ON products;
 CREATE POLICY "products_manage" ON products
-  FOR INSERT, UPDATE, DELETE USING (
+  FOR ALL USING (
     EXISTS (
       SELECT 1 FROM employees e
       WHERE e.user_id = auth.uid() AND e.role IN ('manager', 'admin')
@@ -37,7 +23,7 @@ CREATE POLICY "products_manage" ON products
 
 DROP POLICY IF EXISTS "customers_manage" ON customers;
 CREATE POLICY "customers_manage" ON customers
-  FOR INSERT, UPDATE, DELETE USING (
+  FOR ALL USING (
     EXISTS (
       SELECT 1 FROM employees e
       WHERE e.user_id = auth.uid() AND e.role IN ('supervisor', 'manager', 'admin')
@@ -52,17 +38,13 @@ CREATE POLICY "sales_insert_own" ON sales
     )
   );
 
--- ============================================================
--- ADD MISSING INSERT POLICIES
--- ============================================================
-
 DROP POLICY IF EXISTS "sale_items_insert" ON sale_items;
 CREATE POLICY "sale_items_insert" ON sale_items
   FOR INSERT WITH CHECK (true);
 
 DROP POLICY IF EXISTS "product_sizes_manage" ON product_sizes;
 CREATE POLICY "product_sizes_manage" ON product_sizes
-  FOR INSERT, UPDATE, DELETE USING (
+  FOR ALL USING (
     EXISTS (
       SELECT 1 FROM employees e
       WHERE e.user_id = auth.uid() AND e.role IN ('manager', 'admin')
@@ -79,7 +61,7 @@ CREATE POLICY "cash_box_update" ON cash_box_sessions
 
 DROP POLICY IF EXISTS "cash_box_closures_manage" ON cash_box_closures;
 CREATE POLICY "cash_box_closures_manage" ON cash_box_closures
-  FOR INSERT, UPDATE, DELETE USING (
+  FOR ALL USING (
     EXISTS (
       SELECT 1 FROM employees e
       WHERE e.user_id = auth.uid() AND e.role IN ('supervisor', 'manager', 'admin')
@@ -95,10 +77,6 @@ CREATE POLICY "refunds_insert" ON refunds
     )
   );
 
--- ============================================================
--- SEED DATA: Insert sample products
--- ============================================================
-
 INSERT INTO products (id, name, sku, category, brand, price, cost_price, stock, min_stock, description, status, published_online)
 VALUES
   ('11111111-1111-1111-1111-111111111111', 'Summit Pro Watch', 'WT-992-SMT', 'Electronics', 'TechFit', 299, 180, 142, 20, 'Premium smartwatch with advanced fitness tracking and GPS.', 'active', true),
@@ -108,7 +86,6 @@ VALUES
   ('55555555-5555-5555-5555-555555555555', 'Caramel Iced Latte', 'CL-002', 'Drinks', 'BeanHouse', 5.25, 1.80, 150, 20, 'Creamy caramel iced latte with oat milk option.', 'active', false)
 ON CONFLICT (id) DO NOTHING;
 
--- Insert sizes for Camiseta Básica
 INSERT INTO product_sizes (product_id, size, stock, min_stock)
 VALUES
   ('33333333-3333-3333-3333-333333333333', 'S', 15, 5),
@@ -116,10 +93,6 @@ VALUES
   ('33333333-3333-3333-3333-333333333333', 'L', 3, 5),
   ('33333333-3333-3333-3333-333333333333', 'XL', 0, 5)
 ON CONFLICT (product_id, size) DO NOTHING;
-
--- ============================================================
--- SEED DATA: Insert sample customers
--- ============================================================
 
 INSERT INTO customers (id, name, email, phone, loyalty_points, tier, total_spent)
 VALUES
