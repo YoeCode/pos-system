@@ -170,7 +170,7 @@ CREATE POLICY "employees_select_active" ON employees
   FOR SELECT USING (active = true);
 
 CREATE POLICY "employees_manage_admin" ON employees
-  FOR INSERT, UPDATE, DELETE USING (
+  FOR ALL USING (
     EXISTS (
       SELECT 1 FROM employees e
       WHERE e.user_id = auth.uid() AND e.role IN ('manager', 'admin')
@@ -181,7 +181,7 @@ CREATE POLICY "products_select_active" ON products
   FOR SELECT USING (status = 'active');
 
 CREATE POLICY "products_manage" ON products
-  FOR INSERT, UPDATE, DELETE USING (
+  FOR ALL USING (
     EXISTS (
       SELECT 1 FROM employees e
       WHERE e.user_id = auth.uid() AND e.role IN ('manager', 'admin')
@@ -196,7 +196,7 @@ CREATE POLICY "product_sizes_select" ON product_sizes
   );
 
 CREATE POLICY "product_sizes_manage" ON product_sizes
-  FOR INSERT, UPDATE, DELETE USING (
+  FOR ALL USING (
     EXISTS (
       SELECT 1 FROM employees e
       WHERE e.user_id = auth.uid() AND e.role IN ('manager', 'admin')
@@ -207,7 +207,7 @@ CREATE POLICY "customers_select" ON customers
   FOR SELECT USING (active = true);
 
 CREATE POLICY "customers_manage" ON customers
-  FOR INSERT, UPDATE, DELETE USING (
+  FOR ALL USING (
     EXISTS (
       SELECT 1 FROM employees e
       WHERE e.user_id = auth.uid() AND e.role IN ('supervisor', 'manager', 'admin')
@@ -243,7 +243,7 @@ CREATE POLICY "cash_box_closures_select" ON cash_box_closures
   FOR SELECT USING (true);
 
 CREATE POLICY "cash_box_closures_manage" ON cash_box_closures
-  FOR INSERT, UPDATE, DELETE USING (
+  FOR ALL USING (
     EXISTS (
       SELECT 1 FROM employees e
       WHERE e.user_id = auth.uid() AND e.role IN ('supervisor', 'manager', 'admin')
