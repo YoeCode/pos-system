@@ -53,7 +53,7 @@ async function signInWithSupabase(email: string, password: string): Promise<Auth
     .select('id, name, email, role, terminal_id, avatar_url')
     .eq('user_id', data.user.id)
     .eq('active', true)
-    .single();
+    .maybeSingle();
 
   if (empError || !employee) return null;
 
@@ -81,7 +81,7 @@ async function getSupabaseCurrentUser(): Promise<AuthUser | null> {
     .select('id, name, email, role, terminal_id, avatar_url')
     .eq('user_id', data.session.user.id)
     .eq('active', true)
-    .single();
+    .maybeSingle();
 
   if (error || !employee) return null;
 
