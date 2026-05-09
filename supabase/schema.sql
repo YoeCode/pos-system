@@ -1,15 +1,5 @@
--- ============================================================
--- Casa Lis POS - Supabase Database Schema
--- Execute this in the Supabase SQL Editor
--- ============================================================
-
--- Enable required extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- ============================================================
--- EMPLOYEES TABLE
--- Links to auth.users for login, stores role and POS data
--- ============================================================
 CREATE TABLE employees (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
@@ -19,13 +9,12 @@ CREATE TABLE employees (
   pin TEXT,
   phone TEXT,
   shift TEXT,
+  terminal_id TEXT,
+  avatar_url TEXT,
   active BOOLEAN NOT NULL DEFAULT true,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- ============================================================
--- PRODUCTS TABLE
--- ============================================================
 CREATE TABLE products (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name TEXT NOT NULL,
@@ -41,13 +30,11 @@ CREATE TABLE products (
   published_online BOOLEAN NOT NULL DEFAULT false,
   image_url TEXT,
   version TEXT,
+  size_group_id TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- ============================================================
--- PRODUCT SIZES (for products with variants)
--- ============================================================
 CREATE TABLE product_sizes (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
@@ -58,9 +45,6 @@ CREATE TABLE product_sizes (
   UNIQUE(product_id, size)
 );
 
--- ============================================================
--- CUSTOMERS (with loyalty program)
--- ============================================================
 CREATE TABLE customers (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name TEXT NOT NULL,
@@ -74,9 +58,6 @@ CREATE TABLE customers (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- ============================================================
--- SALES TABLE
--- ============================================================
 CREATE TABLE sales (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   order_number TEXT NOT NULL,
@@ -84,6 +65,7 @@ CREATE TABLE sales (
   tax NUMERIC(10,2) NOT NULL DEFAULT 0,
   total NUMERIC(10,2) NOT NULL DEFAULT 0,
   discount NUMERIC(10,2) NOT NULL DEFAULT 0,
+  refunded_amount NUMERIC(10,2) NOT NULL DEFAULT 0,
   payment_method TEXT NOT NULL CHECK (payment_method IN ('cash', 'card', 'bizum')),
   amount_received NUMERIC(10,2),
   change NUMERIC(10,2),
@@ -96,23 +78,19 @@ CREATE TABLE sales (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- ============================================================
--- SALE ITEMS (line items per sale)
--- ============================================================
 CREATE TABLE sale_items (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   sale_id UUID NOT NULL REFERENCES sales(id) ON DELETE CASCADE,
   product_id UUID NOT NULL REFERENCES products(id),
   product_name TEXT NOT NULL,
+  product_sku TEXT,
+  product_category TEXT,
   quantity INTEGER NOT NULL DEFAULT 1,
   unit_price NUMERIC(10,2) NOT NULL DEFAULT 0,
   line_total NUMERIC(10,2) NOT NULL DEFAULT 0,
   selected_size TEXT
 );
 
--- ============================================================
--- CASH BOX SESSIONS (open/close tracking)
--- ============================================================
 CREATE TABLE cash_box_sessions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   opened_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -123,9 +101,6 @@ CREATE TABLE cash_box_sessions (
   is_open BOOLEAN NOT NULL DEFAULT true
 );
 
--- ============================================================
--- CASH BOX CLOSURES (audit trail / arqueo)
--- ============================================================
 CREATE TABLE cash_box_closures (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   session_id UUID NOT NULL REFERENCES cash_box_sessions(id) ON DELETE CASCADE,
@@ -141,9 +116,6 @@ CREATE TABLE cash_box_closures (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- ============================================================
--- REFUNDS
--- ============================================================
 CREATE TABLE refunds (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   sale_id UUID NOT NULL REFERENCES sales(id),
@@ -154,9 +126,6 @@ CREATE TABLE refunds (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- ============================================================
--- SETTINGS (singleton table - one row)
--- ============================================================
 CREATE TABLE settings (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   store_name TEXT NOT NULL DEFAULT 'Casa Lis',
@@ -171,12 +140,8 @@ CREATE TABLE settings (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Insert default settings
 INSERT INTO settings (id) VALUES ('00000000-0000-0000-0000-000000000000');
 
--- ============================================================
--- INDEXES
--- ============================================================
 CREATE INDEX idx_sales_completed_at ON sales(completed_at DESC);
 CREATE INDEX idx_sales_employee_id ON sales(employee_id);
 CREATE INDEX idx_sales_customer_id ON sales(customer_id);
@@ -190,9 +155,6 @@ CREATE INDEX idx_cash_box_sessions_is_open ON cash_box_sessions(is_open);
 CREATE INDEX idx_employees_role ON employees(role);
 CREATE INDEX idx_employees_active ON employees(active);
 
--- ============================================================
--- ENABLE ROW LEVEL SECURITY ON ALL TABLES
--- ============================================================
 ALTER TABLE employees ENABLE ROW LEVEL SECURITY;
 ALTER TABLE products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE product_sizes ENABLE ROW LEVEL SECURITY;
@@ -204,37 +166,28 @@ ALTER TABLE cash_box_closures ENABLE ROW LEVEL SECURITY;
 ALTER TABLE refunds ENABLE ROW LEVEL SECURITY;
 ALTER TABLE settings ENABLE ROW LEVEL SECURITY;
 
--- ============================================================
--- RLS POLICIES
--- ============================================================
-
--- EMPLOYEES: authenticated users can view active employees
 CREATE POLICY "employees_select_active" ON employees
   FOR SELECT USING (active = true);
 
--- Only managers and admins can insert/update employees
 CREATE POLICY "employees_manage_admin" ON employees
-  FOR ALL USING (
+  FOR INSERT, UPDATE, DELETE USING (
     EXISTS (
       SELECT 1 FROM employees e
       WHERE e.user_id = auth.uid() AND e.role IN ('manager', 'admin')
     )
   );
 
--- PRODUCTS: all authenticated can view active products
 CREATE POLICY "products_select_active" ON products
   FOR SELECT USING (status = 'active');
 
--- Managers/admins can manage products
 CREATE POLICY "products_manage" ON products
-  FOR ALL USING (
+  FOR INSERT, UPDATE, DELETE USING (
     EXISTS (
       SELECT 1 FROM employees e
       WHERE e.user_id = auth.uid() AND e.role IN ('manager', 'admin')
     )
   );
 
--- PRODUCT SIZES: viewable if parent product is active
 CREATE POLICY "product_sizes_select" ON product_sizes
   FOR SELECT USING (
     EXISTS (
@@ -242,44 +195,72 @@ CREATE POLICY "product_sizes_select" ON product_sizes
     )
   );
 
--- CUSTOMERS: all authenticated can view
+CREATE POLICY "product_sizes_manage" ON product_sizes
+  FOR INSERT, UPDATE, DELETE USING (
+    EXISTS (
+      SELECT 1 FROM employees e
+      WHERE e.user_id = auth.uid() AND e.role IN ('manager', 'admin')
+    )
+  );
+
 CREATE POLICY "customers_select" ON customers
   FOR SELECT USING (active = true);
 
--- Supervisors+ can manage customers
 CREATE POLICY "customers_manage" ON customers
-  FOR ALL USING (
+  FOR INSERT, UPDATE, DELETE USING (
     EXISTS (
       SELECT 1 FROM employees e
       WHERE e.user_id = auth.uid() AND e.role IN ('supervisor', 'manager', 'admin')
     )
   );
 
--- SALES: all authenticated can view (for reports)
 CREATE POLICY "sales_select" ON sales
   FOR SELECT USING (true);
 
--- Cashiers can insert sales (their own)
 CREATE POLICY "sales_insert_own" ON sales
   FOR INSERT WITH CHECK (
-    employee_id = (
-      SELECT id FROM employees WHERE user_id = auth.uid() LIMIT 1
+    employee_id IS NULL OR employee_id IN (
+      SELECT id FROM employees WHERE user_id = auth.uid()
     )
   );
 
--- SALE ITEMS: viewable by parent sale
 CREATE POLICY "sale_items_select" ON sale_items
   FOR SELECT USING (true);
 
--- CASH BOX SESSIONS: viewable by all
+CREATE POLICY "sale_items_insert" ON sale_items
+  FOR INSERT WITH CHECK (true);
+
 CREATE POLICY "cash_box_select" ON cash_box_sessions
   FOR SELECT USING (true);
 
--- REFUNDS: viewable by all
+CREATE POLICY "cash_box_insert" ON cash_box_sessions
+  FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "cash_box_update" ON cash_box_sessions
+  FOR UPDATE USING (true);
+
+CREATE POLICY "cash_box_closures_select" ON cash_box_closures
+  FOR SELECT USING (true);
+
+CREATE POLICY "cash_box_closures_manage" ON cash_box_closures
+  FOR INSERT, UPDATE, DELETE USING (
+    EXISTS (
+      SELECT 1 FROM employees e
+      WHERE e.user_id = auth.uid() AND e.role IN ('supervisor', 'manager', 'admin')
+    )
+  );
+
 CREATE POLICY "refunds_select" ON refunds
   FOR SELECT USING (true);
 
--- SETTINGS: readable by all, writable by admin only
+CREATE POLICY "refunds_insert" ON refunds
+  FOR INSERT WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM employees e
+      WHERE e.user_id = auth.uid() AND e.role IN ('supervisor', 'manager', 'admin')
+    )
+  );
+
 CREATE POLICY "settings_select" ON settings
   FOR SELECT USING (true);
 
@@ -291,11 +272,6 @@ CREATE POLICY "settings_update_admin" ON settings
     )
   );
 
--- ============================================================
--- TRIGGERS
--- ============================================================
-
--- Auto-update updated_at on products
 CREATE OR REPLACE FUNCTION update_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -309,37 +285,7 @@ CREATE TRIGGER products_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at();
 
--- Auto-update updated_at on settings
 CREATE TRIGGER settings_updated_at
   BEFORE UPDATE ON settings
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at();
-
--- ============================================================
--- REALTIME PUBLICATIONS (for live sync)
--- ============================================================
-
--- Create publication for realtime (Supabase Realtime)
--- You need to run this in Supabase Dashboard > Database > Replication > Add Table
--- Or enable via SQL if you have permissions:
--- CREATE PUBLICATION supabase_realtime FOR TABLE sales, cash_box_sessions, products;
-
--- ============================================================
--- SEED DATA (optional - for testing)
--- ============================================================
-
--- Insert sample products (uncomment to use)
-/*
-INSERT INTO products (name, sku, category, brand, price, cost_price, stock, min_stock, description, status, published_online)
-VALUES
-  ('Summit Pro Watch', 'WT-992-SMT', 'Electronics', 'TechFit', 299, 180, 142, 20, 'Premium smartwatch', 'active', true),
-  ('AudioCore Wireless', 'AD-402-WRL', 'Electronics', 'SoundPro', 189, 95, 8, 10, 'Wireless headphones', 'active', true);
-*/
-
--- Insert sample customers
-/*
-INSERT INTO customers (name, email, phone, loyalty_points, tier, total_spent)
-VALUES
-  ('María García', 'maria@example.es', '+34 600 111 222', 120, 'bronze', 120),
-  ('Carlos Ruiz', 'carlos@example.es', '+34 600 222 333', 780, 'silver', 780);
-*/
