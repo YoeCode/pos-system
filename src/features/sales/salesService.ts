@@ -111,7 +111,7 @@ async function getNextOrderNumberFromSupabase(): Promise<number> {
     .select('order_number')
     .order('order_number', { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
 
   if (error || !data) return 1042;
 
