@@ -58,7 +58,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
   const change = isCash && !isNaN(parsedAmount) ? parsedAmount - total : null;
   const canConfirm = isCash ? !isNaN(parsedAmount) && parsedAmount >= total : true;
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (!canConfirm) return;
 
     const order: Order = {
