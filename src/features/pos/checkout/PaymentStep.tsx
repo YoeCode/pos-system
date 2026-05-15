@@ -99,55 +99,59 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
       refundedAmount: 0,
     };
 
-      dispatch(completeSaleAsync(sale));
+    try {
+      await dispatch(completeSaleAsync(sale)).unwrap();
 
-    cart.forEach(item => {
-        dispatch(reduceStockAsync({ productId: item.product.id, quantity: item.quantity, size: item.selectedSize }));
-    });
+      await Promise.all(cart.map(item =>
+        dispatch(reduceStockAsync({ productId: item.product.id, quantity: item.quantity, size: item.selectedSize })).unwrap()
+      ));
 
-    const lowStockItems: string[] = [];
-    cart.forEach(item => {
-      const product = products.find(p => p.id === item.product.id);
-      if (!product || product.status !== 'active') return;
-      if (product.sizes && product.sizes.length > 0 && item.selectedSize) {
-        const sizeEntry = product.sizes.find(s => s.size === item.selectedSize);
-        if (sizeEntry && sizeEntry.stock - item.quantity <= sizeEntry.minStock) {
-          lowStockItems.push(`${product.name} (${item.selectedSize})`);
-        }
-      } else if (product.stock - item.quantity <= product.minStock) {
-        lowStockItems.push(product.name);
-      }
-    });
-
-    if (lowStockItems.length > 0) {
-      const criticalCount = lowStockItems.filter((_, i) => {
-        const item = cart[i];
-        if (!item) return false;
+      const lowStockItems: string[] = [];
+      cart.forEach(item => {
         const product = products.find(p => p.id === item.product.id);
-        if (!product) return false;
-        if (product.sizes && item.selectedSize) {
+        if (!product || product.status !== 'active') return;
+        if (product.sizes && product.sizes.length > 0 && item.selectedSize) {
           const sizeEntry = product.sizes.find(s => s.size === item.selectedSize);
-          return sizeEntry ? sizeEntry.stock - item.quantity === 0 : false;
+          if (sizeEntry && sizeEntry.stock - item.quantity <= sizeEntry.minStock) {
+            lowStockItems.push(`${product.name} (${item.selectedSize})`);
+          }
+        } else if (product.stock - item.quantity <= product.minStock) {
+          lowStockItems.push(product.name);
         }
-        return product.stock - item.quantity === 0;
-      }).length;
+      });
 
-      if (criticalCount > 0) {
-        addToast(`${criticalCount} producto${criticalCount > 1 ? 's' : ''} sin stock tras la venta`, 'error');
-      } else {
-        addToast(`${lowStockItems.length} producto${lowStockItems.length > 1 ? 's' : ''} con stock bajo tras la venta`, 'warning');
+      if (lowStockItems.length > 0) {
+        const criticalCount = lowStockItems.filter((_, i) => {
+          const item = cart[i];
+          if (!item) return false;
+          const product = products.find(p => p.id === item.product.id);
+          if (!product) return false;
+          if (product.sizes && item.selectedSize) {
+            const sizeEntry = product.sizes.find(s => s.size === item.selectedSize);
+            return sizeEntry ? sizeEntry.stock - item.quantity === 0 : false;
+          }
+          return product.stock - item.quantity === 0;
+        }).length;
+
+        if (criticalCount > 0) {
+          addToast(`${criticalCount} producto${criticalCount > 1 ? 's' : ''} sin stock tras la venta`, 'error');
+        } else {
+          addToast(`${lowStockItems.length} producto${lowStockItems.length > 1 ? 's' : ''} con stock bajo tras la venta`, 'warning');
+        }
       }
-    }
 
-    if (customerId) {
-      dispatch(addLoyaltyPoints({ customerId, points: loyaltyPointsEarned, amountSpent: total, tiers }));
-      if (pointsToRedeem > 0) {
-        dispatch(deductLoyaltyPoints({ customerId, points: pointsToRedeem, amountSpent: 0, tiers }));
+      if (customerId) {
+        dispatch(addLoyaltyPoints({ customerId, points: loyaltyPointsEarned, amountSpent: total, tiers }));
+        if (pointsToRedeem > 0) {
+          dispatch(deductLoyaltyPoints({ customerId, points: pointsToRedeem, amountSpent: 0, tiers }));
+        }
       }
-    }
 
-    dispatch(startNewSale());
-    onComplete(sale.id, loyaltyPointsEarned);
+      onComplete(sale.id, loyaltyPointsEarned);
+      dispatch(startNewSale());
+    } catch {
+      addToast('Error al completar la venta', 'error');
+    }
   };
 
   return (
