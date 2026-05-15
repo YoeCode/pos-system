@@ -37,7 +37,7 @@ function mapDbSale(row: any): Sale {
     },
     paymentMethod: row.payment_method as PaymentMethod,
     amountReceived: row.amount_received,
-    change: row.change_amount,
+    change: row.change,
     completedAt: row.completed_at,
     employeeId: row.employee_id || undefined,
     terminalId: row.terminal_id || undefined,
@@ -78,7 +78,7 @@ async function createSaleInSupabase(sale: Sale): Promise<Sale | null> {
       refunded_amount: sale.refundedAmount,
       payment_method: sale.paymentMethod,
       amount_received: sale.amountReceived,
-      change_amount: sale.change,
+      change: sale.change,
       completed_at: sale.completedAt,
     })
     .select()
