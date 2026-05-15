@@ -5,6 +5,10 @@ const mockSales: Sale[] = [];
 
 let localNextOrderNumber = 1042;
 
+function isValidUuid(id: string | undefined | null): id is string {
+  return !!id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+}
+
 function mapDbSale(row: any): Sale {
   const items: OrderItem[] = (row.sale_items || []).map((si: any) => ({
     product: {
@@ -61,13 +65,15 @@ async function fetchSalesFromSupabase(): Promise<Sale[]> {
 }
 
 async function createSaleInSupabase(sale: Sale): Promise<Sale | null> {
+  const saleId = isValidUuid(sale.id) ? sale.id : crypto.randomUUID();
+
   const { data: saleData, error: saleError } = await supabase
     .from('sales')
     .insert({
-      id: sale.id,
+      id: saleId,
       order_number: sale.order.orderNumber,
-      customer_id: sale.customerId || null,
-      employee_id: sale.employeeId || null,
+      customer_id: isValidUuid(sale.customerId) ? sale.customerId : null,
+      employee_id: isValidUuid(sale.employeeId) ? sale.employeeId : null,
       terminal_id: sale.terminalId || null,
       subtotal: sale.order.subtotal,
       tax: sale.order.tax,
@@ -86,17 +92,19 @@ async function createSaleInSupabase(sale: Sale): Promise<Sale | null> {
 
   if (saleError || !saleData) return null;
 
-  const saleItems = sale.order.items.map(item => ({
-    sale_id: saleData.id,
-    product_id: item.product.id,
-    product_name: item.product.name,
-    product_sku: item.product.sku,
-    product_category: item.product.category,
-    quantity: item.quantity,
-    unit_price: item.product.price,
-    line_total: item.lineTotal,
-    selected_size: null,
-  }));
+  const saleItems = sale.order.items
+    .filter(item => isValidUuid(item.product.id))
+    .map(item => ({
+      sale_id: saleData.id,
+      product_id: item.product.id,
+      product_name: item.product.name,
+      product_sku: item.product.sku,
+      product_category: item.product.category,
+      quantity: item.quantity,
+      unit_price: item.product.price,
+      line_total: item.lineTotal,
+      selected_size: null,
+    }));
 
   if (saleItems.length > 0) {
     await supabase.from('sale_items').insert(saleItems);
