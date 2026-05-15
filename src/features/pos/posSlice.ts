@@ -13,6 +13,9 @@ interface CashBoxState {
   openDate: string | null;
 }
 
+const isValidUuid = (id: string): boolean =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
 const loadCashBoxFromStorage = (): CashBoxState => {
   try {
     const stored = localStorage.getItem(CASH_BOX_KEY);
@@ -26,7 +29,10 @@ const loadCashBoxFromStorage = (): CashBoxState => {
           openDateObj.getMonth() === today.getMonth() &&
           openDateObj.getDate() === today.getDate();
         if (isSameDay) {
-          return parsed;
+          return {
+            ...parsed,
+            employeeIds: parsed.employeeIds.filter(isValidUuid),
+          };
         }
       }
     }

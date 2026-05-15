@@ -58,8 +58,11 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
   const change = isCash && !isNaN(parsedAmount) ? parsedAmount - total : null;
   const canConfirm = isCash ? !isNaN(parsedAmount) && parsedAmount >= total : true;
 
+  const isValidUuid = (id: string | undefined | null): boolean =>
+    !!id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
   const handleConfirm = async () => {
-    if (!canConfirm) return;
+    const parsedAmount = parseFloat(amountReceived);
 
     const order: Order = {
       id: crypto.randomUUID(),
@@ -78,9 +81,12 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
 
     const loyaltyPointsEarned = customerId ? Math.floor(total * pointsPerEuro) : 0;
 
-    const saleEmployeeId = currentEmployeeId || 
-      (currentUser ? allEmployees.find(e => e.email.toLowerCase() === currentUser.email.toLowerCase())?.id : null) ||
-      currentUser?.id;
+    const saleEmployeeId =
+      (isValidUuid(currentEmployeeId) ? currentEmployeeId : null) ||
+      (currentUser && allEmployees.length > 0
+        ? allEmployees.find(e => e.email.toLowerCase() === currentUser.email.toLowerCase())?.id
+        : null) ||
+      (isValidUuid(currentUser?.id) ? currentUser?.id : null);
 
     const sale: Sale = {
       id: crypto.randomUUID(),
