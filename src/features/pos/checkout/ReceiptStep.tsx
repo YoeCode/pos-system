@@ -74,17 +74,18 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, 
   const handlePDF = async () => {
     if (!pdfRef.current) return;
     try {
-      pdfRef.current.style.position = 'fixed';
-      pdfRef.current.style.left = '-9999px';
-      pdfRef.current.style.top = '0';
-      pdfRef.current.style.opacity = '1';
-      pdfRef.current.classList.remove('hidden');
-      await exportElementToPDF(pdfRef.current, `ticket-${order.orderNumber}.pdf`);
-      pdfRef.current.classList.add('hidden');
-      pdfRef.current.style.position = '';
-      pdfRef.current.style.left = '';
-      pdfRef.current.style.top = '';
-      pdfRef.current.style.opacity = '';
+      const tempDiv = document.createElement('div');
+      tempDiv.style.position = 'absolute';
+      tempDiv.style.left = '-9999px';
+      tempDiv.style.top = '0';
+      tempDiv.style.width = '320px';
+      tempDiv.style.background = 'white';
+      tempDiv.innerHTML = pdfRef.current.innerHTML;
+      document.body.appendChild(tempDiv);
+
+      await exportElementToPDF(tempDiv, `ticket-${order.orderNumber}.pdf`);
+
+      document.body.removeChild(tempDiv);
       addToast('PDF descargado', 'success');
     } catch {
       addToast('Error al generar PDF', 'error');
