@@ -76,11 +76,18 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, 
     try {
       const clone = pdfRef.current.cloneNode(true) as HTMLElement;
       clone.style.position = 'fixed';
-      clone.style.left = '-9999px';
+      clone.style.left = '0';
       clone.style.top = '0';
-      clone.style.width = '320px';
       clone.style.opacity = '1';
       clone.classList.remove('hidden');
+
+      const ticket = clone.querySelector('[class*="w-[80mm]"], [class*="w-[58mm]"]') as HTMLElement | null;
+      if (ticket) {
+        ticket.style.margin = '0';
+        ticket.style.marginLeft = '0';
+        ticket.style.marginRight = '0';
+      }
+
       document.body.appendChild(clone);
 
       await exportElementToPDF(clone, `ticket-${order.orderNumber}.pdf`);
