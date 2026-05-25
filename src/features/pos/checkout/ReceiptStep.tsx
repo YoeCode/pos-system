@@ -9,7 +9,6 @@ import {
   selectTaxLabel,
   selectTicketConfig,
 } from '../../settings/settingsSlice';
-import PrintableReceipt from '../PrintableReceipt';
 import { exportElementToPDF } from '../../../utils/exportUtils';
 import { sendTicketEmail, isEmailConfigured } from '../../../utils/emailService';
 import { useToast } from '../../../components/ToastProvider';
@@ -34,16 +33,13 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, 
   const taxLabel = useAppSelector(selectTaxLabel);
   const allEmployees = useAppSelector(selectActiveEmployees);
   const ticketConfig = useAppSelector(selectTicketConfig);
-  const printRefNormal = useRef<HTMLDivElement>(null);
-  const printRefGift = useRef<HTMLDivElement>(null);
-  const pdfRef = useRef<HTMLDivElement>(null);
+  const ticketRef = useRef<HTMLDivElement>(null);
   const [email, setEmail] = useState('');
   const [sendingEmail, setSendingEmail] = useState(false);
   const { addToast } = useToast();
 
   const handlePrint = (giftMode: boolean) => {
-    const ref = giftMode ? printRefGift : printRefNormal;
-    if (!ref.current) return;
+    if (!ticketRef.current) return;
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
     printWindow.document.write(`
@@ -55,12 +51,12 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, 
               body { margin: 0; padding: 0; }
               .no-print { display: none !important; }
             }
-            body { font-family: monospace; background: white; }
+            body { font-family: monospace; background: white; padding: 20px; }
           </style>
           <script src="https://cdn.tailwindcss.com"></script>
         </head>
         <body>
-          ${ref.current.innerHTML}
+          ${ticketRef.current.outerHTML}
           <div class="no-print flex justify-center gap-3 p-6">
             <button onclick="window.print()" class="px-5 py-2.5 bg-primary text-white rounded-lg font-bold">Imprimir</button>
             <button onclick="window.close()" class="px-5 py-2.5 border border-border rounded-lg font-medium">Cerrar</button>
@@ -72,9 +68,9 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, 
   };
 
   const handlePDF = async () => {
-    if (!pdfRef.current) return;
+    if (!ticketRef.current) return;
     try {
-      await exportElementToPDF(pdfRef.current, `ticket-${order.orderNumber}.pdf`);
+      await exportElementToPDF(ticketRef.current, `ticket-${order.orderNumber}.pdf`);
       addToast('PDF descargado', 'success');
     } catch {
       addToast('Error al generar PDF', 'error');
@@ -134,7 +130,7 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, 
   return (
     <div className="flex flex-col gap-5">
       {/* Normal ticket */}
-      <div className="mx-auto w-full max-w-xs bg-white border border-dashed border-gray-300 rounded-lg p-5 font-mono text-xs">
+      <div ref={ticketRef} className="mx-auto w-full max-w-xs bg-white border border-dashed border-gray-300 rounded-lg p-5 font-mono text-xs">
         <div className="text-center mb-4">
           {ticketConfig?.showLogo && ticketConfig?.logoUrl && (
             <img src={ticketConfig.logoUrl} alt="Logo" className="w-16 h-16 object-contain mx-auto mb-2" />
@@ -293,15 +289,7 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, 
         Nueva venta
       </button>
 
-      <div ref={printRefNormal} className="absolute left-[-9999px] top-0 opacity-0 pointer-events-none">
-        <PrintableReceipt saleId={saleId} loyaltyPointsEarned={loyaltyPointsEarned} />
-      </div>
-      <div ref={printRefGift} className="absolute left-[-9999px] top-0 opacity-0 pointer-events-none">
-        <PrintableReceipt saleId={saleId} loyaltyPointsEarned={loyaltyPointsEarned} giftMode />
-      </div>
-      <div ref={pdfRef} className="absolute left-[-9999px] top-0 opacity-0 pointer-events-none">
-        <PrintableReceipt saleId={saleId} loyaltyPointsEarned={loyaltyPointsEarned} />
-      </div>
+
     </div>
   );
 };
