@@ -9,7 +9,7 @@ import {
   selectTaxLabel,
   selectTicketConfig,
 } from '../../settings/settingsSlice';
-import { exportElementToPDF } from '../../../utils/exportUtils';
+import { generateTicketPDF } from '../../../utils/exportUtils';
 import { sendTicketEmail, isEmailConfigured } from '../../../utils/emailService';
 import { useToast } from '../../../components/ToastProvider';
 
@@ -67,10 +67,9 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, 
     printWindow.document.close();
   };
 
-  const handlePDF = async () => {
-    if (!ticketRef.current) return;
+  const handlePDF = () => {
     try {
-      await exportElementToPDF(ticketRef.current, `ticket-${order.orderNumber}.pdf`);
+      generateTicketPDF(sale, storeName, taxLabel, footerMessage, employeeName || undefined);
       addToast('PDF descargado', 'success');
     } catch {
       addToast('Error al generar PDF', 'error');

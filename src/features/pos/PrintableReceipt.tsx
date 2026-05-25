@@ -58,7 +58,7 @@ const PrintableReceipt: React.FC<PrintableReceiptProps> = ({ saleId, loyaltyPoin
       className={`${widthClass} mx-auto bg-white p-4 font-mono print:shadow-none`}
       style={{
         fontSize: '11px',
-        lineHeight: '1.6',
+        lineHeight: '0.6',
         overflow: 'visible',
       }}
     >
