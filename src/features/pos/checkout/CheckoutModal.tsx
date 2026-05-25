@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Modal from '../../../components/ui/Modal';
 import PaymentStep from './PaymentStep';
 import ReceiptStep from './ReceiptStep';
@@ -36,8 +36,13 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [confirmedOrderNumber, setConfirmedOrderNumber] = useState<string | null>(null);
   const [loyaltyPointsEarned, setLoyaltyPointsEarned] = useState(0);
 
+  useEffect(() => {
+    if (isOpen && step === 'payment') {
+      setConfirmedOrderNumber(orderNumber);
+    }
+  }, [isOpen, orderNumber, step]);
+
   const handleComplete = (saleId: string, pointsEarned: number) => {
-    setConfirmedOrderNumber(orderNumber);
     setCompletedSaleId(saleId);
     setLoyaltyPointsEarned(pointsEarned);
     setStep('receipt');
@@ -52,7 +57,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   };
 
   const title = step === 'payment' ? 'Confirm Payment' : 'Receipt';
-  const subtitle = step === 'receipt' && confirmedOrderNumber ? confirmedOrderNumber : orderNumber;
+  const subtitle = confirmedOrderNumber || orderNumber;
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title={title} subtitle={subtitle}>

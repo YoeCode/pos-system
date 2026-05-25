@@ -52,6 +52,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
   const products = useAppSelector(selectAllProducts);
   const { addToast } = useToast();
   const [amountReceived, setAmountReceived] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isCash = paymentMethod === 'cash';
   const parsedAmount = parseFloat(amountReceived);
@@ -62,6 +63,9 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
     !!id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
   const handleConfirm = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+
     const parsedAmount = parseFloat(amountReceived);
 
     const order: Order = {
@@ -157,6 +161,8 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
       dispatch(startNewSale());
     } catch {
       addToast('Error al completar la venta', 'error');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -247,10 +253,20 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
       {/* Confirm button */}
       <button
         onClick={handleConfirm}
-        disabled={!canConfirm}
-        className="w-full py-3.5 bg-primary hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold rounded-xl text-sm transition-all duration-150 active:scale-[0.98]"
+        disabled={!canConfirm || isSubmitting}
+        className="w-full py-3.5 bg-primary hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold rounded-xl text-sm transition-all duration-150 active:scale-[0.98] flex items-center justify-center gap-2"
       >
-        CONFIRM PAYMENT
+        {isSubmitting ? (
+          <>
+            <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            Procesando...
+          </>
+        ) : (
+          'CONFIRM PAYMENT'
+        )}
       </button>
     </div>
   );
