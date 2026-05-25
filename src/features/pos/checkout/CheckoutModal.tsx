@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Modal from '../../../components/ui/Modal';
 import PaymentStep from './PaymentStep';
 import ReceiptStep from './ReceiptStep';
@@ -35,12 +35,14 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [completedSaleId, setCompletedSaleId] = useState<string | null>(null);
   const [confirmedOrderNumber, setConfirmedOrderNumber] = useState<string | null>(null);
   const [loyaltyPointsEarned, setLoyaltyPointsEarned] = useState(0);
+  const prevIsOpen = useRef(isOpen);
 
   useEffect(() => {
-    if (isOpen && step === 'payment') {
+    if (isOpen && !prevIsOpen.current) {
       setConfirmedOrderNumber(orderNumber);
     }
-  }, [isOpen, orderNumber, step]);
+    prevIsOpen.current = isOpen;
+  }, [isOpen, orderNumber]);
 
   const handleComplete = (saleId: string, pointsEarned: number) => {
     setCompletedSaleId(saleId);
@@ -68,7 +70,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
           tax={tax}
           total={total}
           paymentMethod={paymentMethod}
-          orderNumber={orderNumber}
+          orderNumber={confirmedOrderNumber || orderNumber}
           customerId={customerId}
           discountApplied={discountApplied}
           pointsToRedeem={pointsToRedeem}
