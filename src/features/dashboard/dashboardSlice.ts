@@ -56,12 +56,10 @@ const mockSales: Sale[] = [
 ];
 
 interface DashboardState {
-  sales: Sale[];
   dateRange: 'today' | 'week' | 'month';
 }
 
 const initialState: DashboardState = {
-  sales: mockSales,
   dateRange: 'today',
 };
 
