@@ -54,7 +54,7 @@ const PrintableReceipt: React.FC<PrintableReceiptProps> = ({ saleId, loyaltyPoin
   const widthClass = ticketSize === '80mm' ? 'w-[80mm]' : 'w-[58mm]';
 
   return (
-    <div className={`${widthClass} mx-auto bg-white p-4 font-mono text-[10px] leading-tight print:shadow-none`}>
+    <div className={`${widthClass} mx-auto bg-white p-4 font-mono text-[10px] leading-snug print:shadow-none`}>
       <div className="text-center mb-3">
         {ticketConfig?.showLogo && ticketConfig?.logoUrl && (
           <img src={ticketConfig.logoUrl} alt="Logo" className="w-12 h-12 object-contain mx-auto mb-1" />
