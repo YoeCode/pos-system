@@ -74,28 +74,7 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, 
   const handlePDF = async () => {
     if (!pdfRef.current) return;
     try {
-      const clone = pdfRef.current.cloneNode(true) as HTMLElement;
-      clone.style.position = 'fixed';
-      clone.style.left = '0';
-      clone.style.top = '0';
-      clone.style.opacity = '1';
-      clone.classList.remove('hidden');
-
-      const ticket = clone.querySelector('[class*="w-[80mm]"], [class*="w-[58mm]"]') as HTMLElement | null;
-      if (ticket) {
-        ticket.style.margin = '0';
-        ticket.style.marginLeft = '0';
-        ticket.style.marginRight = '0';
-        ticket.style.width = '320px';
-        ticket.style.maxWidth = '320px';
-        ticket.style.minWidth = '320px';
-      }
-
-      document.body.appendChild(clone);
-
-      await exportElementToPDF(clone, `ticket-${order.orderNumber}.pdf`);
-
-      document.body.removeChild(clone);
+      await exportElementToPDF(pdfRef.current, `ticket-${order.orderNumber}.pdf`);
       addToast('PDF descargado', 'success');
     } catch {
       addToast('Error al generar PDF', 'error');
@@ -314,13 +293,13 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, 
         Nueva venta
       </button>
 
-      <div ref={printRefNormal} className="hidden">
+      <div ref={printRefNormal} className="absolute left-[-9999px] top-0 opacity-0 pointer-events-none">
         <PrintableReceipt saleId={saleId} loyaltyPointsEarned={loyaltyPointsEarned} />
       </div>
-      <div ref={printRefGift} className="hidden">
+      <div ref={printRefGift} className="absolute left-[-9999px] top-0 opacity-0 pointer-events-none">
         <PrintableReceipt saleId={saleId} loyaltyPointsEarned={loyaltyPointsEarned} giftMode />
       </div>
-      <div ref={pdfRef} className="hidden">
+      <div ref={pdfRef} className="absolute left-[-9999px] top-0 opacity-0 pointer-events-none">
         <PrintableReceipt saleId={saleId} loyaltyPointsEarned={loyaltyPointsEarned} />
       </div>
     </div>
