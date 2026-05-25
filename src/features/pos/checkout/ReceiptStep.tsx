@@ -86,6 +86,9 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, 
         ticket.style.margin = '0';
         ticket.style.marginLeft = '0';
         ticket.style.marginRight = '0';
+        ticket.style.width = '320px';
+        ticket.style.maxWidth = '320px';
+        ticket.style.minWidth = '320px';
       }
 
       document.body.appendChild(clone);

@@ -5,11 +5,20 @@ export const exportElementToPDF = async (
   element: HTMLElement,
   filename: string
 ): Promise<void> => {
+  const originalOverflow = element.style.overflow;
+  const originalLineHeight = element.style.lineHeight;
+  element.style.overflow = 'visible';
+  element.style.lineHeight = '1.4';
+
   const canvas = await html2canvas(element, {
-    scale: 2,
+    scale: 3,
     useCORS: true,
     logging: false,
+    backgroundColor: '#ffffff',
   });
+
+  element.style.overflow = originalOverflow;
+  element.style.lineHeight = originalLineHeight;
 
   const imgData = canvas.toDataURL('image/png');
   const pdf = new jsPDF({
