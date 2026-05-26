@@ -3,6 +3,7 @@ import { useAppSelector } from '../../app/store';
 import { getTenantMembers } from '../../features/tenants/tenantsService';
 import type { TenantMemberInfo } from '../../features/tenants/tenantsService';
 import InviteMemberModal from '../../features/tenants/InviteMemberModal';
+import BillingSection from '../../features/tenants/BillingSection';
 import type { TenantRole } from '../../types';
 
 export default function TenantSettings() {
@@ -27,10 +28,12 @@ export default function TenantSettings() {
   };
 
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold text-white mb-6">Configuración del Negocio</h2>
+    <div className="p-6 max-w-3xl mx-auto space-y-6">
+      <h2 className="text-2xl font-bold text-white">Configuración del Negocio</h2>
 
-      <div className="bg-slate-800 rounded-xl p-6 border border-slate-700 mb-6">
+      <BillingSection tenantId={tenantId} />
+
+      <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-white">Miembros del equipo</h3>
           <button
