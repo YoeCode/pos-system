@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../app/store';
 import { loginUser, clearError } from '../../features/auth/authSlice';
 import { useI18n } from '../../i18n/I18nProvider';
@@ -141,6 +141,13 @@ const LoginPage: React.FC = () => {
           )}
         </button>
       </form>
+
+      <div className="px-8 pb-4 text-center">
+        <span className="text-sm text-dark-muted">¿No tienes cuenta? </span>
+        <Link to="/register" className="text-sm font-medium text-primary hover:text-primary-light transition-colors">
+          Crear nuevo negocio
+        </Link>
+      </div>
 
       {/* Security footer */}
       <div className="px-8 pb-8 flex flex-col gap-3">

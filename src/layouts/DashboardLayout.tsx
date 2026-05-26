@@ -153,6 +153,8 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const user = useAppSelector(state => state.auth.user);
+  const tenantId = user?.tenantId;
+  const tenantRole = user?.tenantRole;
   const storeName = useAppSelector(selectStoreName);
   const t = useI18n();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -215,13 +217,20 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         <div className="px-5 py-5 border-b border-border flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 min-w-0">
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
               <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 3h2v-2h-2v2zm0 3h2v-2h-2v2zm-2-3h2v-2h-2v2zm3-5h2v-2h-2v2zm2 2h2v-2h-2v2zm-2 2h2v-2h-2v2zm-3 0h2v-2h-2v2z" />
               </svg>
             </div>
-            <span className="font-bold text-base text-text-primary truncate">{storeName}</span>
+            <div className="min-w-0">
+              <span className="font-bold text-base text-text-primary truncate block">{storeName}</span>
+              {tenantId && (
+                <span className="text-[10px] text-text-muted uppercase tracking-wider truncate block">
+                  {tenantRole || 'miembro'}
+                </span>
+              )}
+            </div>
           </div>
           <button onClick={closeSidebar} className="lg:hidden p-1 text-text-muted hover:text-text-primary">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
