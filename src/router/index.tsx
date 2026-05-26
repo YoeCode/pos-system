@@ -6,7 +6,11 @@ import { ROLE_PERMISSIONS, PAGE_PERMISSIONS } from '../types';
 import AuthLayout from '../layouts/AuthLayout';
 import DashboardLayout from '../layouts/DashboardLayout';
 
+import LandingPage from '../pages/Landing/LandingPage';
 import LoginPage from '../pages/Login/LoginPage';
+import RegisterPage from '../pages/Register/RegisterPage';
+import TenantSelectPage from '../pages/TenantSelect/TenantSelectPage';
+import TenantSettings from '../pages/TenantSettings/TenantSettings';
 import POSPage from '../pages/POS/POSPage';
 import ProductsPage from '../pages/Products/ProductsPage';
 import EmployeesPage from '../pages/Employees/EmployeesPage';
@@ -37,13 +41,29 @@ const ProtectedRoute = ({ children }: { children: ReactNode }) => {
 export const router = createBrowserRouter([
   {
     path: '/',
-    element: <Navigate to="/login" replace />,
+    element: <LandingPage />,
   },
   {
     path: '/login',
     element: (
       <AuthLayout>
         <LoginPage />
+      </AuthLayout>
+    ),
+  },
+  {
+    path: '/register',
+    element: (
+      <AuthLayout>
+        <RegisterPage />
+      </AuthLayout>
+    ),
+  },
+  {
+    path: '/select-tenant',
+    element: (
+      <AuthLayout>
+        <TenantSelectPage />
       </AuthLayout>
     ),
   },
@@ -123,6 +143,16 @@ export const router = createBrowserRouter([
       <ProtectedRoute>
         <DashboardLayout>
           <InventoryPage />
+        </DashboardLayout>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/tenant-settings',
+    element: (
+      <ProtectedRoute>
+        <DashboardLayout>
+          <TenantSettings />
         </DashboardLayout>
       </ProtectedRoute>
     ),
