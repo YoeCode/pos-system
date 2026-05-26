@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { useAppSelector } from '../../app/store';
-import { getTenantMembers, inviteTenantMember } from '../../features/tenants/tenantsService';
+import { getTenantMembers } from '../../features/tenants/tenantsService';
 import type { TenantMemberInfo } from '../../features/tenants/tenantsService';
+import InviteMemberModal from '../../features/tenants/InviteMemberModal';
+import type { TenantRole } from '../../types';
 
 export default function TenantSettings() {
   const tenantId = useAppSelector(state => state.auth.user?.tenantId);
   const [members, setMembers] = useState<TenantMemberInfo[]>([]);
-  const [email, setEmail] = useState('');
-  const [role, setRole] = useState<'cashier' | 'manager' | 'supervisor'>('cashier');
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const loadMembers = async () => {
@@ -16,13 +17,12 @@ export default function TenantSettings() {
     setMembers(data);
   };
 
-  const handleInvite = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!tenantId || !email) return;
+  const handleInvite = async (_email: string, _role: TenantRole) => {
+    if (!tenantId) return;
 
     setIsLoading(true);
     setIsLoading(false);
-    setEmail('');
+    setIsModalOpen(false);
     loadMembers();
   };
 
@@ -31,33 +31,15 @@ export default function TenantSettings() {
       <h2 className="text-2xl font-bold text-white mb-6">Configuración del Negocio</h2>
 
       <div className="bg-slate-800 rounded-xl p-6 border border-slate-700 mb-6">
-        <h3 className="text-lg font-semibold text-white mb-4">Miembros del equipo</h3>
-
-        <form onSubmit={handleInvite} className="flex gap-3 mb-6">
-          <input
-            type="email"
-            placeholder="Email del empleado"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="flex-1 px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500"
-          />
-          <select
-            value={role}
-            onChange={(e) => setRole(e.target.value as 'cashier' | 'manager' | 'supervisor')}
-            className="px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-emerald-500"
-          >
-            <option value="cashier">Cajero</option>
-            <option value="supervisor">Supervisor</option>
-            <option value="manager">Gerente</option>
-          </select>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-white">Miembros del equipo</h3>
           <button
-            type="submit"
-            disabled={isLoading || !email}
-            className="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 rounded-lg text-white font-medium transition-colors"
+            onClick={() => setIsModalOpen(true)}
+            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-white text-sm font-medium transition-colors"
           >
-            Invitar
+            Invitar miembro
           </button>
-        </form>
+        </div>
 
         <div className="space-y-2">
           {members.map((member) => (
@@ -83,6 +65,13 @@ export default function TenantSettings() {
           )}
         </div>
       </div>
+
+      <InviteMemberModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onInvite={handleInvite}
+        isLoading={isLoading}
+      />
     </div>
   );
 }
