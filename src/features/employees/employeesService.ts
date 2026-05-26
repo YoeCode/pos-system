@@ -135,10 +135,11 @@ function mapDbEmployee(row: any): Employee {
   };
 }
 
-async function fetchEmployeesFromSupabase(): Promise<Employee[]> {
+async function fetchEmployeesFromSupabase(tenantId: string): Promise<Employee[]> {
   const { data, error } = await supabase
     .from('employees')
     .select('*')
+    .eq('tenant_id', tenantId)
     .eq('active', true)
     .order('name');
 
@@ -146,11 +147,12 @@ async function fetchEmployeesFromSupabase(): Promise<Employee[]> {
   return data.map(mapDbEmployee);
 }
 
-async function createEmployeeInSupabase(employee: Employee): Promise<Employee | null> {
+async function createEmployeeInSupabase(employee: Employee, tenantId: string): Promise<Employee | null> {
   const { data, error } = await supabase
     .from('employees')
     .insert({
       id: employee.id,
+      tenant_id: tenantId,
       name: employee.name,
       email: employee.email,
       role: mapRoleToDb(employee.role),
@@ -166,7 +168,7 @@ async function createEmployeeInSupabase(employee: Employee): Promise<Employee | 
   return mapDbEmployee(data);
 }
 
-async function updateEmployeeInSupabase(employee: Employee): Promise<Employee | null> {
+async function updateEmployeeInSupabase(employee: Employee, tenantId: string): Promise<Employee | null> {
   const { error } = await supabase
     .from('employees')
     .update({
@@ -178,7 +180,8 @@ async function updateEmployeeInSupabase(employee: Employee): Promise<Employee | 
       shift: employee.shift || null,
       active: employee.active,
     })
-    .eq('id', employee.id);
+    .eq('id', employee.id)
+    .eq('tenant_id', tenantId);
 
   if (error) return null;
 
@@ -191,33 +194,34 @@ async function updateEmployeeInSupabase(employee: Employee): Promise<Employee | 
   return data ? mapDbEmployee(data) : null;
 }
 
-async function deleteEmployeeFromSupabase(id: string): Promise<boolean> {
+async function deleteEmployeeFromSupabase(id: string, tenantId: string): Promise<boolean> {
   const { error } = await supabase
     .from('employees')
     .update({ active: false })
-    .eq('id', id);
+    .eq('id', id)
+    .eq('tenant_id', tenantId);
 
   return !error;
 }
 
-export async function fetchEmployees(): Promise<Employee[]> {
+export async function fetchEmployees(tenantId: string): Promise<Employee[]> {
   if (isSupabaseConfigured()) {
-    return fetchEmployeesFromSupabase();
+    return fetchEmployeesFromSupabase(tenantId);
   }
   return [...mockEmployees];
 }
 
-export async function createEmployee(employee: Employee): Promise<Employee | null> {
+export async function createEmployee(employee: Employee, tenantId: string): Promise<Employee | null> {
   if (isSupabaseConfigured()) {
-    return createEmployeeInSupabase(employee);
+    return createEmployeeInSupabase(employee, tenantId);
   }
   mockEmployees.push(employee);
   return employee;
 }
 
-export async function updateEmployee(employee: Employee): Promise<Employee | null> {
+export async function updateEmployee(employee: Employee, tenantId: string): Promise<Employee | null> {
   if (isSupabaseConfigured()) {
-    return updateEmployeeInSupabase(employee);
+    return updateEmployeeInSupabase(employee, tenantId);
   }
   const idx = mockEmployees.findIndex(e => e.id === employee.id);
   if (idx !== -1) {
@@ -227,9 +231,9 @@ export async function updateEmployee(employee: Employee): Promise<Employee | nul
   return null;
 }
 
-export async function deleteEmployee(id: string): Promise<boolean> {
+export async function deleteEmployee(id: string, tenantId: string): Promise<boolean> {
   if (isSupabaseConfigured()) {
-    return deleteEmployeeFromSupabase(id);
+    return deleteEmployeeFromSupabase(id, tenantId);
   }
   const idx = mockEmployees.findIndex(e => e.id === id);
   if (idx !== -1) {

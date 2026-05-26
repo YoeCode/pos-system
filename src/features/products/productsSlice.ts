@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
 import type { Product, ProductSize } from '../../types';
+import type { RootState } from '../../app/store';
 import {
   fetchProducts,
   createProduct,
@@ -72,15 +73,17 @@ const initialState: ProductsState = {
 
 export const fetchProductsAsync = createAsyncThunk(
   'products/fetchProductsAsync',
-  async () => {
-    return fetchProducts();
+  async (_, { getState }) => {
+    const tenantId = (getState() as RootState).auth.user?.tenantId || '';
+    return fetchProducts(tenantId);
   }
 );
 
 export const createProductAsync = createAsyncThunk(
   'products/createProductAsync',
-  async (product: Product) => {
-    const result = await createProduct(product);
+  async (product: Product, { getState }) => {
+    const tenantId = (getState() as RootState).auth.user?.tenantId || '';
+    const result = await createProduct(product, tenantId);
     if (!result) throw new Error('Failed to create product');
     return result;
   }
@@ -88,8 +91,9 @@ export const createProductAsync = createAsyncThunk(
 
 export const updateProductAsync = createAsyncThunk(
   'products/updateProductAsync',
-  async (product: Product) => {
-    const result = await updateProduct(product);
+  async (product: Product, { getState }) => {
+    const tenantId = (getState() as RootState).auth.user?.tenantId || '';
+    const result = await updateProduct(product, tenantId);
     if (!result) throw new Error('Failed to update product');
     return result;
   }
@@ -97,10 +101,11 @@ export const updateProductAsync = createAsyncThunk(
 
 export const deleteProductAsync = createAsyncThunk(
   'products/deleteProductAsync',
-  async (id: string) => {
-    const result = await deleteProduct(id);
+  async (productId: string, { getState }) => {
+    const tenantId = (getState() as RootState).auth.user?.tenantId || '';
+    const result = await deleteProduct(productId, tenantId);
     if (!result) throw new Error('Failed to delete product');
-    return id;
+    return productId;
   }
 );
 

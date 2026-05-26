@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
 import type { Sale } from '../../types';
+import type { RootState } from '../../app/store';
 import { fetchSales, createSale, getNextOrderNumber } from './salesService';
 
 interface SalesState {
@@ -19,15 +20,17 @@ const initialState: SalesState = {
 
 export const fetchSalesAsync = createAsyncThunk(
   'sales/fetchSalesAsync',
-  async () => {
-    return fetchSales();
+  async (_, { getState }) => {
+    const tenantId = (getState() as RootState).auth.user?.tenantId || '';
+    return fetchSales(tenantId);
   }
 );
 
 export const completeSaleAsync = createAsyncThunk(
   'sales/completeSaleAsync',
-  async (sale: Sale) => {
-    const result = await createSale(sale);
+  async (sale: Sale, { getState }) => {
+    const tenantId = (getState() as RootState).auth.user?.tenantId || '';
+    const result = await createSale(sale, tenantId);
     if (!result) throw new Error('Failed to create sale');
     return result;
   }
@@ -35,8 +38,9 @@ export const completeSaleAsync = createAsyncThunk(
 
 export const loadNextOrderNumberAsync = createAsyncThunk(
   'sales/loadNextOrderNumberAsync',
-  async () => {
-    return getNextOrderNumber();
+  async (_, { getState }) => {
+    const tenantId = (getState() as RootState).auth.user?.tenantId || '';
+    return getNextOrderNumber(tenantId);
   }
 );
 

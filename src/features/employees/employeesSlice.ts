@@ -22,15 +22,17 @@ const initialState: EmployeesState = {
 
 export const fetchEmployeesAsync = createAsyncThunk(
   'employees/fetchEmployeesAsync',
-  async () => {
-    return fetchEmployees();
+  async (_, { getState }) => {
+    const tenantId = (getState() as RootState).auth.user?.tenantId || '';
+    return fetchEmployees(tenantId);
   }
 );
 
 export const addEmployeeAsync = createAsyncThunk(
   'employees/addEmployeeAsync',
-  async (employee: Employee) => {
-    const result = await createEmployee(employee);
+  async (employee: Employee, { getState }) => {
+    const tenantId = (getState() as RootState).auth.user?.tenantId || '';
+    const result = await createEmployee(employee, tenantId);
     if (!result) throw new Error('Failed to create employee');
     return result;
   }
@@ -38,8 +40,9 @@ export const addEmployeeAsync = createAsyncThunk(
 
 export const updateEmployeeAsync = createAsyncThunk(
   'employees/updateEmployeeAsync',
-  async (employee: Employee) => {
-    const result = await updateEmployee(employee);
+  async (employee: Employee, { getState }) => {
+    const tenantId = (getState() as RootState).auth.user?.tenantId || '';
+    const result = await updateEmployee(employee, tenantId);
     if (!result) throw new Error('Failed to update employee');
     return result;
   }

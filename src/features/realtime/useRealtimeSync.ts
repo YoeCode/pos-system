@@ -11,12 +11,13 @@ import { useToast } from '../../components/ToastProvider';
 export function useRealtimeSync() {
   const dispatch = useAppDispatch();
   const isAuthenticated = useAppSelector(state => state.auth.isAuthenticated);
+  const tenantId = useAppSelector(state => state.auth.user?.tenantId || '');
   const multiTerminalMode = useAppSelector(selectMultiTerminalMode);
   const { addToast } = useToast();
   const notifiedRef = useRef(false);
 
   useEffect(() => {
-    if (!isSupabaseConfigured() || !isAuthenticated) return;
+    if (!isSupabaseConfigured() || !isAuthenticated || !tenantId) return;
 
     const unsubscribeStatus = subscribeToRealtimeStatus((status) => {
       if (status === 'connected' && !notifiedRef.current) {
@@ -30,7 +31,7 @@ export function useRealtimeSync() {
       }
     });
 
-    const unsubscribeSync = startRealtimeSync({
+    const unsubscribeSync = startRealtimeSync(tenantId, {
       onProductChange: () => {
         dispatch(fetchProductsAsync());
       },
@@ -47,5 +48,5 @@ export function useRealtimeSync() {
       unsubscribeSync();
       notifiedRef.current = false;
     };
-  }, [dispatch, isAuthenticated, multiTerminalMode, addToast]);
+  }, [dispatch, isAuthenticated, tenantId, multiTerminalMode, addToast]);
 }

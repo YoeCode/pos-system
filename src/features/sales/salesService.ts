@@ -54,39 +54,43 @@ function mapDbSale(row: any): Sale {
   };
 }
 
-async function fetchSalesFromSupabase(): Promise<Sale[]> {
+async function fetchSalesFromSupabase(tenantId: string): Promise<Sale[]> {
   const { data, error } = await supabase
     .from('sales')
     .select('*, sale_items(*)')
+    .eq('tenant_id', tenantId)
     .order('completed_at', { ascending: false });
 
   if (error || !data) return [];
-  return data.map(mapDbSale);
+  return (data as any[]).map(mapDbSale);
 }
 
-async function createSaleInSupabase(sale: Sale): Promise<Sale | null> {
+async function createSaleInSupabase(sale: Sale, tenantId: string): Promise<Sale | null> {
   const saleId = isValidUuid(sale.id) ? sale.id : crypto.randomUUID();
+
+  const insertData: Record<string, any> = {
+    id: saleId,
+    tenant_id: tenantId,
+    order_number: sale.order.orderNumber,
+    customer_id: isValidUuid(sale.customerId) ? sale.customerId : null,
+    employee_id: isValidUuid(sale.employeeId) ? sale.employeeId : null,
+    terminal_id: sale.terminalId || null,
+    subtotal: sale.order.subtotal,
+    tax: sale.order.tax,
+    total: sale.order.total,
+    discount: sale.discountApplied,
+    loyalty_points_earned: sale.loyaltyPointsEarned,
+    loyalty_points_redeemed: sale.loyaltyPointsRedeemed,
+    refunded_amount: sale.refundedAmount,
+    payment_method: sale.paymentMethod,
+    amount_received: sale.amountReceived,
+    change: sale.change,
+    completed_at: sale.completedAt,
+  };
 
   const { data: saleData, error: saleError } = await supabase
     .from('sales')
-    .insert({
-      id: saleId,
-      order_number: sale.order.orderNumber,
-      customer_id: isValidUuid(sale.customerId) ? sale.customerId : null,
-      employee_id: isValidUuid(sale.employeeId) ? sale.employeeId : null,
-      terminal_id: sale.terminalId || null,
-      subtotal: sale.order.subtotal,
-      tax: sale.order.tax,
-      total: sale.order.total,
-      discount: sale.discountApplied,
-      loyalty_points_earned: sale.loyaltyPointsEarned,
-      loyalty_points_redeemed: sale.loyaltyPointsRedeemed,
-      refunded_amount: sale.refundedAmount,
-      payment_method: sale.paymentMethod,
-      amount_received: sale.amountReceived,
-      change: sale.change,
-      completed_at: sale.completedAt,
-    })
+    .insert(insertData)
     .select()
     .single();
 
@@ -95,7 +99,7 @@ async function createSaleInSupabase(sale: Sale): Promise<Sale | null> {
   const saleItems = sale.order.items
     .filter(item => isValidUuid(item.product.id))
     .map(item => ({
-      sale_id: saleData.id,
+      sale_id: (saleData as any).id,
       product_id: item.product.id,
       product_name: item.product.name,
       product_sku: item.product.sku,
@@ -113,38 +117,39 @@ async function createSaleInSupabase(sale: Sale): Promise<Sale | null> {
   return mapDbSale({ ...saleData, sale_items: saleItems });
 }
 
-async function getNextOrderNumberFromSupabase(): Promise<number> {
+async function getNextOrderNumberFromSupabase(tenantId: string): Promise<number> {
   const { data, error } = await supabase
     .from('sales')
     .select('order_number')
+    .eq('tenant_id', tenantId)
     .order('order_number', { ascending: false })
     .limit(1)
     .maybeSingle();
 
   if (error || !data) return 1042;
 
-  const num = parseInt(data.order_number.replace(/^\D*/, ''), 10);
+  const num = parseInt((data as any).order_number.replace(/^\D*/, ''), 10);
   return isNaN(num) ? 1042 : num + 1;
 }
 
-export async function fetchSales(): Promise<Sale[]> {
+export async function fetchSales(tenantId: string): Promise<Sale[]> {
   if (isSupabaseConfigured()) {
-    return fetchSalesFromSupabase();
+    return fetchSalesFromSupabase(tenantId);
   }
   return [...mockSales];
 }
 
-export async function createSale(sale: Sale): Promise<Sale | null> {
+export async function createSale(sale: Sale, tenantId: string): Promise<Sale | null> {
   if (isSupabaseConfigured()) {
-    return createSaleInSupabase(sale);
+    return createSaleInSupabase(sale, tenantId);
   }
   mockSales.push(sale);
   return sale;
 }
 
-export async function getNextOrderNumber(): Promise<number> {
+export async function getNextOrderNumber(tenantId: string): Promise<number> {
   if (isSupabaseConfigured()) {
-    return getNextOrderNumberFromSupabase();
+    return getNextOrderNumberFromSupabase(tenantId);
   }
   localNextOrderNumber += 1;
   return localNextOrderNumber;

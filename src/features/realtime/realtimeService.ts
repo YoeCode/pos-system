@@ -28,7 +28,7 @@ export interface RealtimeCallbacks {
   onCustomerChange?: (payload: RealtimePostgresChangesPayload<any>) => void;
 }
 
-export function startRealtimeSync(callbacks: RealtimeCallbacks): () => void {
+export function startRealtimeSync(tenantId: string, callbacks: RealtimeCallbacks): () => void {
   if (!isSupabaseConfigured()) {
     console.warn('[Realtime] Supabase not configured, skipping Realtime');
     return () => {};
@@ -44,7 +44,7 @@ export function startRealtimeSync(callbacks: RealtimeCallbacks): () => void {
       .channel('db-products')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'products' },
+        { event: '*', schema: 'public', table: 'products', filter: `tenant_id=eq.${tenantId}` },
         (payload) => {
           console.log('[Realtime] Product change:', payload);
           callbacks.onProductChange!(payload);
@@ -63,7 +63,7 @@ export function startRealtimeSync(callbacks: RealtimeCallbacks): () => void {
       .channel('db-sales')
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'sales' },
+        { event: 'INSERT', schema: 'public', table: 'sales', filter: `tenant_id=eq.${tenantId}` },
         (payload) => {
           console.log('[Realtime] Sale inserted:', payload);
           callbacks.onSaleChange!(payload);
@@ -82,7 +82,7 @@ export function startRealtimeSync(callbacks: RealtimeCallbacks): () => void {
       .channel('db-employees')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'employees' },
+        { event: '*', schema: 'public', table: 'employees', filter: `tenant_id=eq.${tenantId}` },
         (payload) => {
           console.log('[Realtime] Employee change:', payload);
           callbacks.onEmployeeChange!(payload);
@@ -101,7 +101,7 @@ export function startRealtimeSync(callbacks: RealtimeCallbacks): () => void {
       .channel('db-customers')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'customers' },
+        { event: '*', schema: 'public', table: 'customers', filter: `tenant_id=eq.${tenantId}` },
         (payload) => {
           console.log('[Realtime] Customer change:', payload);
           callbacks.onCustomerChange!(payload);

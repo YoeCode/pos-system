@@ -241,36 +241,40 @@ function mapDbProduct(row: any): Product {
   };
 }
 
-async function fetchProductsFromSupabase(): Promise<Product[]> {
+async function fetchProductsFromSupabase(tenantId: string): Promise<Product[]> {
   const { data, error } = await supabase
     .from('products')
     .select('*, product_sizes(*)')
+    .eq('tenant_id', tenantId)
     .order('name');
 
   if (error || !data) return [];
-  return data.map(mapDbProduct);
+  return (data as any[]).map(mapDbProduct);
 }
 
-async function createProductInSupabase(product: Product): Promise<Product | null> {
+async function createProductInSupabase(product: Product, tenantId: string): Promise<Product | null> {
+  const insertData: Record<string, any> = {
+    id: product.id,
+    tenant_id: tenantId,
+    name: product.name,
+    sku: product.sku,
+    category: product.category,
+    brand: product.brand || null,
+    price: product.price,
+    cost_price: product.costPrice,
+    stock: product.stock,
+    min_stock: product.minStock,
+    image_url: product.image || null,
+    description: product.description || null,
+    status: product.status,
+    published_online: product.publishedOnline,
+    version: product.version || null,
+    size_group_id: product.sizeGroupId || null,
+  };
+
   const { data, error } = await supabase
     .from('products')
-    .insert({
-      id: product.id,
-      name: product.name,
-      sku: product.sku,
-      category: product.category,
-      brand: product.brand || null,
-      price: product.price,
-      cost_price: product.costPrice,
-      stock: product.stock,
-      min_stock: product.minStock,
-      image_url: product.image || null,
-      description: product.description || null,
-      status: product.status,
-      published_online: product.publishedOnline,
-      version: product.version || null,
-      size_group_id: product.sizeGroupId || null,
-    })
+    .insert(insertData)
     .select()
     .single();
 
@@ -278,7 +282,7 @@ async function createProductInSupabase(product: Product): Promise<Product | null
 
   if (product.sizes && product.sizes.length > 0) {
     const sizesToInsert = product.sizes.map(s => ({
-      product_id: data.id,
+      product_id: (data as any).id,
       size: s.size,
       stock: s.stock,
       min_stock: s.minStock,
@@ -290,26 +294,29 @@ async function createProductInSupabase(product: Product): Promise<Product | null
   return mapDbProduct({ ...data, product_sizes: product.sizes || [] });
 }
 
-async function updateProductInSupabase(product: Product): Promise<Product | null> {
+async function updateProductInSupabase(product: Product, tenantId: string): Promise<Product | null> {
+  const updateData: Record<string, any> = {
+    name: product.name,
+    sku: product.sku,
+    category: product.category,
+    brand: product.brand || null,
+    price: product.price,
+    cost_price: product.costPrice,
+    stock: product.stock,
+    min_stock: product.minStock,
+    image_url: product.image || null,
+    description: product.description || null,
+    status: product.status,
+    published_online: product.publishedOnline,
+    version: product.version || null,
+    size_group_id: product.sizeGroupId || null,
+  };
+
   const { error } = await supabase
     .from('products')
-    .update({
-      name: product.name,
-      sku: product.sku,
-      category: product.category,
-      brand: product.brand || null,
-      price: product.price,
-      cost_price: product.costPrice,
-      stock: product.stock,
-      min_stock: product.minStock,
-      image_url: product.image || null,
-      description: product.description || null,
-      status: product.status,
-      published_online: product.publishedOnline,
-      version: product.version || null,
-      size_group_id: product.sizeGroupId || null,
-    })
-    .eq('id', product.id);
+    .update(updateData)
+    .eq('id', product.id)
+    .eq('tenant_id', tenantId);
 
   if (error) return null;
 
@@ -335,29 +342,29 @@ async function updateProductInSupabase(product: Product): Promise<Product | null
   return data ? mapDbProduct(data) : null;
 }
 
-async function deleteProductFromSupabase(id: string): Promise<boolean> {
-  const { error } = await supabase.from('products').delete().eq('id', id);
+async function deleteProductFromSupabase(id: string, tenantId: string): Promise<boolean> {
+  const { error } = await supabase.from('products').delete().eq('id', id).eq('tenant_id', tenantId);
   return !error;
 }
 
-export async function fetchProducts(): Promise<Product[]> {
+export async function fetchProducts(tenantId: string): Promise<Product[]> {
   if (isSupabaseConfigured()) {
-    return fetchProductsFromSupabase();
+    return fetchProductsFromSupabase(tenantId);
   }
   return [...mockProducts];
 }
 
-export async function createProduct(product: Product): Promise<Product | null> {
+export async function createProduct(product: Product, tenantId: string): Promise<Product | null> {
   if (isSupabaseConfigured()) {
-    return createProductInSupabase(product);
+    return createProductInSupabase(product, tenantId);
   }
   mockProducts.push(product);
   return product;
 }
 
-export async function updateProduct(product: Product): Promise<Product | null> {
+export async function updateProduct(product: Product, tenantId: string): Promise<Product | null> {
   if (isSupabaseConfigured()) {
-    return updateProductInSupabase(product);
+    return updateProductInSupabase(product, tenantId);
   }
   const idx = mockProducts.findIndex(p => p.id === product.id);
   if (idx !== -1) {
@@ -367,9 +374,9 @@ export async function updateProduct(product: Product): Promise<Product | null> {
   return null;
 }
 
-export async function deleteProduct(id: string): Promise<boolean> {
+export async function deleteProduct(id: string, tenantId: string): Promise<boolean> {
   if (isSupabaseConfigured()) {
-    return deleteProductFromSupabase(id);
+    return deleteProductFromSupabase(id, tenantId);
   }
   const idx = mockProducts.findIndex(p => p.id === id);
   if (idx !== -1) {
