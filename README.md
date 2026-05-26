@@ -66,8 +66,40 @@ export default defineConfig([
         project: ['./tsconfig.node.json', './tsconfig.app.json'],
         tsconfigRootDir: import.meta.dirname,
       },
-      // other options...
     },
   },
 ])
 ```
+
+## EmailJS Configuration (Email Tickets)
+
+To enable sending tickets by email from the POS receipt screen:
+
+1. Create a free account at [emailjs.com](https://www.emailjs.com)
+2. Add an **Email Service** (Gmail, Outlook, etc.) and note the **Service ID**
+3. Create an **Email Template** with these variables:
+   - `{{to_email}}` — customer email address
+   - `{{to_name}}` — customer name (derived from email)
+   - `{{store_name}}` — your store name
+   - `{{order_number}}` — sale order number
+   - `{{order_date}}` — sale date and time
+   - `{{order_items}}` — line items as plain text
+   - `{{subtotal}}` — subtotal amount
+   - `{{tax}}` — tax amount
+   - `{{total}}` — total amount
+   - `{{payment_method}}` — payment method used
+   - `{{receipt_html}}` — full receipt HTML
+4. Get your **Public Key** from Account → API Keys
+5. Fill these values in your `.env` file:
+
+```env
+VITE_EMAILJS_SERVICE_ID=your_service_id
+VITE_EMAILJS_TEMPLATE_ID=your_template_id
+VITE_EMAILJS_PUBLIC_KEY=your_public_key
+```
+
+### Free Tier Limits
+- **200 emails/month** — requests beyond this are silently ignored
+- **50 KB max payload** — keep templates concise
+- **No attachments** — send receipts as HTML/text only
+- **2 templates max**

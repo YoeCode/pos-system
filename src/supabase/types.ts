@@ -1,61 +1,89 @@
-export interface Database {
+export type Database = {
   public: {
     Tables: {
       employees: {
         Row: EmployeeRow;
         Insert: EmployeeInsert;
         Update: EmployeeUpdate;
+        Relationships: [];
       };
       products: {
         Row: ProductRow;
         Insert: ProductInsert;
         Update: ProductUpdate;
+        Relationships: [];
       };
       product_sizes: {
         Row: ProductSizeRow;
         Insert: ProductSizeInsert;
         Update: ProductSizeUpdate;
+        Relationships: [];
       };
       customers: {
         Row: CustomerRow;
         Insert: CustomerInsert;
         Update: CustomerUpdate;
+        Relationships: [];
       };
       sales: {
         Row: SaleRow;
         Insert: SaleInsert;
         Update: SaleUpdate;
+        Relationships: [];
       };
       sale_items: {
         Row: SaleItemRow;
         Insert: SaleItemInsert;
         Update: SaleItemUpdate;
+        Relationships: [];
       };
       cash_box_sessions: {
         Row: CashBoxSessionRow;
         Insert: CashBoxSessionInsert;
         Update: CashBoxSessionUpdate;
+        Relationships: [];
       };
       cash_box_closures: {
         Row: CashBoxClosureRow;
         Insert: CashBoxClosureInsert;
         Update: CashBoxClosureUpdate;
+        Relationships: [];
       };
       refunds: {
         Row: RefundRow;
         Insert: RefundInsert;
         Update: RefundUpdate;
+        Relationships: [];
       };
       settings: {
         Row: SettingsRow;
         Insert: SettingsInsert;
         Update: SettingsUpdate;
+        Relationships: [];
+      };
+      tenants: {
+        Row: TenantRow;
+        Insert: TenantInsert;
+        Update: TenantUpdate;
+        Relationships: [];
+      };
+      tenant_members: {
+        Row: TenantMemberRow;
+        Insert: TenantMemberInsert;
+        Update: TenantMemberUpdate;
+        Relationships: [];
       };
     };
+    Views: {};
+    Functions: {};
   };
 }
 
 export type UserRole = 'cashier' | 'supervisor' | 'manager' | 'admin';
+export type TenantRole = 'owner' | 'admin' | 'manager' | 'supervisor' | 'cashier';
+export type PaymentMethod = 'cash' | 'card' | 'bizum';
+export type TenantPlan = 'free' | 'pro' | 'enterprise';
+export type SubscriptionStatus = 'active' | 'past_due' | 'canceled';
 
 export interface EmployeeRow {
   id: string;
@@ -211,8 +239,6 @@ export interface CustomerUpdate {
   total_spent?: number;
 }
 
-export type PaymentMethod = 'cash' | 'card' | 'bizum';
-
 export interface SaleRow {
   id: string;
   order_number: string;
@@ -220,6 +246,7 @@ export interface SaleRow {
   tax: number;
   total: number;
   discount: number;
+  refunded_amount: number;
   payment_method: PaymentMethod;
   amount_received: number | null;
   change: number | null;
@@ -239,6 +266,7 @@ export interface SaleInsert {
   tax: number;
   total: number;
   discount?: number;
+  refunded_amount?: number;
   payment_method: PaymentMethod;
   amount_received?: number | null;
   change?: number | null;
@@ -257,6 +285,7 @@ export interface SaleUpdate {
   tax?: number;
   total?: number;
   discount?: number;
+  refunded_amount?: number;
   payment_method?: PaymentMethod;
   amount_received?: number | null;
   change?: number | null;
@@ -273,6 +302,8 @@ export interface SaleItemRow {
   sale_id: string;
   product_id: string;
   product_name: string;
+  product_sku: string | null;
+  product_category: string | null;
   quantity: number;
   unit_price: number;
   line_total: number;
@@ -284,6 +315,8 @@ export interface SaleItemInsert {
   sale_id: string;
   product_id: string;
   product_name: string;
+  product_sku?: string | null;
+  product_category?: string | null;
   quantity: number;
   unit_price: number;
   line_total: number;
@@ -295,6 +328,8 @@ export interface SaleItemUpdate {
   sale_id?: string;
   product_id?: string;
   product_name?: string;
+  product_sku?: string | null;
+  product_category?: string | null;
   quantity?: number;
   unit_price?: number;
   line_total?: number;
@@ -349,13 +384,13 @@ export interface CashBoxClosureRow {
 export interface CashBoxClosureInsert {
   id?: string;
   session_id: string;
-  cash_expected: number;
-  cash_counted: number;
-  card_expected: number;
-  card_counted: number;
-  bizum_expected: number;
-  bizum_counted: number;
-  total_difference: number;
+  cash_expected?: number;
+  cash_counted?: number;
+  card_expected?: number;
+  card_counted?: number;
+  bizum_expected?: number;
+  bizum_counted?: number;
+  total_difference?: number;
   closed_by?: string | null;
   pin_verified?: boolean;
 }
@@ -440,4 +475,73 @@ export interface SettingsUpdate {
   tax_included?: boolean;
   language?: 'en' | 'es';
   currency?: string;
+}
+
+export interface TenantRow {
+  id: string;
+  name: string;
+  slug: string;
+  owner_id: string | null;
+  plan: TenantPlan;
+  subscription_status: SubscriptionStatus;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
+  max_employees: number;
+  max_products: number;
+  max_sales_monthly: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TenantInsert {
+  id?: string;
+  name: string;
+  slug: string;
+  owner_id?: string | null;
+  plan?: TenantPlan;
+  subscription_status?: SubscriptionStatus;
+  stripe_customer_id?: string | null;
+  stripe_subscription_id?: string | null;
+  max_employees?: number;
+  max_products?: number;
+  max_sales_monthly?: number;
+}
+
+export interface TenantUpdate {
+  id?: string;
+  name?: string;
+  slug?: string;
+  owner_id?: string | null;
+  plan?: TenantPlan;
+  subscription_status?: SubscriptionStatus;
+  stripe_customer_id?: string | null;
+  stripe_subscription_id?: string | null;
+  max_employees?: number;
+  max_products?: number;
+  max_sales_monthly?: number;
+}
+
+export interface TenantMemberRow {
+  id: string;
+  tenant_id: string;
+  user_id: string;
+  role: TenantRole;
+  invited_by: string | null;
+  joined_at: string;
+}
+
+export interface TenantMemberInsert {
+  id?: string;
+  tenant_id: string;
+  user_id: string;
+  role?: TenantRole;
+  invited_by?: string | null;
+}
+
+export interface TenantMemberUpdate {
+  id?: string;
+  tenant_id?: string;
+  user_id?: string;
+  role?: TenantRole;
+  invited_by?: string | null;
 }

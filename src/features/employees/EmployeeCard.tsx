@@ -2,7 +2,7 @@ import React from 'react';
 import type { Employee } from '../../types';
 import Badge from '../../components/ui/Badge';
 import { useAppDispatch } from '../../app/store';
-import { setEditingEmployee, toggleModal, updateEmployee } from './employeesSlice';
+import { setEditingEmployee, toggleModal, updateEmployeeAsync } from './employeesSlice';
 import { usePermission } from '../../hooks/usePermission';
 import { useI18n } from '../../i18n/I18nProvider';
 
@@ -46,7 +46,7 @@ const EmployeeCard: React.FC<EmployeeCardProps> = ({ employee }) => {
   };
 
   const handleToggleActive = () => {
-    dispatch(updateEmployee({ ...employee, active: !employee.active }));
+    dispatch(updateEmployeeAsync({ ...employee, active: !employee.active }));
   };
 
   return (

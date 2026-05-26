@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/store';
-import { addEmployee, toggleModal, setEditingEmployee, updateEmployee } from './employeesSlice';
+import { addEmployeeAsync, toggleModal, setEditingEmployee, updateEmployeeAsync } from './employeesSlice';
 import type { Employee } from '../../types';
 import Modal from '../../components/ui/Modal';
 import Toggle from '../../components/ui/Toggle';
@@ -72,14 +72,14 @@ const EmployeeModal: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (isEditing && editingEmployee) {
-      dispatch(updateEmployee({ ...form, id: editingEmployee.id, startDate: editingEmployee.startDate }));
+      dispatch(updateEmployeeAsync({ ...form, id: editingEmployee.id, startDate: editingEmployee.startDate }));
     } else {
       const employee: Employee = {
         ...form,
-        id: Date.now().toString(),
+        id: crypto.randomUUID(),
         startDate: new Date().toISOString().split('T')[0],
       };
-      dispatch(addEmployee(employee));
+      dispatch(addEmployeeAsync(employee));
     }
     handleClose();
   };

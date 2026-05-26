@@ -6,6 +6,8 @@ import { ROLE_PERMISSIONS } from '../types';
 import { selectStoreName } from '../features/settings/settingsSlice';
 import { selectLowStockCount } from '../features/products/productsSlice';
 import { useI18n } from '../i18n/I18nProvider';
+import { useRealtimeStatusIndicator } from '../features/realtime/useRealtimeStatusIndicator';
+import { useRealtimeSync } from '../features/realtime/useRealtimeSync';
 import SaleWindowsTabs from '../features/pos/SaleWindowsTabs';
 
 interface NavItemProps {
@@ -154,6 +156,9 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const storeName = useAppSelector(selectStoreName);
   const t = useI18n();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const realtimeStatus = useRealtimeStatusIndicator();
+
+  useRealtimeSync();
 
   const userPermissions = user ? ROLE_PERMISSIONS[user.role] || [] : [];
   const lowStockCount = useAppSelector(selectLowStockCount);
@@ -282,8 +287,19 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v1m6 0H9" />
                 </svg>
               </button>
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                <span className="text-sm font-medium text-primary">{user?.name?.charAt(0).toUpperCase() || 'U'}</span>
+              <div className="relative">
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                  <span className="text-sm font-medium text-primary">{user?.name?.charAt(0).toUpperCase() || 'U'}</span>
+                </div>
+                {realtimeStatus === 'connected' && (
+                  <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white" title="Sincronización activa" />
+                )}
+                {realtimeStatus === 'connecting' && (
+                  <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-yellow-400 rounded-full border-2 border-white animate-pulse" title="Conectando..." />
+                )}
+                {realtimeStatus === 'error' && (
+                  <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" title="Error de sincronización" />
+                )}
               </div>
             </div>
           </div>

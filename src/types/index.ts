@@ -1,4 +1,5 @@
 export type UserRole = 'cashier' | 'supervisor' | 'manager' | 'admin';
+export type TenantRole = 'owner' | 'admin' | 'manager' | 'supervisor' | 'cashier';
 
 export type Permission =
   | 'pos:sale'
@@ -31,6 +32,8 @@ export interface AuthUser {
   email: string;
   password: string;
   role: UserRole;
+  tenantId?: string;
+  tenantRole?: TenantRole;
   terminal?: string;
   avatar?: string;
 }

@@ -1,119 +1,54 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
 import type { Employee } from '../../types';
 import type { RootState } from '../../app/store';
-
-const mockEmployees: Employee[] = [
-  {
-    id: '1',
-    name: 'Ana Martínez',
-    email: 'admin@casalis.com',
-    phone: '+34 555 0101',
-    role: 'Admin',
-    shift: 'Morning 06:00-14:00',
-    pin: '1234',
-    active: true,
-    permissions: {
-      processSales: true,
-      applyDiscounts: true,
-      manageInventory: true,
-      accessReports: true,
-    },
-    startDate: '2023-03-15',
-  },
-  {
-    id: '2',
-    name: 'Carlos López',
-    email: 'manager@casalis.com',
-    phone: '+34 555 0102',
-    role: 'Supervisor',
-    shift: 'Evening 14:00-22:00',
-    pin: '2345',
-    active: true,
-    permissions: {
-      processSales: true,
-      applyDiscounts: true,
-      manageInventory: true,
-      accessReports: true,
-    },
-    startDate: '2022-07-01',
-  },
-  {
-    id: '3',
-    name: 'María García',
-    email: 'supervisor@casalis.com',
-    phone: '+34 555 0103',
-    role: 'Supervisor',
-    shift: 'Morning 06:00-14:00',
-    pin: '3456',
-    active: true,
-    permissions: {
-      processSales: true,
-      applyDiscounts: true,
-      manageInventory: true,
-      accessReports: true,
-    },
-    startDate: '2021-01-10',
-  },
-  {
-    id: '4',
-    name: 'Juan Rodríguez',
-    email: 'cashier@casalis.com',
-    phone: '+34 555 0104',
-    role: 'Cashier',
-    shift: 'Night 22:00-06:00',
-    pin: '4567',
-    active: true,
-    permissions: {
-      processSales: true,
-      applyDiscounts: false,
-      manageInventory: false,
-      accessReports: false,
-    },
-    startDate: '2023-09-20',
-  },
-  {
-    id: '5',
-    name: 'Laura Fernández',
-    email: 'cashier2@casalis.com',
-    phone: '+34 555 0105',
-    role: 'Cashier',
-    shift: 'Morning 06:00-14:00',
-    pin: '5678',
-    active: true,
-    permissions: {
-      processSales: true,
-      applyDiscounts: false,
-      manageInventory: false,
-      accessReports: false,
-    },
-    startDate: '2024-01-15',
-  },
-];
+import { fetchEmployees, createEmployee, updateEmployee } from './employeesService';
 
 interface EmployeesState {
   employees: Employee[];
   isModalOpen: boolean;
   editingEmployee: Employee | null;
+  isLoading: boolean;
+  error: string | null;
 }
 
 const initialState: EmployeesState = {
-  employees: mockEmployees,
+  employees: [],
   isModalOpen: false,
   editingEmployee: null,
+  isLoading: false,
+  error: null,
 };
+
+export const fetchEmployeesAsync = createAsyncThunk(
+  'employees/fetchEmployeesAsync',
+  async () => {
+    return fetchEmployees();
+  }
+);
+
+export const addEmployeeAsync = createAsyncThunk(
+  'employees/addEmployeeAsync',
+  async (employee: Employee) => {
+    const result = await createEmployee(employee);
+    if (!result) throw new Error('Failed to create employee');
+    return result;
+  }
+);
+
+export const updateEmployeeAsync = createAsyncThunk(
+  'employees/updateEmployeeAsync',
+  async (employee: Employee) => {
+    const result = await updateEmployee(employee);
+    if (!result) throw new Error('Failed to update employee');
+    return result;
+  }
+);
 
 const employeesSlice = createSlice({
   name: 'employees',
   initialState,
   reducers: {
-    addEmployee: (state, action: PayloadAction<Employee>) => {
-      state.employees.push(action.payload);
-    },
-    updateEmployee: (state, action: PayloadAction<Employee>) => {
-      const idx = state.employees.findIndex(e => e.id === action.payload.id);
-      if (idx !== -1) state.employees[idx] = action.payload;
-    },
     toggleModal: (state) => {
       state.isModalOpen = !state.isModalOpen;
     },
@@ -121,9 +56,31 @@ const employeesSlice = createSlice({
       state.editingEmployee = action.payload;
     },
   },
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchEmployeesAsync.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchEmployeesAsync.fulfilled, (state, action: PayloadAction<Employee[]>) => {
+        state.isLoading = false;
+        state.employees = action.payload;
+      })
+      .addCase(fetchEmployeesAsync.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.error.message || 'Failed to fetch employees';
+      })
+      .addCase(addEmployeeAsync.fulfilled, (state, action: PayloadAction<Employee>) => {
+        state.employees.push(action.payload);
+      })
+      .addCase(updateEmployeeAsync.fulfilled, (state, action: PayloadAction<Employee>) => {
+        const idx = state.employees.findIndex(e => e.id === action.payload.id);
+        if (idx !== -1) state.employees[idx] = action.payload;
+      });
+  },
 });
 
-export const { addEmployee, updateEmployee, toggleModal, setEditingEmployee } = employeesSlice.actions;
+export const { toggleModal, setEditingEmployee } = employeesSlice.actions;
 
 export const selectActiveEmployees = (state: RootState): Employee[] => 
   state.employees.employees.filter((e: Employee) => e.active);

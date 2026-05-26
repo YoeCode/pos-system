@@ -8,6 +8,7 @@ import { ToastProvider } from './components/ToastProvider';
 import { initializeAuth } from './features/auth/authSlice';
 import { fetchProductsAsync } from './features/products/productsSlice';
 import { fetchSalesAsync, loadNextOrderNumberAsync } from './features/sales/salesSlice';
+import { fetchEmployeesAsync } from './features/employees/employeesSlice';
 import { useAppDispatch } from './app/store';
 
 function AppInner() {
@@ -18,6 +19,7 @@ function AppInner() {
     dispatch(fetchProductsAsync());
     dispatch(fetchSalesAsync());
     dispatch(loadNextOrderNumberAsync());
+    dispatch(fetchEmployeesAsync());
   }, [dispatch]);
 
   return (

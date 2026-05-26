@@ -1,5 +1,7 @@
 import { supabase, isSupabaseConfigured } from '../../supabase/client';
-import type { AuthUser, UserRole } from '../../types';
+import type { AuthUser, UserRole, TenantRole } from '../../types';
+
+const TENANT_STORAGE_KEY = 'nexopos_tenant_id';
 
 const mockUsers: AuthUser[] = [
   {
@@ -8,6 +10,8 @@ const mockUsers: AuthUser[] = [
     email: 'admin@casalis.com',
     password: 'admin123',
     role: 'admin',
+    tenantId: 'legacy-tenant',
+    tenantRole: 'owner',
     terminal: '01',
   },
   {
@@ -16,6 +20,8 @@ const mockUsers: AuthUser[] = [
     email: 'manager@casalis.com',
     password: 'manager123',
     role: 'manager',
+    tenantId: 'legacy-tenant',
+    tenantRole: 'manager',
     terminal: '01',
   },
   {
@@ -24,6 +30,8 @@ const mockUsers: AuthUser[] = [
     email: 'supervisor@casalis.com',
     password: 'super123',
     role: 'supervisor',
+    tenantId: 'legacy-tenant',
+    tenantRole: 'supervisor',
     terminal: '01',
   },
   {
@@ -32,6 +40,8 @@ const mockUsers: AuthUser[] = [
     email: 'cashier@casalis.com',
     password: 'cash123',
     role: 'cashier',
+    tenantId: 'legacy-tenant',
+    tenantRole: 'cashier',
     terminal: '01',
   },
   {
@@ -40,9 +50,66 @@ const mockUsers: AuthUser[] = [
     email: 'cashier2@casalis.com',
     password: 'cash123',
     role: 'cashier',
+    tenantId: 'legacy-tenant',
+    tenantRole: 'cashier',
     terminal: '02',
   },
 ];
+
+interface TenantMembership {
+  tenantId: string;
+  tenantName: string;
+  tenantSlug: string;
+  role: TenantRole;
+}
+
+function storeTenantId(tenantId: string): void {
+  localStorage.setItem(TENANT_STORAGE_KEY, tenantId);
+}
+
+function getStoredTenantId(): string | null {
+  return localStorage.getItem(TENANT_STORAGE_KEY);
+}
+
+function clearTenantId(): void {
+  localStorage.removeItem(TENANT_STORAGE_KEY);
+}
+
+async function getUserTenants(userId: string): Promise<TenantMembership[]> {
+  const { data, error } = await supabase
+    .from('tenant_members')
+    .select('tenant_id, role, tenants(id, name, slug)')
+    .eq('user_id', userId)
+    .order('joined_at', { ascending: false });
+
+  if (error || !data) return [];
+
+  return data.map((row: any) => ({
+    tenantId: row.tenant_id,
+    tenantName: row.tenants?.name || '',
+    tenantSlug: row.tenants?.slug || '',
+    role: row.role as TenantRole,
+  }));
+}
+
+async function resolveTenantForUser(userId: string): Promise<TenantMembership | null> {
+  const storedTenantId = getStoredTenantId();
+  const tenants = await getUserTenants(userId);
+
+  if (tenants.length === 0) return null;
+  if (tenants.length === 1) {
+    storeTenantId(tenants[0].tenantId);
+    return tenants[0];
+  }
+
+  if (storedTenantId) {
+    const match = tenants.find(t => t.tenantId === storedTenantId);
+    if (match) return match;
+  }
+
+  storeTenantId(tenants[0].tenantId);
+  return tenants[0];
+}
 
 async function signInWithSupabase(email: string, password: string): Promise<AuthUser | null> {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
@@ -57,12 +124,16 @@ async function signInWithSupabase(email: string, password: string): Promise<Auth
 
   if (empError || !employee) return null;
 
+  const tenantMembership = await resolveTenantForUser(data.user.id);
+
   return {
     id: employee.id,
     name: employee.name,
     email: employee.email,
     password: '',
     role: employee.role as UserRole,
+    tenantId: tenantMembership?.tenantId,
+    tenantRole: tenantMembership?.role,
     terminal: employee.terminal_id || undefined,
     avatar: employee.avatar_url || undefined,
   };
@@ -70,6 +141,7 @@ async function signInWithSupabase(email: string, password: string): Promise<Auth
 
 async function signOutFromSupabase(): Promise<void> {
   await supabase.auth.signOut();
+  clearTenantId();
 }
 
 async function getSupabaseCurrentUser(): Promise<AuthUser | null> {
@@ -85,22 +157,30 @@ async function getSupabaseCurrentUser(): Promise<AuthUser | null> {
 
   if (error || !employee) return null;
 
+  const tenantMembership = await resolveTenantForUser(data.session.user.id);
+
   return {
     id: employee.id,
     name: employee.name,
     email: employee.email,
     password: '',
     role: employee.role as UserRole,
+    tenantId: tenantMembership?.tenantId,
+    tenantRole: tenantMembership?.role,
     terminal: employee.terminal_id || undefined,
     avatar: employee.avatar_url || undefined,
   };
 }
 
 async function getSupabaseAvailableUsers(): Promise<{ email: string; name: string; role: UserRole }[]> {
+  const tenantId = getStoredTenantId();
+  if (!tenantId) return [];
+
   const { data, error } = await supabase
     .from('employees')
     .select('name, email, role')
     .eq('active', true)
+    .eq('tenant_id', tenantId)
     .order('name');
 
   if (error || !data) return [];
@@ -145,7 +225,7 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
         if (user) return user;
       }
     }
-  } catch { /* empty */ }
+  } catch {}
   return null;
 }
 

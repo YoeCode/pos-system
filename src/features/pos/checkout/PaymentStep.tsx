@@ -87,10 +87,10 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
 
     const saleEmployeeId =
       (isValidUuid(currentEmployeeId) ? currentEmployeeId : null) ||
+      (isValidUuid(currentUser?.id) ? currentUser?.id : null) ||
       (currentUser && allEmployees.length > 0
         ? allEmployees.find(e => e.email.toLowerCase() === currentUser.email.toLowerCase())?.id
-        : null) ||
-      (isValidUuid(currentUser?.id) ? currentUser?.id : null);
+        : null);
 
     const sale: Sale = {
       id: crypto.randomUUID(),

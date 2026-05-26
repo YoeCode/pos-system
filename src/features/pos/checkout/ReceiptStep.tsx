@@ -19,10 +19,10 @@ interface ReceiptStepProps {
   onDone: () => void;
 }
 
-const paymentMethodLabel: Record<string, string> = {
+const paymentMethodLabel: Record<PaymentMethod, string> = {
   cash: 'Cash',
   card: 'Card',
-  qr: 'QR Code',
+  bizum: 'Bizum',
 };
 
 const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, onDone }) => {
@@ -77,7 +77,7 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, 
   };
 
   const handleEmail = async () => {
-    if (!email.trim() || !pdfRef.current) return;
+    if (!email.trim() || !ticketRef.current) return;
     if (!isEmailConfigured()) {
       addToast('Email no configurado. Revisa la documentación.', 'error');
       return;
@@ -96,7 +96,7 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, 
         tax: `$${order.tax.toFixed(2)}`,
         total: `$${order.total.toFixed(2)}`,
         payment_method: paymentMethodLabel[paymentMethod],
-        receipt_html: pdfRef.current.outerHTML,
+        receipt_html: ticketRef.current.outerHTML,
       });
       addToast('Ticket enviado por email', 'success');
       setEmail('');

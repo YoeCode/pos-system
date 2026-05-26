@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useAppSelector } from '../../app/store';
 import { useI18n } from '../../i18n/I18nProvider';
-import { selectFilteredSales } from '../../features/dashboard/dashboardSlice';
+import { selectAllSales } from '../../features/sales/salesSlice';
 import Modal from '../../components/ui/Modal';
 import PrintableReceipt from '../../features/pos/PrintableReceipt';
 import { exportTableToExcel } from '../../utils/exportUtils';
@@ -11,7 +11,7 @@ type DateRange = 'today' | 'week' | 'month' | 'year' | 'custom';
 
 const ReportsPage: React.FC = () => {
   const t = useI18n();
-  const allSales = useAppSelector(selectFilteredSales);
+  const allSales = useAppSelector(selectAllSales);
   const employees = useAppSelector(state => state.employees.employees);
   
   const [activeTab, setActiveTab] = useState<ReportTab>('sales');
