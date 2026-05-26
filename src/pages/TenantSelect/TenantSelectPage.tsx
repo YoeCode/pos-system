@@ -3,13 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../app/store';
 import { setActiveTenant } from '../../features/auth/authSlice';
 import { getUserTenants } from '../../features/auth/authService';
-import type { TenantInfo } from '../../features/tenants/tenantsService';
+import type { TenantMembership } from '../../features/auth/authService';
 
 export default function TenantSelectPage() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const user = useAppSelector(state => state.auth.user);
-  const [tenants, setTenants] = useState<TenantInfo[]>([]);
+  const [tenants, setTenants] = useState<TenantMembership[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -19,12 +19,12 @@ export default function TenantSelectPage() {
     }
 
     async function loadTenants() {
-      const userTenants = await getUserTenants();
+      const userTenants = await getUserTenants(user.id);
       setTenants(userTenants);
       setIsLoading(false);
 
       if (userTenants.length === 1) {
-        dispatch(setActiveTenant(userTenants[0].id));
+        dispatch(setActiveTenant(userTenants[0].tenantId));
         navigate('/dashboard');
       }
     }
@@ -72,17 +72,17 @@ export default function TenantSelectPage() {
         <div className="space-y-3">
           {tenants.map((tenant) => (
             <button
-              key={tenant.id}
-              onClick={() => handleSelect(tenant.id)}
+              key={tenant.tenantId}
+              onClick={() => handleSelect(tenant.tenantId)}
               className="w-full p-4 bg-slate-800 hover:bg-slate-700 rounded-xl border border-slate-700 hover:border-emerald-500 transition-all text-left"
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-semibold text-white text-lg">{tenant.name}</h3>
-                  <p className="text-slate-400 text-sm">Plan {tenant.plan}</p>
+                  <h3 className="font-semibold text-white text-lg">{tenant.tenantName}</h3>
+                  <p className="text-slate-400 text-sm capitalize">{tenant.role}</p>
                 </div>
                 <div className="w-10 h-10 bg-emerald-600/20 rounded-full flex items-center justify-center">
-                  <span className="text-emerald-400 font-bold">{tenant.name.charAt(0).toUpperCase()}</span>
+                  <span className="text-emerald-400 font-bold">{tenant.tenantName.charAt(0).toUpperCase()}</span>
                 </div>
               </div>
             </button>

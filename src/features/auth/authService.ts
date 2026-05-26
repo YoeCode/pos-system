@@ -56,26 +56,14 @@ const mockUsers: AuthUser[] = [
   },
 ];
 
-interface TenantMembership {
+export interface TenantMembership {
   tenantId: string;
   tenantName: string;
   tenantSlug: string;
   role: TenantRole;
 }
 
-function storeTenantId(tenantId: string): void {
-  localStorage.setItem(TENANT_STORAGE_KEY, tenantId);
-}
-
-function getStoredTenantId(): string | null {
-  return localStorage.getItem(TENANT_STORAGE_KEY);
-}
-
-function clearTenantId(): void {
-  localStorage.removeItem(TENANT_STORAGE_KEY);
-}
-
-async function getUserTenants(userId: string): Promise<TenantMembership[]> {
+async function getUserTenantsInternal(userId: string): Promise<TenantMembership[]> {
   const { data, error } = await supabase
     .from('tenant_members')
     .select('tenant_id, role, tenants(id, name, slug)')
@@ -92,9 +80,13 @@ async function getUserTenants(userId: string): Promise<TenantMembership[]> {
   }));
 }
 
+export async function getUserTenants(userId: string): Promise<TenantMembership[]> {
+  return getUserTenantsInternal(userId);
+}
+
 async function resolveTenantForUser(userId: string): Promise<TenantMembership | null> {
   const storedTenantId = getStoredTenantId();
-  const tenants = await getUserTenants(userId);
+  const tenants = await getUserTenantsInternal(userId);
 
   if (tenants.length === 0) return null;
   if (tenants.length === 1) {
