@@ -111,16 +111,18 @@ export const deleteProductAsync = createAsyncThunk(
 
 export const reduceStockAsync = createAsyncThunk(
   'products/reduceStockAsync',
-  async ({ productId, quantity, size }: { productId: string; quantity: number; size?: string }) => {
-    await reduceStock(productId, quantity, size);
+  async ({ productId, quantity, size }: { productId: string; quantity: number; size?: string }, { getState }) => {
+    const tenantId = (getState() as RootState).auth.user?.tenantId || '';
+    await reduceStock(productId, quantity, size, tenantId);
     return { productId, quantity, size };
   }
 );
 
 export const restoreStockAsync = createAsyncThunk(
   'products/restoreStockAsync',
-  async ({ productId, quantity, size }: { productId: string; quantity: number; size?: string }) => {
-    await restoreStock(productId, quantity, size);
+  async ({ productId, quantity, size }: { productId: string; quantity: number; size?: string }, { getState }) => {
+    const tenantId = (getState() as RootState).auth.user?.tenantId || '';
+    await restoreStock(productId, quantity, size, tenantId);
     return { productId, quantity, size };
   }
 );

@@ -386,7 +386,7 @@ export async function deleteProduct(id: string, tenantId: string): Promise<boole
   return false;
 }
 
-export async function reduceStock(productId: string, quantity: number, size?: string): Promise<boolean> {
+export async function reduceStock(productId: string, quantity: number, size?: string, tenantId?: string): Promise<boolean> {
   if (isSupabaseConfigured()) {
     if (size) {
       const { data: sizeRow } = await supabase
@@ -409,11 +409,12 @@ export async function reduceStock(productId: string, quantity: number, size?: st
         .from('products')
         .select('stock')
         .eq('id', productId)
+        .eq('tenant_id', tenantId || '')
         .single();
 
       if (prod) {
         const newStock = Math.max(0, prod.stock - quantity);
-        await supabase.from('products').update({ stock: newStock }).eq('id', productId);
+        await supabase.from('products').update({ stock: newStock }).eq('id', productId).eq('tenant_id', tenantId || '');
       }
     }
     return true;
@@ -434,7 +435,7 @@ export async function reduceStock(productId: string, quantity: number, size?: st
   return true;
 }
 
-export async function restoreStock(productId: string, quantity: number, size?: string): Promise<boolean> {
+export async function restoreStock(productId: string, quantity: number, size?: string, tenantId?: string): Promise<boolean> {
   if (isSupabaseConfigured()) {
     if (size) {
       const { data: sizeRow } = await supabase
@@ -457,11 +458,12 @@ export async function restoreStock(productId: string, quantity: number, size?: s
         .from('products')
         .select('stock')
         .eq('id', productId)
+        .eq('tenant_id', tenantId || '')
         .single();
 
       if (prod) {
         const newStock = prod.stock + quantity;
-        await supabase.from('products').update({ stock: newStock }).eq('id', productId);
+        await supabase.from('products').update({ stock: newStock }).eq('id', productId).eq('tenant_id', tenantId || '');
       }
     }
     return true;
