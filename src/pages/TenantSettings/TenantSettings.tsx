@@ -31,7 +31,7 @@ export default function TenantSettings() {
     <div className="p-6 max-w-3xl mx-auto space-y-6">
       <h2 className="text-2xl font-bold text-white">Configuración del Negocio</h2>
 
-      <BillingSection tenantId={tenantId} />
+      {tenantId && <BillingSection tenantId={tenantId} />}
 
       <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
         <div className="flex items-center justify-between mb-4">

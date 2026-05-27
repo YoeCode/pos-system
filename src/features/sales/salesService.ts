@@ -100,6 +100,7 @@ async function createSaleInSupabase(sale: Sale, tenantId: string): Promise<Sale 
     .filter(item => isValidUuid(item.product.id))
     .map(item => ({
       sale_id: (saleData as any).id,
+      tenant_id: tenantId,
       product_id: item.product.id,
       product_name: item.product.name,
       product_sku: item.product.sku,
@@ -111,7 +112,7 @@ async function createSaleInSupabase(sale: Sale, tenantId: string): Promise<Sale 
     }));
 
   if (saleItems.length > 0) {
-    await supabase.from('sale_items').insert(saleItems);
+    await supabase.from('sale_items').insert(saleItems as any);
   }
 
   return mapDbSale({ ...saleData, sale_items: saleItems });

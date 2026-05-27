@@ -283,12 +283,13 @@ async function createProductInSupabase(product: Product, tenantId: string): Prom
   if (product.sizes && product.sizes.length > 0) {
     const sizesToInsert = product.sizes.map(s => ({
       product_id: (data as any).id,
+      tenant_id: tenantId,
       size: s.size,
       stock: s.stock,
       min_stock: s.minStock,
       sku: s.sku || null,
     }));
-    await supabase.from('product_sizes').insert(sizesToInsert);
+    await supabase.from('product_sizes').insert(sizesToInsert as any);
   }
 
   return mapDbProduct({ ...data, product_sizes: product.sizes || [] });
@@ -314,23 +315,24 @@ async function updateProductInSupabase(product: Product, tenantId: string): Prom
 
   const { error } = await supabase
     .from('products')
-    .update(updateData)
+    .update(updateData as any)
     .eq('id', product.id)
     .eq('tenant_id', tenantId);
 
   if (error) return null;
 
-  await supabase.from('product_sizes').delete().eq('product_id', product.id);
+  await supabase.from('product_sizes').delete().eq('product_id', product.id).eq('tenant_id', tenantId);
 
   if (product.sizes && product.sizes.length > 0) {
     const sizesToInsert = product.sizes.map(s => ({
       product_id: product.id,
+      tenant_id: tenantId,
       size: s.size,
       stock: s.stock,
       min_stock: s.minStock,
       sku: s.sku || null,
     }));
-    await supabase.from('product_sizes').insert(sizesToInsert);
+    await supabase.from('product_sizes').insert(sizesToInsert as any);
   }
 
   const { data } = await supabase

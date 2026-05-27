@@ -19,6 +19,7 @@ export default function TenantSelectPage() {
     }
 
     async function loadTenants() {
+      if (!user) return;
       const userTenants = await getUserTenants(user.id);
       setTenants(userTenants);
       setIsLoading(false);

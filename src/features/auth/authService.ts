@@ -3,6 +3,18 @@ import type { AuthUser, UserRole, TenantRole } from '../../types';
 
 const TENANT_STORAGE_KEY = 'nexopos_tenant_id';
 
+function storeTenantId(tenantId: string): void {
+  localStorage.setItem(TENANT_STORAGE_KEY, tenantId);
+}
+
+function getStoredTenantId(): string | null {
+  return localStorage.getItem(TENANT_STORAGE_KEY);
+}
+
+function clearTenantId(): void {
+  localStorage.removeItem(TENANT_STORAGE_KEY);
+}
+
 const mockUsers: AuthUser[] = [
   {
     id: '1',

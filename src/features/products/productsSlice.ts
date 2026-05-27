@@ -234,10 +234,10 @@ export const selectLowStockAlerts = (state: { products: ProductsState }): StockA
   state.products.items.forEach(product => {
     if (product.status !== 'active') return;
     if (product.sizes && product.sizes.length > 0) {
-      const lowSizes = product.sizes.filter(s => s.stock <= s.minStock);
+      const lowSizes = product.sizes.filter(s => s.stock <= (s.minStock || 0));
       if (lowSizes.length > 0) {
         const totalStock = product.sizes.reduce((sum, s) => sum + s.stock, 0);
-        const totalMin = product.sizes.reduce((sum, s) => sum + s.minStock, 0);
+        const totalMin = product.sizes.reduce((sum, s) => sum + (s.minStock || 0), 0);
         alerts.push({
           productId: product.id,
           productName: product.name,
@@ -245,7 +245,7 @@ export const selectLowStockAlerts = (state: { products: ProductsState }): StockA
           stock: totalStock,
           minStock: totalMin,
           severity: totalStock === 0 ? 'critical' : 'warning',
-          sizes: lowSizes.map(s => ({ size: s.size, stock: s.stock, minStock: s.minStock })),
+          sizes: lowSizes.map(s => ({ size: s.size, stock: s.stock, minStock: s.minStock || 0 })),
         });
       }
     } else {

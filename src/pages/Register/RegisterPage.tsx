@@ -77,12 +77,13 @@ export default function RegisterPage() {
 
       // 4. Create employee record
       await supabase.from('employees').insert({
+        tenant_id: tenantData.id,
         user_id: authData.user.id,
         name: form.businessName,
         email: form.email,
         role: 'admin',
         active: true,
-      });
+      } as any);
 
       navigate('/login');
     } catch {
