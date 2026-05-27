@@ -82,25 +82,70 @@ ALTER TABLE refunds ADD COLUMN IF NOT EXISTS tenant_id UUID REFERENCES tenants(i
 ALTER TABLE settings ADD COLUMN IF NOT EXISTS tenant_id UUID REFERENCES tenants(id);
 
 -- --------------------------------------------
--- T1.4: Refactor settings table for multi-tenant
+-- T1.7: Create legacy tenant and backfill data
+-- MUST run before T1.4 and T1.8
 -- --------------------------------------------
--- First, backfill existing settings with legacy tenant (done in T1.7)
--- Make tenant_id the primary key (one settings per tenant)
+INSERT INTO tenants (id, name, slug, plan, max_employees, max_products, max_sales_monthly, subscription_status)
+VALUES (
+  'f1d2d2d2-d2d2-d2d2-d2d2-d2d2d2d2d2d2',
+  'Casa Lis Legacy',
+  'casalis-legacy',
+  'enterprise',
+  999,
+  9999,
+  99999,
+  'active'
+)
+ON CONFLICT (id) DO NOTHING;
+
+UPDATE tenants SET slug = 'casalis-legacy' WHERE id = 'f1d2d2d2-d2d2-d2d2-d2d2-d2d2d2d2d2d2';
+
+UPDATE employees SET tenant_id = 'f1d2d2d2-d2d2-d2d2-d2d2-d2d2d2d2d2d2' WHERE tenant_id IS NULL;
+UPDATE products SET tenant_id = 'f1d2d2d2-d2d2-d2d2-d2d2-d2d2d2d2d2d2' WHERE tenant_id IS NULL;
+UPDATE product_sizes SET tenant_id = 'f1d2d2d2-d2d2-d2d2-d2d2-d2d2d2d2d2d2' WHERE tenant_id IS NULL;
+UPDATE customers SET tenant_id = 'f1d2d2d2-d2d2-d2d2-d2d2-d2d2d2d2d2d2' WHERE tenant_id IS NULL;
+UPDATE sales SET tenant_id = 'f1d2d2d2-d2d2-d2d2-d2d2-d2d2d2d2d2d2' WHERE tenant_id IS NULL;
+UPDATE sale_items SET tenant_id = 'f1d2d2d2-d2d2-d2d2-d2d2-d2d2d2d2d2d2' WHERE tenant_id IS NULL;
+UPDATE cash_box_sessions SET tenant_id = 'f1d2d2d2-d2d2-d2d2-d2d2-d2d2d2d2d2d2' WHERE tenant_id IS NULL;
+UPDATE cash_box_closures SET tenant_id = 'f1d2d2d2-d2d2-d2d2-d2d2-d2d2d2d2d2d2' WHERE tenant_id IS NULL;
+UPDATE refunds SET tenant_id = 'f1d2d2d2-d2d2-d2d2-d2d2-d2d2d2d2d2d2' WHERE tenant_id IS NULL;
+UPDATE settings SET tenant_id = 'f1d2d2d2-d2d2-d2d2-d2d2-d2d2d2d2d2d2' WHERE tenant_id IS NULL;
+
+UPDATE tenants 
+SET owner_id = (
+  SELECT user_id FROM employees 
+  WHERE tenant_id = 'f1d2d2d2-d2d2-d2d2-d2d2-d2d2d2d2d2d2' 
+  AND role = 'admin' 
+  AND user_id IS NOT NULL 
+  ORDER BY created_at 
+  LIMIT 1
+)
+WHERE id = 'f1d2d2d2-d2d2-d2d2-d2d2-d2d2d2d2d2d2';
+
+UPDATE tenants 
+SET owner_id = (
+  SELECT user_id FROM employees 
+  WHERE tenant_id = 'f1d2d2d2-d2d2-d2d2-d2d2-d2d2d2d2d2d2' 
+  AND user_id IS NOT NULL 
+  ORDER BY created_at 
+  LIMIT 1
+)
+WHERE id = 'f1d2d2d2-d2d2-d2d2-d2d2-d2d2d2d2d2d2' AND owner_id IS NULL;
+
+-- --------------------------------------------
+-- T1.4: Refactor settings table for multi-tenant
+-- Run AFTER T1.7 backfill so tenant_id has values
+-- --------------------------------------------
 DO $$
 BEGIN
-  -- Only run if settings still has the old singleton structure
   IF EXISTS (
     SELECT 1 FROM information_schema.columns
     WHERE table_name = 'settings' AND column_name = 'id'
     AND data_type = 'uuid'
   ) THEN
-    -- Drop old primary key if it's the singleton ID
     ALTER TABLE settings DROP CONSTRAINT IF EXISTS settings_pkey;
-    -- Make tenant_id not null
     ALTER TABLE settings ALTER COLUMN tenant_id SET NOT NULL;
-    -- Set tenant_id as primary key
     ALTER TABLE settings ADD PRIMARY KEY (tenant_id);
-    -- Drop old id column if it exists
     ALTER TABLE settings DROP COLUMN IF EXISTS id;
   END IF;
 END $$;
@@ -128,14 +173,12 @@ RETURNS UUID AS $$
 DECLARE
   tenant_uuid UUID;
 BEGIN
-  -- Try to get tenant_id from user_metadata in JWT
   BEGIN
     tenant_uuid := (auth.jwt() -> 'user_metadata' ->> 'tenant_id')::uuid;
   EXCEPTION WHEN OTHERS THEN
     tenant_uuid := NULL;
   END;
   
-  -- Fallback: get from tenant_members if single membership
   IF tenant_uuid IS NULL THEN
     SELECT tenant_id INTO tenant_uuid
     FROM tenant_members
@@ -147,7 +190,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Helper function to check if user has role in current tenant
 CREATE OR REPLACE FUNCTION has_tenant_role(required_roles TEXT[])
 RETURNS BOOLEAN AS $$
 BEGIN
@@ -161,62 +203,8 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- --------------------------------------------
--- T1.7: Create legacy tenant and backfill data
--- --------------------------------------------
--- Insert legacy tenant (idempotent)
-INSERT INTO tenants (id, name, slug, plan, max_employees, max_products, max_sales_monthly, subscription_status)
-VALUES (
-  'f1d2d2d2-d2d2-d2d2-d2d2-d2d2d2d2d2d2',
-  'Casa Lis Legacy',
-  'casalis-legacy',
-  'enterprise',
-  999,
-  9999,
-  99999,
-  'active'
-)
-ON CONFLICT (id) DO NOTHING;
-
--- Update slug if conflict
-UPDATE tenants SET slug = 'casalis-legacy' WHERE id = 'f1d2d2d2-d2d2-d2d2-d2d2-d2d2d2d2d2d2';
-
--- Backfill tenant_id on all existing data
-UPDATE employees SET tenant_id = 'f1d2d2d2-d2d2-d2d2-d2d2-d2d2d2d2d2d2' WHERE tenant_id IS NULL;
-UPDATE products SET tenant_id = 'f1d2d2d2-d2d2-d2d2-d2d2-d2d2d2d2d2d2' WHERE tenant_id IS NULL;
-UPDATE product_sizes SET tenant_id = 'f1d2d2d2-d2d2-d2d2-d2d2-d2d2d2d2d2d2' WHERE tenant_id IS NULL;
-UPDATE customers SET tenant_id = 'f1d2d2d2-d2d2-d2d2-d2d2-d2d2d2d2d2d2' WHERE tenant_id IS NULL;
-UPDATE sales SET tenant_id = 'f1d2d2d2-d2d2-d2d2-d2d2-d2d2d2d2d2d2' WHERE tenant_id IS NULL;
-UPDATE sale_items SET tenant_id = 'f1d2d2d2-d2d2-d2d2-d2d2-d2d2d2d2d2d2' WHERE tenant_id IS NULL;
-UPDATE cash_box_sessions SET tenant_id = 'f1d2d2d2-d2d2-d2d2-d2d2-d2d2d2d2d2d2' WHERE tenant_id IS NULL;
-UPDATE cash_box_closures SET tenant_id = 'f1d2d2d2-d2d2-d2d2-d2d2-d2d2d2d2d2d2' WHERE tenant_id IS NULL;
-UPDATE refunds SET tenant_id = 'f1d2d2d2-d2d2-d2d2-d2d2-d2d2d2d2d2d2' WHERE tenant_id IS NULL;
-UPDATE settings SET tenant_id = 'f1d2d2d2-d2d2-d2d2-d2d2-d2d2d2d2d2d2' WHERE tenant_id IS NULL;
-
--- Set legacy tenant owner to first admin employee with user_id
-UPDATE tenants 
-SET owner_id = (
-  SELECT user_id FROM employees 
-  WHERE tenant_id = 'f1d2d2d2-d2d2-d2d2-d2d2-d2d2d2d2d2d2' 
-  AND role = 'admin' 
-  AND user_id IS NOT NULL 
-  ORDER BY created_at 
-  LIMIT 1
-)
-WHERE id = 'f1d2d2d2-d2d2-d2d2-d2d2-d2d2d2d2d2d2';
-
--- If no admin with user_id found, fallback to any employee with user_id
-UPDATE tenants 
-SET owner_id = (
-  SELECT user_id FROM employees 
-  WHERE tenant_id = 'f1d2d2d2-d2d2-d2d2-d2d2-d2d2d2d2d2d2' 
-  AND user_id IS NOT NULL 
-  ORDER BY created_at 
-  LIMIT 1
-)
-WHERE id = 'f1d2d2d2-d2d2-d2d2-d2d2-d2d2d2d2d2d2' AND owner_id IS NULL;
-
--- --------------------------------------------
 -- T1.8: Make tenant_id NOT NULL on all tables
+-- Run AFTER T1.7 backfill
 -- --------------------------------------------
 ALTER TABLE employees ALTER COLUMN tenant_id SET NOT NULL;
 ALTER TABLE products ALTER COLUMN tenant_id SET NOT NULL;
@@ -227,7 +215,6 @@ ALTER TABLE sale_items ALTER COLUMN tenant_id SET NOT NULL;
 ALTER TABLE cash_box_sessions ALTER COLUMN tenant_id SET NOT NULL;
 ALTER TABLE cash_box_closures ALTER COLUMN tenant_id SET NOT NULL;
 ALTER TABLE refunds ALTER COLUMN tenant_id SET NOT NULL;
--- settings already has NOT NULL from T1.4
 
 -- --------------------------------------------
 -- T1.9: Create tenant_members for existing employees with user_id
@@ -265,7 +252,6 @@ END $$;
 -- RLS POLICIES REFACTOR - Tenant Scoped
 -- ============================================
 
--- Drop old single-tenant policies (they assume global access)
 DROP POLICY IF EXISTS "employees_select_active" ON employees;
 DROP POLICY IF EXISTS "employees_manage_admin" ON employees;
 DROP POLICY IF EXISTS "products_select_active" ON products;
@@ -288,7 +274,6 @@ DROP POLICY IF EXISTS "refunds_insert" ON refunds;
 DROP POLICY IF EXISTS "settings_select" ON settings;
 DROP POLICY IF EXISTS "settings_update_admin" ON settings;
 
--- Employees: readable by all tenant members, manageable by admin+
 CREATE POLICY "employees_tenant_select" ON employees
   FOR SELECT USING (tenant_id = current_tenant_id());
 
@@ -310,7 +295,6 @@ CREATE POLICY "employees_tenant_delete" ON employees
     AND has_tenant_role(ARRAY['owner', 'admin'])
   );
 
--- Products: readable by all members, manageable by admin+
 CREATE POLICY "products_tenant_select" ON products
   FOR SELECT USING (tenant_id = current_tenant_id());
 
@@ -332,7 +316,6 @@ CREATE POLICY "products_tenant_delete" ON products
     AND has_tenant_role(ARRAY['owner', 'admin'])
   );
 
--- Product sizes: cascade with products
 CREATE POLICY "product_sizes_tenant_select" ON product_sizes
   FOR SELECT USING (tenant_id = current_tenant_id());
 
@@ -342,7 +325,6 @@ CREATE POLICY "product_sizes_tenant_all" ON product_sizes
     AND has_tenant_role(ARRAY['owner', 'admin', 'manager'])
   );
 
--- Customers: readable by all, manageable by supervisor+
 CREATE POLICY "customers_tenant_select" ON customers
   FOR SELECT USING (tenant_id = current_tenant_id());
 
@@ -352,7 +334,6 @@ CREATE POLICY "customers_tenant_all" ON customers
     AND has_tenant_role(ARRAY['owner', 'admin', 'manager', 'supervisor'])
   );
 
--- Sales: readable by all tenant members, insert by any member
 CREATE POLICY "sales_tenant_select" ON sales
   FOR SELECT USING (tenant_id = current_tenant_id());
 
@@ -365,14 +346,12 @@ CREATE POLICY "sales_tenant_update" ON sales
     AND has_tenant_role(ARRAY['owner', 'admin', 'manager', 'supervisor'])
   );
 
--- Sale items: cascade with sales
 CREATE POLICY "sale_items_tenant_select" ON sale_items
   FOR SELECT USING (tenant_id = current_tenant_id());
 
 CREATE POLICY "sale_items_tenant_insert" ON sale_items
   FOR INSERT WITH CHECK (tenant_id = current_tenant_id());
 
--- Cash box sessions: readable by all, manageable by supervisor+
 CREATE POLICY "cash_box_tenant_select" ON cash_box_sessions
   FOR SELECT USING (tenant_id = current_tenant_id());
 
@@ -382,7 +361,6 @@ CREATE POLICY "cash_box_tenant_all" ON cash_box_sessions
     AND has_tenant_role(ARRAY['owner', 'admin', 'manager', 'supervisor'])
   );
 
--- Cash box closures: readable by all, manageable by supervisor+
 CREATE POLICY "cash_box_closures_tenant_select" ON cash_box_closures
   FOR SELECT USING (tenant_id = current_tenant_id());
 
@@ -392,7 +370,6 @@ CREATE POLICY "cash_box_closures_tenant_all" ON cash_box_closures
     AND has_tenant_role(ARRAY['owner', 'admin', 'manager', 'supervisor'])
   );
 
--- Refunds: readable by all, insert by supervisor+
 CREATE POLICY "refunds_tenant_select" ON refunds
   FOR SELECT USING (tenant_id = current_tenant_id());
 
@@ -402,7 +379,6 @@ CREATE POLICY "refunds_tenant_insert" ON refunds
     AND has_tenant_role(ARRAY['owner', 'admin', 'manager', 'supervisor'])
   );
 
--- Settings: one per tenant
 CREATE POLICY "settings_tenant_select" ON settings
   FOR SELECT USING (tenant_id = current_tenant_id());
 
@@ -443,28 +419,14 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- ============================================
 -- PIN HASHING (Security)
 -- ============================================
--- Add pin_hash column if not exists
 ALTER TABLE employees ADD COLUMN IF NOT EXISTS pin_hash TEXT;
-
--- Migrate existing plain PINs to hashed (using bcrypt)
--- Note: pgcrypto must be enabled (already is via uuid-ossp)
-DO $$
-BEGIN
-  IF EXISTS (SELECT 1 FROM employees WHERE pin IS NOT NULL AND pin_hash IS NULL LIMIT 1) THEN
-    -- We can't hash in pure SQL easily without pgcrypto crypt function
-    -- This should be done via Edge Function or manual update
-    -- For now, add column and leave migration for Phase 2
-    NULL;
-  END IF;
-END $$;
 
 -- ============================================
 -- VERIFICATION
 -- ============================================
--- Run this to verify after execution:
--- SELECT 
---   (SELECT COUNT(*) FROM tenants) as tenants,
---   (SELECT COUNT(*) FROM tenant_members) as members,
---   (SELECT COUNT(*) FROM employees WHERE tenant_id IS NULL) as employees_no_tenant,
---   (SELECT COUNT(*) FROM products WHERE tenant_id IS NULL) as products_no_tenant,
---   (SELECT COUNT(*) FROM sales WHERE tenant_id IS NULL) as sales_no_tenant;
+SELECT 
+  (SELECT COUNT(*) FROM tenants) as tenants,
+  (SELECT COUNT(*) FROM tenant_members) as members,
+  (SELECT COUNT(*) FROM employees WHERE tenant_id IS NULL) as employees_no_tenant,
+  (SELECT COUNT(*) FROM products WHERE tenant_id IS NULL) as products_no_tenant,
+  (SELECT COUNT(*) FROM sales WHERE tenant_id IS NULL) as sales_no_tenant;
