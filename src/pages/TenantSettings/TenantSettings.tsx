@@ -1,35 +1,102 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAppSelector } from '../../app/store';
-import { getTenantMembers } from '../../features/tenants/tenantsService';
-import type { TenantMemberInfo } from '../../features/tenants/tenantsService';
+import { getTenantMembers, getTenantInfo } from '../../features/tenants/tenantsService';
+import type { TenantMemberInfo, TenantInfo } from '../../features/tenants/tenantsService';
+import { createInvitation, getInvitationsByTenant, cancelInvitation } from '../../features/invitations/invitationsService';
+import type { Invitation } from '../../features/invitations/invitationsService';
 import InviteMemberModal from '../../features/tenants/InviteMemberModal';
 import BillingSection from '../../features/tenants/BillingSection';
+import { sendInvitationEmail, isEmailConfigured } from '../../utils/invitationEmail';
 import type { TenantRole } from '../../types';
 
 export default function TenantSettings() {
   const tenantId = useAppSelector(state => state.auth.user?.tenantId);
+  const userName = useAppSelector(state => state.auth.user?.name) || '';
   const [members, setMembers] = useState<TenantMemberInfo[]>([]);
+  const [invitations, setInvitations] = useState<Invitation[]>([]);
+  const [tenantInfo, setTenantInfo] = useState<TenantInfo | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
-  const loadMembers = async () => {
+  const loadData = async () => {
     if (!tenantId) return;
-    const data = await getTenantMembers(tenantId);
-    setMembers(data);
+    const [memberData, inviteData, tenantData] = await Promise.all([
+      getTenantMembers(tenantId),
+      getInvitationsByTenant(tenantId),
+      getTenantInfo(tenantId),
+    ]);
+    setMembers(memberData);
+    setInvitations(inviteData);
+    setTenantInfo(tenantData);
   };
 
-  const handleInvite = async (_email: string, _role: TenantRole) => {
+  useEffect(() => {
+    loadData();
+  }, [tenantId]);
+
+  const handleInvite = async (email: string, role: TenantRole) => {
     if (!tenantId) return;
 
     setIsLoading(true);
-    setIsLoading(false);
-    setIsModalOpen(false);
-    loadMembers();
+    setActionError(null);
+
+    try {
+      const invitation = await createInvitation({ email, role, tenantId });
+      if (!invitation) {
+        setActionError('No se pudo crear la invitación. El email ya puede tener una invitación pendiente.');
+        setIsLoading(false);
+        return;
+      }
+
+      const inviteLink = `${window.location.origin}/accept-invite?token=${invitation.token}`;
+
+      if (isEmailConfigured()) {
+        try {
+          await sendInvitationEmail({
+            to_email: email,
+            to_name: email.split('@')[0],
+            tenant_name: tenantInfo?.name || 'Tu empresa',
+            invited_by: userName,
+            invite_link: inviteLink,
+            role_label: role,
+          });
+        } catch (emailErr) {
+          setActionError('Invitación creada, pero no se pudo enviar el email. Copia el enlace manualmente.');
+        }
+      }
+
+      setIsModalOpen(false);
+      loadData();
+    } catch {
+      setActionError('Error al enviar la invitación. Intenta de nuevo.');
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  const handleCancelInvite = async (invitationId: string) => {
+    if (!tenantId) return;
+    const ok = await cancelInvitation(invitationId, tenantId);
+    if (ok) loadData();
+  };
+
+  const formatDate = (iso: string) => {
+    const d = new Date(iso);
+    return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+  };
+
+  const isExpired = (expiresAt: string) => new Date(expiresAt) < new Date();
 
   return (
     <div className="p-6 max-w-3xl mx-auto space-y-6">
       <h2 className="text-2xl font-bold text-white">Configuración del Negocio</h2>
+
+      {actionError && (
+        <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg text-amber-400 text-sm">
+          {actionError}
+        </div>
+      )}
 
       {tenantId && <BillingSection tenantId={tenantId} />}
 
@@ -63,7 +130,40 @@ export default function TenantSettings() {
               </span>
             </div>
           ))}
-          {members.length === 0 && (
+
+          {invitations.filter(i => i.status === 'pending').map((inv) => (
+            <div key={inv.id} className="flex items-center justify-between p-3 bg-slate-700/30 rounded-lg border border-dashed border-slate-600">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-slate-600/30 rounded-full flex items-center justify-center">
+                  <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-slate-300 font-medium">{inv.email}</p>
+                  <p className="text-slate-500 text-xs">
+                    Invitación pendiente · {isExpired(inv.expiresAt) ? 'Expirada' : `Expira ${formatDate(inv.expiresAt)}`}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-1 bg-slate-600/50 rounded-full text-sm text-slate-400 capitalize">
+                  {inv.role}
+                </span>
+                <button
+                  onClick={() => handleCancelInvite(inv.id)}
+                  className="text-slate-500 hover:text-red-400 transition-colors"
+                  title="Cancelar invitación"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          ))}
+
+          {members.length === 0 && invitations.filter(i => i.status === 'pending').length === 0 && (
             <p className="text-slate-400 text-center py-4">No hay miembros registrados</p>
           )}
         </div>

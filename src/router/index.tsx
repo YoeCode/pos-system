@@ -11,6 +11,7 @@ import LoginPage from '../pages/Login/LoginPage';
 import RegisterPage from '../pages/Register/RegisterPage';
 import TenantSelectPage from '../pages/TenantSelect/TenantSelectPage';
 import TenantSettings from '../pages/TenantSettings/TenantSettings';
+import AcceptInvitePage from '../pages/AcceptInvite/AcceptInvitePage';
 import POSPage from '../pages/POS/POSPage';
 import ProductsPage from '../pages/Products/ProductsPage';
 import EmployeesPage from '../pages/Employees/EmployeesPage';
@@ -156,5 +157,9 @@ export const router = createBrowserRouter([
         </DashboardLayout>
       </ProtectedRoute>
     ),
+  },
+  {
+    path: '/accept-invite',
+    element: <AcceptInvitePage />,
   },
 ]);
