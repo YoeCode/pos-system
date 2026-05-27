@@ -26,7 +26,8 @@ CREATE TABLE IF NOT EXISTS tenants (
 ALTER TABLE tenants ENABLE ROW LEVEL SECURITY;
 
 -- RLS: tenants readable by their members
-CREATE POLICY IF NOT EXISTS "tenants_select_members" ON tenants
+DROP POLICY IF EXISTS "tenants_select_members" ON tenants;
+CREATE POLICY "tenants_select_members" ON tenants
   FOR SELECT USING (
     EXISTS (
       SELECT 1 FROM tenant_members tm
@@ -35,7 +36,8 @@ CREATE POLICY IF NOT EXISTS "tenants_select_members" ON tenants
   );
 
 -- RLS: tenants updatable by owner only
-CREATE POLICY IF NOT EXISTS "tenants_update_owner" ON tenants
+DROP POLICY IF EXISTS "tenants_update_owner" ON tenants;
+CREATE POLICY "tenants_update_owner" ON tenants
   FOR UPDATE USING (owner_id = auth.uid());
 
 -- --------------------------------------------
@@ -54,11 +56,13 @@ CREATE TABLE IF NOT EXISTS tenant_members (
 ALTER TABLE tenant_members ENABLE ROW LEVEL SECURITY;
 
 -- RLS: members can see their own memberships
-CREATE POLICY IF NOT EXISTS "tenant_members_select_own" ON tenant_members
+DROP POLICY IF EXISTS "tenant_members_select_own" ON tenant_members;
+CREATE POLICY "tenant_members_select_own" ON tenant_members
   FOR SELECT USING (user_id = auth.uid());
 
 -- RLS: owner/admin can manage members of their tenant
-CREATE POLICY IF NOT EXISTS "tenant_members_manage" ON tenant_members
+DROP POLICY IF EXISTS "tenant_members_manage" ON tenant_members;
+CREATE POLICY "tenant_members_manage" ON tenant_members
   FOR ALL USING (
     EXISTS (
       SELECT 1 FROM tenant_members tm
