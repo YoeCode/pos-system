@@ -185,6 +185,7 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
     { to: '/employees', icon: <TeamIcon />, label: t.nav.employees, permission: 'employee:view' as const },
     { to: '/reports', icon: <ReportsIcon />, label: t.nav.reports, permission: 'report:view' as const },
     { to: '/settings', icon: <SettingsIcon />, label: t.nav.settings, permission: 'setting:view' as const },
+    { to: '/tenant-settings', icon: <SettingsIcon />, label: 'Negocio', permission: 'setting:view' as const },
   ].filter(item => userPermissions.includes(item.permission));
 
   const openSidebar = () => {
