@@ -17,6 +17,7 @@ export interface InvitationInput {
   email: string;
   role: TenantRole;
   tenantId: string;
+  invitedBy: string;
 }
 
 function mapDbInvitation(row: any): Invitation {
@@ -42,6 +43,7 @@ export async function createInvitation(input: InvitationInput): Promise<Invitati
       tenant_id: input.tenantId,
       email: input.email.toLowerCase().trim(),
       role: input.role,
+      invited_by: input.invitedBy,
     })
     .select()
     .single();

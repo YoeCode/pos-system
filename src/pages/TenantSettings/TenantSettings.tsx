@@ -10,8 +10,10 @@ import { sendInvitationEmail, isEmailConfigured } from '../../utils/invitationEm
 import type { TenantRole } from '../../types';
 
 export default function TenantSettings() {
-  const tenantId = useAppSelector(state => state.auth.user?.tenantId);
-  const userName = useAppSelector(state => state.auth.user?.name) || '';
+  const user = useAppSelector(state => state.auth.user);
+  const tenantId = user?.tenantId;
+  const authUserId = user?.authUserId;
+  const userName = user?.name || '';
   const [members, setMembers] = useState<TenantMemberInfo[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [tenantInfo, setTenantInfo] = useState<TenantInfo | null>(null);
@@ -36,13 +38,13 @@ export default function TenantSettings() {
   }, [tenantId]);
 
   const handleInvite = async (email: string, role: TenantRole) => {
-    if (!tenantId) return;
+    if (!tenantId || !authUserId) return;
 
     setIsLoading(true);
     setActionError(null);
 
     try {
-      const invitation = await createInvitation({ email, role, tenantId });
+      const invitation = await createInvitation({ email, role, tenantId, invitedBy: authUserId });
       if (!invitation) {
         setActionError('No se pudo crear la invitación. El email ya puede tener una invitación pendiente.');
         setIsLoading(false);
