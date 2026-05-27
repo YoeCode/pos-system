@@ -117,7 +117,12 @@ async function resolveTenantForUser(userId: string): Promise<TenantMembership | 
 
 async function signInWithSupabase(email: string, password: string): Promise<AuthUser | null> {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error || !data.user) {
+  if (error) {
+    throw new Error(error.message === 'Invalid login credentials'
+      ? 'Credenciales incorrectas'
+      : `Error de login: ${error.message}`);
+  }
+  if (!data.user) {
     throw new Error('Credenciales incorrectas');
   }
 
