@@ -72,28 +72,20 @@ export async function getInvitationByToken(token: string): Promise<Invitation | 
 }
 
 export async function acceptInvitation(
-  token: string,
-  authUserId: string
+  token: string
 ): Promise<boolean> {
   if (!isSupabaseConfigured()) return false;
 
-  const { data: invitation, error: fetchError } = await supabase
-    .from('invitations')
-    .select('*')
-    .eq('token', token)
-    .eq('status', 'pending')
-    .gt('expires_at', new Date().toISOString())
-    .maybeSingle();
+  const { data, error } = await supabase.rpc('accept_invitation_by_token', {
+    p_token: token,
+  });
 
-  if (fetchError || !invitation) return false;
+  if (error) {
+    console.error('acceptInvitation RPC error:', error);
+    return false;
+  }
 
-  const { error: updateError } = await supabase
-    .from('invitations')
-    .update({ status: 'accepted' })
-    .eq('id', invitation.id);
-
-  if (updateError) return false;
-  return true;
+  return data === true;
 }
 
 export async function getInvitationsByTenant(tenantId: string): Promise<Invitation[]> {

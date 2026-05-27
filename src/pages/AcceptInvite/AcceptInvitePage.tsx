@@ -113,9 +113,9 @@ export default function AcceptInvitePage() {
         return;
       }
 
-      const accepted = await acceptInvitation(token, authUserId);
+      const accepted = await acceptInvitation(token);
       if (!accepted) {
-        setError('Error al confirmar la invitación. Contacta al administrador.');
+        setError('Error al confirmar la invitación. Puede que haya expirado o ya haya sido aceptada.');
         setIsSubmitting(false);
         return;
       }
