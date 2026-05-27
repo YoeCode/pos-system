@@ -117,7 +117,9 @@ async function resolveTenantForUser(userId: string): Promise<TenantMembership | 
 
 async function signInWithSupabase(email: string, password: string): Promise<AuthUser | null> {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error || !data.user) return null;
+  if (error || !data.user) {
+    throw new Error('Credenciales incorrectas');
+  }
 
   const { data: employee, error: empError } = await supabase
     .from('employees')
@@ -126,18 +128,25 @@ async function signInWithSupabase(email: string, password: string): Promise<Auth
     .eq('active', true)
     .maybeSingle();
 
-  if (empError || !employee) return null;
+  if (empError || !employee) {
+    throw new Error('Usuario no vinculado a un empleado. Contacta al administrador.');
+  }
 
   const tenantMembership = await resolveTenantForUser(data.user.id);
 
+  if (!tenantMembership) {
+    throw new Error('Usuario sin empresa asignada. Contacta al administrador.');
+  }
+
   return {
     id: employee.id,
+    authUserId: data.user.id,
     name: employee.name,
     email: employee.email,
     password: '',
     role: employee.role as UserRole,
-    tenantId: tenantMembership?.tenantId,
-    tenantRole: tenantMembership?.role,
+    tenantId: tenantMembership.tenantId,
+    tenantRole: tenantMembership.role,
     terminal: employee.terminal_id || undefined,
     avatar: employee.avatar_url || undefined,
   };
@@ -165,6 +174,7 @@ async function getSupabaseCurrentUser(): Promise<AuthUser | null> {
 
   return {
     id: employee.id,
+    authUserId: data.session.user.id,
     name: employee.name,
     email: employee.email,
     password: '',

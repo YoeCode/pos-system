@@ -40,9 +40,13 @@ const initialState: AuthState = {
 export const loginUser = createAsyncThunk(
   'auth/loginUser',
   async ({ email, password }: { email: string; password: string }, { rejectWithValue }) => {
-    const user = await signIn(email, password);
-    if (!user) return rejectWithValue('Invalid credentials');
-    return user;
+    try {
+      const user = await signIn(email, password);
+      if (!user) return rejectWithValue('Credenciales incorrectas');
+      return user;
+    } catch (err) {
+      return rejectWithValue(err instanceof Error ? err.message : 'Error de autenticación');
+    }
   }
 );
 
@@ -67,11 +71,12 @@ export const setActiveTenant = createAsyncThunk(
     const state = getState() as { auth: AuthState };
     const user = state.auth.user;
     if (!user) return rejectWithValue('No user logged in');
+    if (!user.authUserId) return rejectWithValue('Missing auth user id');
 
     const { data, error } = await supabase
       .from('tenant_members')
       .select('tenant_id, role, tenants(id, name, slug)')
-      .eq('user_id', user.id)
+      .eq('user_id', user.authUserId)
       .eq('tenant_id', tenantId)
       .single();
 
