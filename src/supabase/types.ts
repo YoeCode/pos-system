@@ -195,6 +195,7 @@ export type Database = {
           pin_hash: string | null
           role: string
           shift: string | null
+          status: string | null
           tenant_id: string
           terminal_id: string | null
           user_id: string | null
@@ -211,6 +212,7 @@ export type Database = {
           pin_hash?: string | null
           role?: string
           shift?: string | null
+          status?: string | null
           tenant_id: string
           terminal_id?: string | null
           user_id?: string | null
@@ -227,6 +229,7 @@ export type Database = {
           pin_hash?: string | null
           role?: string
           shift?: string | null
+          status?: string | null
           tenant_id?: string
           terminal_id?: string | null
           user_id?: string | null
@@ -234,6 +237,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "employees_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invitations: {
+        Row: {
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string
+          role: string
+          status: string
+          tenant_id: string
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by: string
+          role?: string
+          status?: string
+          tenant_id: string
+          token?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string
+          role?: string
+          status?: string
+          tenant_id?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invitations_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -701,8 +748,22 @@ export type Database = {
     Functions: {
       can_add_employee: { Args: { p_tenant_id: string }; Returns: boolean }
       can_create_product: { Args: { p_tenant_id: string }; Returns: boolean }
+      complete_invitation_acceptance: {
+        Args: { p_name: string; p_token: string; p_user_id: string }
+        Returns: boolean
+      }
       current_tenant_id: { Args: never; Returns: string }
+      expire_old_invitations: { Args: never; Returns: undefined }
       has_tenant_role: { Args: { required_roles: string[] }; Returns: boolean }
+      register_new_business: {
+        Args: {
+          p_business_name: string
+          p_email: string
+          p_slug: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
