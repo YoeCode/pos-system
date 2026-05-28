@@ -45,45 +45,19 @@ export default function RegisterPage() {
         return;
       }
 
-      // 2. Create tenant
       const slug = form.businessName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-      const { data: tenantData, error: tenantError } = await supabase
-        .from('tenants')
-        .insert({
-          name: form.businessName,
-          slug,
-          owner_id: authData.user.id,
-          plan: 'free',
-          subscription_status: 'active',
-          max_employees: 2,
-          max_products: 100,
-          max_sales_monthly: 500,
-        })
-        .select()
-        .single();
+      const { data: rpcResult, error: rpcError } = await supabase.rpc('register_new_business', {
+        p_user_id: authData.user.id,
+        p_email: form.email,
+        p_business_name: form.businessName,
+        p_slug: slug,
+      });
 
-      if (tenantError || !tenantData) {
-        setError('Error al crear negocio');
+      if (rpcError || (rpcResult && rpcResult.error)) {
+        setError(rpcError?.message || rpcResult?.error || 'Error al crear negocio');
         setIsLoading(false);
         return;
       }
-
-      // 3. Create tenant_members entry
-      await supabase.from('tenant_members').insert({
-        tenant_id: tenantData.id,
-        user_id: authData.user.id,
-        role: 'owner',
-      });
-
-      // 4. Create employee record
-      await supabase.from('employees').insert({
-        tenant_id: tenantData.id,
-        user_id: authData.user.id,
-        name: form.businessName,
-        email: form.email,
-        role: 'admin',
-        active: true,
-      } as any);
 
       navigate('/login');
     } catch {
