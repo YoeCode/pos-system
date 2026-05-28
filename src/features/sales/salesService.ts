@@ -1,9 +1,5 @@
-import { supabase, isSupabaseConfigured } from '../../supabase/client';
+import { supabase } from '../../supabase/client';
 import type { Sale, OrderItem, PaymentMethod } from '../../types';
-
-const mockSales: Sale[] = [];
-
-let localNextOrderNumber = 1042;
 
 function isValidUuid(id: string | undefined | null): id is string {
   return !!id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
@@ -54,7 +50,7 @@ function mapDbSale(row: any): Sale {
   };
 }
 
-async function fetchSalesFromSupabase(tenantId: string): Promise<Sale[]> {
+export async function fetchSales(tenantId: string): Promise<Sale[]> {
   const { data, error } = await supabase
     .from('sales')
     .select('*, sale_items(*)')
@@ -65,7 +61,7 @@ async function fetchSalesFromSupabase(tenantId: string): Promise<Sale[]> {
   return (data as any[]).map(mapDbSale);
 }
 
-async function createSaleInSupabase(sale: Sale, tenantId: string): Promise<Sale | null> {
+export async function createSale(sale: Sale, tenantId: string): Promise<Sale | null> {
   const saleId = isValidUuid(sale.id) ? sale.id : crypto.randomUUID();
 
   const insertData: Record<string, any> = {
@@ -118,7 +114,7 @@ async function createSaleInSupabase(sale: Sale, tenantId: string): Promise<Sale 
   return mapDbSale({ ...saleData, sale_items: saleItems });
 }
 
-async function getNextOrderNumberFromSupabase(tenantId: string): Promise<number> {
+export async function getNextOrderNumber(tenantId: string): Promise<number> {
   const { data, error } = await supabase
     .from('sales')
     .select('order_number')
@@ -131,27 +127,4 @@ async function getNextOrderNumberFromSupabase(tenantId: string): Promise<number>
 
   const num = parseInt((data as any).order_number.replace(/^\D*/, ''), 10);
   return isNaN(num) ? 1042 : num + 1;
-}
-
-export async function fetchSales(tenantId: string): Promise<Sale[]> {
-  if (isSupabaseConfigured()) {
-    return fetchSalesFromSupabase(tenantId);
-  }
-  return [...mockSales];
-}
-
-export async function createSale(sale: Sale, tenantId: string): Promise<Sale | null> {
-  if (isSupabaseConfigured()) {
-    return createSaleInSupabase(sale, tenantId);
-  }
-  mockSales.push(sale);
-  return sale;
-}
-
-export async function getNextOrderNumber(tenantId: string): Promise<number> {
-  if (isSupabaseConfigured()) {
-    return getNextOrderNumberFromSupabase(tenantId);
-  }
-  localNextOrderNumber += 1;
-  return localNextOrderNumber;
 }

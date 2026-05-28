@@ -1,4 +1,4 @@
-import { supabase, isSupabaseConfigured } from '../../supabase/client';
+import { supabase } from '../../supabase/client';
 import type { TenantRole } from '../../types';
 
 export interface TenantInfo {
