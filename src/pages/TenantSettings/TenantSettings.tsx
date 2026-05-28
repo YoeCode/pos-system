@@ -37,16 +37,39 @@ export default function TenantSettings() {
     loadData();
   }, [tenantId]);
 
+  const formatDate = (iso: string) => {
+    const d = new Date(iso);
+    return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+  };
+
+  const isExpired = (expiresAt: string) => new Date(expiresAt) < new Date();
+
   const handleInvite = async (email: string, role: TenantRole) => {
     if (!tenantId || !authUserId) return;
+
+    const cleanEmail = email.toLowerCase().trim();
+
+    const alreadyMember = members.some(m => m.email.toLowerCase() === cleanEmail);
+    if (alreadyMember) {
+      setActionError('Este usuario ya es miembro del equipo.');
+      return;
+    }
+
+    const alreadyPending = invitations.some(
+      i => i.email.toLowerCase() === cleanEmail && i.status === 'pending' && !isExpired(i.expiresAt)
+    );
+    if (alreadyPending) {
+      setActionError('Ya existe una invitación pendiente para este email.');
+      return;
+    }
 
     setIsLoading(true);
     setActionError(null);
 
     try {
-      const invitation = await createInvitation({ email, role, tenantId, invitedBy: authUserId });
+      const invitation = await createInvitation({ email: cleanEmail, role, tenantId, invitedBy: authUserId });
       if (!invitation) {
-        setActionError('No se pudo crear la invitación. El email ya puede tener una invitación pendiente.');
+        setActionError('No se pudo crear la invitación. Intenta de nuevo.');
         setIsLoading(false);
         return;
       }
@@ -82,13 +105,6 @@ export default function TenantSettings() {
     const ok = await cancelInvitation(invitationId, tenantId);
     if (ok) loadData();
   };
-
-  const formatDate = (iso: string) => {
-    const d = new Date(iso);
-    return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
-  };
-
-  const isExpired = (expiresAt: string) => new Date(expiresAt) < new Date();
 
   return (
     <div className="p-6 max-w-3xl mx-auto space-y-6">
