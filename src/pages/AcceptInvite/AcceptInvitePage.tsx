@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../supabase/client';
-import { getInvitationByToken, acceptInvitation } from '../../features/invitations/invitationsService';
+import { getInvitationByToken } from '../../features/invitations/invitationsService';
 import type { Invitation } from '../../features/invitations/invitationsService';
 
 export default function AcceptInvitePage() {
@@ -84,38 +84,14 @@ export default function AcceptInvitePage() {
         return;
       }
 
-      const { error: empError } = await supabase.from('employees').insert({
-        tenant_id: invitation.tenantId,
-        user_id: authUserId,
-        name: name.trim(),
-        email: invitation.email,
-        role: invitation.role,
-        active: true,
-        status: 'active',
-        pin: '0000',
+      const { data: rpcOk, error: rpcError } = await supabase.rpc('complete_invitation_acceptance', {
+        p_token: token,
+        p_user_id: authUserId,
+        p_name: name.trim(),
       });
 
-      if (empError) {
-        setError('Error al vincular el empleado. Contacta al administrador.');
-        setIsSubmitting(false);
-        return;
-      }
-
-      const { error: memberError } = await supabase.from('tenant_members').insert({
-        tenant_id: invitation.tenantId,
-        user_id: authUserId,
-        role: invitation.role,
-      });
-
-      if (memberError) {
-        setError('Error al asignar la empresa. Contacta al administrador.');
-        setIsSubmitting(false);
-        return;
-      }
-
-      const accepted = await acceptInvitation(token);
-      if (!accepted) {
-        setError('Error al confirmar la invitación. Puede que haya expirado o ya haya sido aceptada.');
+      if (rpcError || !rpcOk) {
+        setError('Error al completar el registro. La invitación puede haber expirado o ya fue usada.');
         setIsSubmitting(false);
         return;
       }
