@@ -7,8 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
@@ -197,6 +195,7 @@ export type Database = {
           shift: string | null
           status: string | null
           tenant_id: string
+          tenant_role: string | null
           terminal_id: string | null
           user_id: string | null
         }
@@ -214,6 +213,7 @@ export type Database = {
           shift?: string | null
           status?: string | null
           tenant_id: string
+          tenant_role?: string | null
           terminal_id?: string | null
           user_id?: string | null
         }
@@ -231,6 +231,7 @@ export type Database = {
           shift?: string | null
           status?: string | null
           tenant_id?: string
+          tenant_role?: string | null
           terminal_id?: string | null
           user_id?: string | null
         }
@@ -653,41 +654,6 @@ export type Database = {
             foreignKeyName: "settings_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: true
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      tenant_members: {
-        Row: {
-          id: string
-          invited_by: string | null
-          joined_at: string
-          role: string
-          tenant_id: string
-          user_id: string
-        }
-        Insert: {
-          id?: string
-          invited_by?: string | null
-          joined_at?: string
-          role?: string
-          tenant_id: string
-          user_id: string
-        }
-        Update: {
-          id?: string
-          invited_by?: string | null
-          joined_at?: string
-          role?: string
-          tenant_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "tenant_members_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },

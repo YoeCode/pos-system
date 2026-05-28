@@ -24,10 +24,11 @@ export interface TenantMembership {
 
 async function getUserTenantsInternal(userId: string): Promise<TenantMembership[]> {
   const { data, error } = await supabase
-    .from('tenant_members')
-    .select('tenant_id, role, tenants(id, name, slug)')
+    .from('employees')
+    .select('tenant_id, tenant_role, tenants(id, name, slug)')
     .eq('user_id', userId)
-    .order('joined_at', { ascending: false });
+    .not('tenant_role', 'is', null)
+    .order('created_at', { ascending: false });
 
   if (error || !data) return [];
 
@@ -35,7 +36,7 @@ async function getUserTenantsInternal(userId: string): Promise<TenantMembership[
     tenantId: row.tenant_id,
     tenantName: row.tenants?.name || '',
     tenantSlug: row.tenants?.slug || '',
-    role: row.role as TenantRole,
+    role: row.tenant_role as TenantRole,
   }));
 }
 

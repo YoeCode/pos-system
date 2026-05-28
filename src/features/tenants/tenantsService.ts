@@ -56,51 +56,21 @@ async function createTenantInSupabase(
   };
 }
 
-async function addTenantMember(
-  tenantId: string,
-  userId: string,
-  role: TenantRole,
-  invitedBy: string
-): Promise<boolean> {
-  const { error } = await supabase
-    .from('tenant_members')
-    .insert({
-      tenant_id: tenantId,
-      user_id: userId,
-      role,
-      invited_by: invitedBy,
-    });
-
-  return !error;
-}
-
 export async function createTenant(
   name: string,
   slug: string,
   ownerId: string
 ): Promise<TenantInfo | null> {
-  if (!isSupabaseConfigured()) return null;
   return createTenantInSupabase(name, slug, ownerId);
 }
 
-export async function inviteTenantMember(
-  tenantId: string,
-  userId: string,
-  role: TenantRole,
-  invitedBy: string
-): Promise<boolean> {
-  if (!isSupabaseConfigured()) return false;
-  return addTenantMember(tenantId, userId, role, invitedBy);
-}
-
 export async function getTenantMembers(tenantId: string): Promise<TenantMemberInfo[]> {
-  if (!isSupabaseConfigured()) return [];
-
   const { data, error } = await supabase
     .from('employees')
-    .select('id, name, email, role, user_id, created_at, tenant_members!left(role, joined_at)')
+    .select('id, name, email, tenant_role, user_id, created_at')
     .eq('tenant_id', tenantId)
     .eq('active', true)
+    .not('tenant_role', 'is', null)
     .order('created_at', { ascending: false });
 
   if (error || !data) return [];
@@ -110,14 +80,12 @@ export async function getTenantMembers(tenantId: string): Promise<TenantMemberIn
     userId: row.user_id,
     name: row.name,
     email: row.email,
-    role: (row.tenant_members?.role || row.role) as TenantRole,
-    joinedAt: row.tenant_members?.joined_at || row.created_at,
+    role: row.tenant_role as TenantRole,
+    joinedAt: row.created_at,
   }));
 }
 
 export async function getTenantInfo(tenantId: string): Promise<TenantInfo | null> {
-  if (!isSupabaseConfigured()) return null;
-
   const { data, error } = await supabase
     .from('tenants')
     .select('*')

@@ -74,10 +74,11 @@ export const setActiveTenant = createAsyncThunk(
     if (!user.authUserId) return rejectWithValue('Missing auth user id');
 
     const { data, error } = await supabase
-      .from('tenant_members')
-      .select('tenant_id, role, tenants(id, name, slug)')
+      .from('employees')
+      .select('tenant_id, tenant_role, tenants(id, name, slug)')
       .eq('user_id', user.authUserId)
       .eq('tenant_id', tenantId)
+      .not('tenant_role', 'is', null)
       .single();
 
     if (error || !data) return rejectWithValue('Invalid tenant');
@@ -86,7 +87,7 @@ export const setActiveTenant = createAsyncThunk(
     const updatedUser: AuthUser = {
       ...user,
       tenantId: row.tenant_id,
-      tenantRole: row.role as TenantRole,
+      tenantRole: row.tenant_role as TenantRole,
     };
 
     localStorage.setItem(TENANT_STORAGE_KEY, row.tenant_id);
