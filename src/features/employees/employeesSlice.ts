@@ -23,7 +23,8 @@ const initialState: EmployeesState = {
 export const fetchEmployeesAsync = createAsyncThunk(
   'employees/fetchEmployeesAsync',
   async (_, { getState }) => {
-    const tenantId = (getState() as RootState).auth.user?.tenantId || '';
+    const tenantId = (getState() as RootState).auth.user?.tenantId;
+    if (!tenantId) return [];
     return fetchEmployees(tenantId);
   }
 );

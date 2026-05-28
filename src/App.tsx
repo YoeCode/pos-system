@@ -9,18 +9,25 @@ import { initializeAuth } from './features/auth/authSlice';
 import { fetchProductsAsync } from './features/products/productsSlice';
 import { fetchSalesAsync, loadNextOrderNumberAsync } from './features/sales/salesSlice';
 import { fetchEmployeesAsync } from './features/employees/employeesSlice';
-import { useAppDispatch } from './app/store';
+import { useAppDispatch, useAppSelector } from './app/store';
 
 function AppInner() {
   const dispatch = useAppDispatch();
+  const isAuthenticated = useAppSelector(state => state.auth.isAuthenticated);
+  const tenantId = useAppSelector(state => state.auth.user?.tenantId);
 
   useEffect(() => {
     dispatch(initializeAuth());
-    dispatch(fetchProductsAsync());
-    dispatch(fetchSalesAsync());
-    dispatch(loadNextOrderNumberAsync());
-    dispatch(fetchEmployeesAsync());
   }, [dispatch]);
+
+  useEffect(() => {
+    if (isAuthenticated && tenantId) {
+      dispatch(fetchProductsAsync());
+      dispatch(fetchSalesAsync());
+      dispatch(loadNextOrderNumberAsync());
+      dispatch(fetchEmployeesAsync());
+    }
+  }, [dispatch, isAuthenticated, tenantId]);
 
   return (
     <I18nProvider>

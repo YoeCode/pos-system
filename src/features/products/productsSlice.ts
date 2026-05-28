@@ -74,7 +74,8 @@ const initialState: ProductsState = {
 export const fetchProductsAsync = createAsyncThunk(
   'products/fetchProductsAsync',
   async (_, { getState }) => {
-    const tenantId = (getState() as RootState).auth.user?.tenantId || '';
+    const tenantId = (getState() as RootState).auth.user?.tenantId;
+    if (!tenantId) return [];
     return fetchProducts(tenantId);
   }
 );

@@ -21,7 +21,8 @@ const initialState: SalesState = {
 export const fetchSalesAsync = createAsyncThunk(
   'sales/fetchSalesAsync',
   async (_, { getState }) => {
-    const tenantId = (getState() as RootState).auth.user?.tenantId || '';
+    const tenantId = (getState() as RootState).auth.user?.tenantId;
+    if (!tenantId) return [];
     return fetchSales(tenantId);
   }
 );
@@ -39,7 +40,8 @@ export const completeSaleAsync = createAsyncThunk(
 export const loadNextOrderNumberAsync = createAsyncThunk(
   'sales/loadNextOrderNumberAsync',
   async (_, { getState }) => {
-    const tenantId = (getState() as RootState).auth.user?.tenantId || '';
+    const tenantId = (getState() as RootState).auth.user?.tenantId;
+    if (!tenantId) return 1042;
     return getNextOrderNumber(tenantId);
   }
 );
