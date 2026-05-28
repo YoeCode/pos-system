@@ -51,16 +51,16 @@ CREATE OR REPLACE FUNCTION public.register_new_business(
  RETURNS jsonb
  LANGUAGE plpgsql
  SECURITY DEFINER
- SET search_path TO 'auth, public'
+ SET search_path TO 'auth', 'public'
 AS $function$
 DECLARE
   new_tenant RECORD;
 BEGIN
-  INSERT INTO tenants (name, slug, owner_id, plan, subscription_status, max_employees, max_products, max_sales_monthly)
+  INSERT INTO public.tenants (name, slug, owner_id, plan, subscription_status, max_employees, max_products, max_sales_monthly)
   VALUES (p_business_name, p_slug, p_user_id, 'free', 'active', 2, 100, 500)
   RETURNING * INTO new_tenant;
 
-  INSERT INTO employees (tenant_id, user_id, name, email, role, active, status, pin, tenant_role)
+  INSERT INTO public.employees (tenant_id, user_id, name, email, role, active, status, pin, tenant_role)
   VALUES (new_tenant.id, p_user_id, p_business_name, p_email, 'admin', true, 'active', '0000', 'owner');
 
   RETURN jsonb_build_object(
