@@ -97,20 +97,21 @@ export async function getTenantMembers(tenantId: string): Promise<TenantMemberIn
   if (!isSupabaseConfigured()) return [];
 
   const { data, error } = await supabase
-    .from('tenant_members')
-    .select('id, user_id, role, joined_at, users:auth.users!inner(email, raw_user_meta_data)')
+    .from('employees')
+    .select('id, name, email, role, user_id, created_at, tenant_members!left(role, joined_at)')
     .eq('tenant_id', tenantId)
-    .order('joined_at', { ascending: false });
+    .eq('active', true)
+    .order('created_at', { ascending: false });
 
   if (error || !data) return [];
 
   return (data as any[]).map((row: any) => ({
     id: row.id,
     userId: row.user_id,
-    name: row.users?.raw_user_meta_data?.name || row.users?.email || '',
-    email: row.users?.email || '',
-    role: row.role,
-    joinedAt: row.joined_at,
+    name: row.name,
+    email: row.email,
+    role: (row.tenant_members?.role || row.role) as TenantRole,
+    joinedAt: row.tenant_members?.joined_at || row.created_at,
   }));
 }
 
