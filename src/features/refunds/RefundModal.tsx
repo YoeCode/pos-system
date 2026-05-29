@@ -4,7 +4,7 @@ import { selectAllSales } from '../../features/sales/salesSlice';
 import { selectRefundSettings } from '../../features/settings/settingsSlice';
 import { selectActiveEmployees } from '../../features/employees/employeesSlice';
 import { restoreStockAsync } from '../../features/products/productsSlice';
-import { deductLoyaltyPoints } from '../../features/customers/customersSlice';
+import { deductLoyaltyPointsAsync } from '../../features/customers/customersSlice';
 import { addRefund } from './refundsSlice';
 import Modal from '../../components/ui/Modal';
 import type { Sale, RefundItem, PaymentMethod } from '../../types';
@@ -99,7 +99,7 @@ const RefundModal: React.FC<RefundModalProps> = ({ isOpen, onClose }) => {
 
   const needsPin = refundSettings.enabled && refundSettings.requirePin && refundTotal >= refundSettings.pinThreshold;
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (!selectedSale || Object.keys(selectedItems).length === 0) return;
 
     if (needsPin) {
@@ -145,12 +145,12 @@ const RefundModal: React.FC<RefundModalProps> = ({ isOpen, onClose }) => {
     if (selectedSale.customerId && selectedSale.loyaltyPointsEarned > 0) {
       const proportion = refundTotal / selectedSale.order.total;
       const pointsToDeduct = Math.floor(selectedSale.loyaltyPointsEarned * proportion);
-      dispatch(deductLoyaltyPoints({
+      await dispatch(deductLoyaltyPointsAsync({
         customerId: selectedSale.customerId,
         points: pointsToDeduct,
         amountSpent: refundTotal,
         tiers,
-      }));
+      })).unwrap();
     }
 
     setCompleted(true);

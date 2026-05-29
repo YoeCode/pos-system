@@ -1,11 +1,16 @@
 import { describe, it, expect } from 'vitest';
 import customersReducer, {
-  addCustomer,
-  updateCustomer,
-  deactivateCustomer,
-  addLoyaltyPoints,
+  createCustomerAsync,
+  updateCustomerAsync,
+  deactivateCustomerAsync,
+  addLoyaltyPointsAsync,
+  deductLoyaltyPointsAsync,
+  selectAllCustomers,
+  selectActiveCustomers,
+  selectCustomerById,
 } from './customersSlice';
-import type { LoyaltyTierConfig } from '../../types';
+import { computeTier } from './customersService';
+import type { Customer, LoyaltyTierConfig } from '../../types';
 
 const DEFAULT_TIERS: LoyaltyTierConfig[] = [
   { tier: 'bronze',   threshold: 0,    discountPct: 0 },
@@ -17,150 +22,210 @@ const DEFAULT_TIERS: LoyaltyTierConfig[] = [
 const INITIAL_STATE = customersReducer(undefined, { type: '@@INIT' });
 
 describe('customersSlice', () => {
-  // ── RF-01 Customer CRUD ──────────────────────────────────────────────────
+  // ── Initial state ─────────────────────────────────────────────────────────
 
-  describe('addCustomer', () => {
-    it('creates customer with loyaltyPoints=0, tier=bronze, active=true', () => {
+  it('starts with empty items, not loading', () => {
+    expect(INITIAL_STATE.items).toEqual([]);
+    expect(INITIAL_STATE.isLoading).toBe(false);
+    expect(INITIAL_STATE.error).toBeNull();
+  });
+
+  // ── createCustomerAsync.fulfilled ──────────────────────────────────────────
+
+  describe('createCustomerAsync.fulfilled', () => {
+    it('adds the new customer to items', () => {
+      const newCustomer: Customer = {
+        id: 'new-1',
+        name: 'Test Customer',
+        email: 'test@test.es',
+        phone: '600000001',
+        notes: '',
+        active: true,
+        loyaltyPoints: 0,
+        tier: 'bronze',
+        totalSpent: 0,
+        createdAt: '2025-01-01T00:00:00Z',
+      };
       const state = customersReducer(
         INITIAL_STATE,
-        addCustomer({ name: 'New Test Customer', email: 'new@test.es', phone: '600000001', notes: '', active: true })
+        createCustomerAsync.fulfilled(newCustomer, 'req-id', { name: 'Test Customer', email: '', phone: '', notes: '', active: true }),
       );
-      const created = state.customers.find(c => c.name === 'New Test Customer');
-      expect(created).toBeDefined();
-      expect(created!.loyaltyPoints).toBe(0);
-      expect(created!.tier).toBe('bronze');
-      expect(created!.totalSpent).toBe(0);
-      expect(created!.active).toBe(true);
-      expect(created!.id).toBeTruthy();
-      expect(created!.createdAt).toBeTruthy();
-    });
-
-    it('adds customer to the collection (count increases)', () => {
-      const before = INITIAL_STATE.customers.length;
-      const s1 = customersReducer(
-        INITIAL_STATE,
-        addCustomer({ name: 'Customer A', email: '', phone: '', notes: '', active: true })
-      );
-      const s2 = customersReducer(
-        s1,
-        addCustomer({ name: 'Customer B', email: '', phone: '', notes: '', active: true })
-      );
-      expect(s2.customers.length).toBe(before + 2);
+      expect(state.items).toHaveLength(1);
+      expect(state.items[0].name).toBe('Test Customer');
     });
   });
 
-  describe('updateCustomer', () => {
-    it('merges patch without changing loyaltyPoints or tier', () => {
-      const customerId = INITIAL_STATE.customers[0].id;
-      const before = INITIAL_STATE.customers[0];
-      const state = customersReducer(
+  // ── updateCustomerAsync.fulfilled ──────────────────────────────────────────
+
+  describe('updateCustomerAsync.fulfilled', () => {
+    it('replaces the existing customer in items', () => {
+      const existing: Customer = {
+        id: 'cust-1',
+        name: 'Original',
+        email: '',
+        phone: '',
+        notes: '',
+        active: true,
+        loyaltyPoints: 100,
+        tier: 'bronze',
+        totalSpent: 100,
+        createdAt: '2025-01-01T00:00:00Z',
+      };
+      const seeded = customersReducer(
         INITIAL_STATE,
-        updateCustomer({ id: customerId, phone: '999999999' })
+        createCustomerAsync.fulfilled(existing, 'req-1', { name: 'Original', email: '', phone: '', notes: '', active: true }),
       );
-      const updated = state.customers.find(c => c.id === customerId)!;
-      expect(updated.phone).toBe('999999999');
-      expect(updated.loyaltyPoints).toBe(before.loyaltyPoints);
-      expect(updated.tier).toBe(before.tier);
+      const updated: Customer = { ...existing, name: 'Updated', phone: '999999999' };
+      const state = customersReducer(
+        seeded,
+        updateCustomerAsync.fulfilled(updated, 'req-2', { id: 'cust-1', name: 'Updated', phone: '999999999' }),
+      );
+      expect(state.items).toHaveLength(1);
+      expect(state.items[0].name).toBe('Updated');
+      expect(state.items[0].phone).toBe('999999999');
     });
   });
 
-  describe('deactivateCustomer — RF-01-C', () => {
+  // ── deactivateCustomerAsync.fulfilled ──────────────────────────────────────
+
+  describe('deactivateCustomerAsync.fulfilled', () => {
     it('sets active=false without removing the customer', () => {
-      const customerId = INITIAL_STATE.customers[0].id;
-      const state = customersReducer(INITIAL_STATE, deactivateCustomer(customerId));
-      const customer = state.customers.find(c => c.id === customerId)!;
-      expect(customer.active).toBe(false);
-      expect(state.customers).toHaveLength(INITIAL_STATE.customers.length);
+      const existing: Customer = {
+        id: 'cust-1',
+        name: 'Active Customer',
+        email: '',
+        phone: '',
+        notes: '',
+        active: true,
+        loyaltyPoints: 0,
+        tier: 'bronze',
+        totalSpent: 0,
+        createdAt: '2025-01-01T00:00:00Z',
+      };
+      const seeded = customersReducer(
+        INITIAL_STATE,
+        createCustomerAsync.fulfilled(existing, 'req-1', { name: 'Active Customer', email: '', phone: '', notes: '', active: true }),
+      );
+      const state = customersReducer(
+        seeded,
+        deactivateCustomerAsync.fulfilled('cust-1', 'req-2', 'cust-1'),
+      );
+      expect(state.items).toHaveLength(1);
+      expect(state.items[0].active).toBe(false);
     });
   });
 
-  // ── RF-05 Tier Auto-Recalculation ─────────────────────────────────────────
+  // ── addLoyaltyPointsAsync.fulfilled ────────────────────────────────────────
 
-  describe('addLoyaltyPoints — tier recalculation', () => {
-    it('RF-05-A: upgrades tier when threshold is crossed', () => {
-      // cust-001 has loyaltyPoints=120, tier=bronze; silver threshold=500
-      const customerId = 'cust-001';
-      const state = customersReducer(
+  describe('addLoyaltyPointsAsync.fulfilled', () => {
+    it('replaces the customer with the server response', () => {
+      const existing: Customer = {
+        id: 'cust-1',
+        name: 'Test',
+        email: '',
+        phone: '',
+        notes: '',
+        active: true,
+        loyaltyPoints: 100,
+        tier: 'bronze',
+        totalSpent: 100,
+        createdAt: '2025-01-01T00:00:00Z',
+      };
+      const seeded = customersReducer(
         INITIAL_STATE,
-        addLoyaltyPoints({ customerId, points: 400, amountSpent: 400, tiers: DEFAULT_TIERS })
+        createCustomerAsync.fulfilled(existing, 'req-1', { name: 'Test', email: '', phone: '', notes: '', active: true }),
       );
-      const customer = state.customers.find(c => c.id === customerId)!;
-      expect(customer.loyaltyPoints).toBe(520);
-      expect(customer.tier).toBe('silver');
-    });
-
-    it('RF-05-B: does not downgrade tier when still above threshold', () => {
-      // cust-003 has loyaltyPoints=2340, tier=gold; gold threshold=1500, platinum=5000
-      const customerId = 'cust-003';
+      const updated: Customer = { ...existing, loyaltyPoints: 200, totalSpent: 200, tier: 'silver' };
       const state = customersReducer(
-        INITIAL_STATE,
-        addLoyaltyPoints({ customerId, points: 10, amountSpent: 10, tiers: DEFAULT_TIERS })
+        seeded,
+        addLoyaltyPointsAsync.fulfilled(updated, 'req-2', { customerId: 'cust-1', points: 100, amountSpent: 100, tiers: DEFAULT_TIERS }),
       );
-      const customer = state.customers.find(c => c.id === customerId)!;
-      expect(customer.loyaltyPoints).toBe(2350);
-      expect(customer.tier).toBe('gold');
-    });
-
-    it('accumulates totalSpent', () => {
-      const customerId = 'cust-005';
-      const state = customersReducer(
-        INITIAL_STATE,
-        addLoyaltyPoints({ customerId, points: 50, amountSpent: 50, tiers: DEFAULT_TIERS })
-      );
-      const customer = state.customers.find(c => c.id === customerId)!;
-      expect(customer.totalSpent).toBe(50);
-    });
-
-    it('correctly resolves platinum tier', () => {
-      const customerId = 'cust-003'; // gold, 2340 pts
-      const state = customersReducer(
-        INITIAL_STATE,
-        addLoyaltyPoints({ customerId, points: 3000, amountSpent: 3000, tiers: DEFAULT_TIERS })
-      );
-      const customer = state.customers.find(c => c.id === customerId)!;
-      expect(customer.loyaltyPoints).toBe(5340);
-      expect(customer.tier).toBe('platinum');
-    });
-
-    it('stays bronze when points < silver threshold', () => {
-      const customerId = 'cust-005'; // 0 pts
-      const state = customersReducer(
-        INITIAL_STATE,
-        addLoyaltyPoints({ customerId, points: 100, amountSpent: 100, tiers: DEFAULT_TIERS })
-      );
-      expect(state.customers.find(c => c.id === customerId)!.tier).toBe('bronze');
-    });
-
-    it('no-ops when customerId is not found', () => {
-      const state = customersReducer(
-        INITIAL_STATE,
-        addLoyaltyPoints({ customerId: 'nonexistent', points: 100, amountSpent: 100, tiers: DEFAULT_TIERS })
-      );
-      expect(state).toEqual(INITIAL_STATE);
+      expect(state.items[0].loyaltyPoints).toBe(200);
+      expect(state.items[0].tier).toBe('silver');
     });
   });
 
-  // ── RNF-01 No circular import ──────────────────────────────────────────────
+  // ── deductLoyaltyPointsAsync.fulfilled ─────────────────────────────────────
+
+  describe('deductLoyaltyPointsAsync.fulfilled', () => {
+    it('replaces the customer with the server response', () => {
+      const existing: Customer = {
+        id: 'cust-1',
+        name: 'Test',
+        email: '',
+        phone: '',
+        notes: '',
+        active: true,
+        loyaltyPoints: 500,
+        tier: 'silver',
+        totalSpent: 500,
+        createdAt: '2025-01-01T00:00:00Z',
+      };
+      const seeded = customersReducer(
+        INITIAL_STATE,
+        createCustomerAsync.fulfilled(existing, 'req-1', { name: 'Test', email: '', phone: '', notes: '', active: true }),
+      );
+      const updated: Customer = { ...existing, loyaltyPoints: 300, tier: 'bronze' };
+      const state = customersReducer(
+        seeded,
+        deductLoyaltyPointsAsync.fulfilled(updated, 'req-2', { customerId: 'cust-1', points: 200, amountSpent: 0, tiers: DEFAULT_TIERS }),
+      );
+      expect(state.items[0].loyaltyPoints).toBe(300);
+      expect(state.items[0].tier).toBe('bronze');
+    });
+  });
+
+  // ── Selectors ──────────────────────────────────────────────────────────────
 
   describe('selectors', () => {
-    it('selectActiveCustomers returns only active customers', async () => {
-      const { selectActiveCustomers } = await import('./customersSlice');
-      const mockState = { customers: INITIAL_STATE };
+    const mockState = {
+      customers: {
+        items: [
+          { id: '1', name: 'Active One', active: true, loyaltyPoints: 100, tier: 'bronze', totalSpent: 100, createdAt: '2025-01-01T00:00:00Z', email: '', phone: '', notes: '' },
+          { id: '2', name: 'Inactive One', active: false, loyaltyPoints: 0, tier: 'bronze', totalSpent: 0, createdAt: '2025-01-01T00:00:00Z', email: '', phone: '', notes: '' },
+          { id: '3', name: 'Active Two', active: true, loyaltyPoints: 200, tier: 'silver', totalSpent: 200, createdAt: '2025-01-01T00:00:00Z', email: '', phone: '', notes: '' },
+        ] as Customer[],
+        isLoading: false,
+        error: null,
+      },
+    };
+
+    it('selectAllCustomers returns all items', () => {
+      expect(selectAllCustomers(mockState)).toHaveLength(3);
+    });
+
+    it('selectActiveCustomers returns only active customers', () => {
       const active = selectActiveCustomers(mockState);
+      expect(active).toHaveLength(2);
       expect(active.every(c => c.active)).toBe(true);
     });
 
-    it('selectCustomerById returns correct customer', async () => {
-      const { selectCustomerById } = await import('./customersSlice');
-      const mockState = { customers: INITIAL_STATE };
-      const customer = selectCustomerById(mockState, 'cust-001');
-      expect(customer?.name).toBe('María García');
+    it('selectCustomerById returns correct customer', () => {
+      expect(selectCustomerById(mockState, '2')?.name).toBe('Inactive One');
     });
 
-    it('selectCustomerById returns undefined for unknown id', async () => {
-      const { selectCustomerById } = await import('./customersSlice');
-      const mockState = { customers: INITIAL_STATE };
+    it('selectCustomerById returns undefined for unknown id', () => {
       expect(selectCustomerById(mockState, 'unknown')).toBeUndefined();
+    });
+  });
+
+  // ── computeTier helper ────────────────────────────────────────────────────
+
+  describe('computeTier', () => {
+    it('returns bronze for 0 points', () => {
+      expect(computeTier(0, DEFAULT_TIERS)).toBe('bronze');
+    });
+
+    it('returns silver above threshold', () => {
+      expect(computeTier(500, DEFAULT_TIERS)).toBe('silver');
+    });
+
+    it('returns platinum above 5000', () => {
+      expect(computeTier(6000, DEFAULT_TIERS)).toBe('platinum');
+    });
+
+    it('returns correct tier at exact threshold', () => {
+      expect(computeTier(1500, DEFAULT_TIERS)).toBe('gold');
     });
   });
 });

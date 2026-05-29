@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/store';
-import { selectActiveCustomers } from './customersSlice';
-import { setSelectedCustomer } from '../pos/posSlice';
+import { selectActiveCustomers, fetchCustomersAsync } from './customersSlice';
+import { setSelectedCustomer, selectActiveWindowCustomerId } from '../pos/posSlice';
 import { selectWalkInCustomerLabel } from '../settings/settingsSlice';
 import Modal from '../../components/ui/Modal';
 import type { LoyaltyTier } from '../../types';
@@ -15,8 +15,12 @@ const tierColors: Record<LoyaltyTier, string> = {
 
 const CustomerSelector: React.FC = () => {
   const dispatch = useAppDispatch();
-  const selectedCustomerId = useAppSelector(state => state.pos.selectedCustomerId);
+  const selectedCustomerId = useAppSelector(selectActiveWindowCustomerId);
   const customers = useAppSelector(selectActiveCustomers);
+
+  useEffect(() => {
+    dispatch(fetchCustomersAsync());
+  }, [dispatch]);
   const walkInLabel = useAppSelector(selectWalkInCustomerLabel);
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');

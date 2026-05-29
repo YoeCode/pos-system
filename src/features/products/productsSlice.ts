@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
 import type { Product, ProductSize } from '../../types';
 import type { RootState } from '../../app/store';
@@ -230,9 +230,13 @@ export interface StockAlertItem {
 
 export const selectAllProducts = (state: { products: ProductsState }): Product[] => state.products.items;
 
-export const selectLowStockAlerts = (state: { products: ProductsState }): StockAlertItem[] => {
+const selectProductsItems = (state: { products: ProductsState }) => state.products.items;
+
+export const selectLowStockAlerts = createSelector(
+  [selectProductsItems],
+  (items): StockAlertItem[] => {
   const alerts: StockAlertItem[] = [];
-  state.products.items.forEach(product => {
+  items.forEach(product => {
     if (product.status !== 'active') return;
     if (product.sizes && product.sizes.length > 0) {
       const lowSizes = product.sizes.filter(s => s.stock <= (s.minStock || 0));
@@ -267,10 +271,14 @@ export const selectLowStockAlerts = (state: { products: ProductsState }): StockA
     if (b.severity === 'critical' && a.severity !== 'critical') return 1;
     return (a.stock / a.minStock) - (b.stock / b.minStock);
   });
-};
+});
 
-export const selectLowStockCount = (state: { products: ProductsState }): number =>
-  selectLowStockAlerts(state).length;
+export const selectLowStockCount = createSelector(
+  [selectLowStockAlerts],
+  (alerts) => alerts.length
+);
 
-export const selectCriticalStockCount = (state: { products: ProductsState }): number =>
-  selectLowStockAlerts(state).filter(a => a.severity === 'critical').length;
+export const selectCriticalStockCount = createSelector(
+  [selectLowStockAlerts],
+  (alerts) => alerts.filter(a => a.severity === 'critical').length
+);

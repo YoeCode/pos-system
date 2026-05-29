@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { useAppSelector } from '../../app/store';
-import { selectAllCustomers, selectActiveCustomers, selectCustomerById } from '../../features/customers/customersSlice';
+import React, { useEffect, useState } from 'react';
+import { useAppDispatch, useAppSelector } from '../../app/store';
+import { selectAllCustomers, selectActiveCustomers, selectCustomerById, fetchCustomersAsync } from '../../features/customers/customersSlice';
 import CustomerDetailPanel from '../../features/customers/CustomerDetailPanel';
 import CustomerModal from '../../features/customers/CustomerModal';
 import SaleDetailView from '../../features/sales/SaleDetailView';
@@ -15,8 +15,13 @@ const tierColors: Record<LoyaltyTier, string> = {
 };
 
 const CustomersPage: React.FC = () => {
+  const dispatch = useAppDispatch();
   const allCustomers = useAppSelector(selectAllCustomers);
   const activeCustomers = useAppSelector(selectActiveCustomers);
+
+  useEffect(() => {
+    dispatch(fetchCustomersAsync());
+  }, [dispatch]);
   const [search, setSearch] = useState('');
   const [detailCustomerId, setDetailCustomerId] = useState<string | null>(null);
   const [selectedSaleId, setSelectedSaleId] = useState<string | null>(null);

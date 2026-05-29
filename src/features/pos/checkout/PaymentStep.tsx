@@ -3,7 +3,7 @@ import { useAppDispatch, useAppSelector } from '../../../app/store';
 import { completeSaleAsync } from '../../sales/salesSlice';
 import { reduceStockAsync, selectAllProducts } from '../../products/productsSlice';
 import { selectTaxLabel, selectPointsPerEuro, selectLoyaltyTiers, selectMultiTerminalMode, selectTerminalId } from '../../settings/settingsSlice';
-import { addLoyaltyPoints, deductLoyaltyPoints } from '../../customers/customersSlice';
+import { addLoyaltyPointsAsync, deductLoyaltyPointsAsync } from '../../customers/customersSlice';
 import { startNewSale } from '../posSlice';
 import { selectActiveEmployees } from '../../employees/employeesSlice';
 import { useToast } from '../../../components/ToastProvider';
@@ -151,9 +151,9 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
       }
 
       if (customerId) {
-        dispatch(addLoyaltyPoints({ customerId, points: loyaltyPointsEarned, amountSpent: total, tiers }));
+        await dispatch(addLoyaltyPointsAsync({ customerId, points: loyaltyPointsEarned, amountSpent: total, tiers })).unwrap();
         if (pointsToRedeem > 0) {
-          dispatch(deductLoyaltyPoints({ customerId, points: pointsToRedeem, amountSpent: 0, tiers }));
+          await dispatch(deductLoyaltyPointsAsync({ customerId, points: pointsToRedeem, amountSpent: 0, tiers })).unwrap();
         }
       }
 

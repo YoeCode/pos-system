@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAppDispatch } from '../../app/store';
-import { addCustomer, updateCustomer, deactivateCustomer } from './customersSlice';
+import { createCustomerAsync, updateCustomerAsync, deactivateCustomerAsync } from './customersSlice';
 import Modal from '../../components/ui/Modal';
 import Button from '../../components/ui/Button';
+import { useToast } from '../../components/ToastProvider';
 import type { Customer } from '../../types';
 
 interface CustomerModalProps {
@@ -22,6 +23,8 @@ const defaultForm = {
 const CustomerModal: React.FC<CustomerModalProps> = ({ isOpen, onClose, customer }) => {
   const dispatch = useAppDispatch();
   const isEdit = !!customer;
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { addToast } = useToast();
 
   const [form, setForm] = useState(defaultForm);
 
@@ -41,22 +44,36 @@ const CustomerModal: React.FC<CustomerModalProps> = ({ isOpen, onClose, customer
 
   const isValid = form.name.trim().length > 0 && form.phone.trim().length > 0;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isValid) return;
+    if (!isValid || isSubmitting) return;
+    setIsSubmitting(true);
 
-    if (isEdit && customer) {
-      dispatch(updateCustomer({ id: customer.id, ...form }));
-    } else {
-      dispatch(addCustomer({ ...form }));
+    try {
+      if (isEdit && customer) {
+        await dispatch(updateCustomerAsync({ id: customer.id, ...form })).unwrap();
+      } else {
+        await dispatch(createCustomerAsync({ ...form })).unwrap();
+      }
+      onClose();
+    } catch {
+      addToast('Failed to save customer', 'error');
+    } finally {
+      setIsSubmitting(false);
     }
-    onClose();
   };
 
-  const handleDeactivate = () => {
-    if (customer) {
-      dispatch(deactivateCustomer(customer.id));
+  const handleDeactivate = async () => {
+    if (!customer || isSubmitting) return;
+    setIsSubmitting(true);
+
+    try {
+      await dispatch(deactivateCustomerAsync(customer.id)).unwrap();
       onClose();
+    } catch {
+      addToast('Failed to deactivate customer', 'error');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -126,8 +143,8 @@ const CustomerModal: React.FC<CustomerModalProps> = ({ isOpen, onClose, customer
             <Button type="button" variant="secondary" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" variant="primary" disabled={!isValid}>
-              {isEdit ? 'Save Changes' : 'Add Customer'}
+            <Button type="submit" variant="primary" disabled={!isValid || isSubmitting}>
+              {isSubmitting ? 'Saving...' : isEdit ? 'Save Changes' : 'Add Customer'}
             </Button>
           </div>
         </div>
