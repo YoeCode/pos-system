@@ -149,43 +149,32 @@ export default function TenantSettings() {
             </div>
           ))}
 
-          {invitations.map((inv) => {
+          {invitations.filter(inv => inv.status !== 'accepted').map((inv) => {
             const expired = isExpired(inv.expiresAt);
-            const isPending = inv.status === 'pending';
-            const isAccepted = inv.status === 'accepted';
+            const pending = inv.status === 'pending';
 
             return (
-              <div key={inv.id} className={`flex items-center justify-between p-3 rounded-lg border ${isPending ? 'bg-slate-700/30 border-dashed border-slate-600' : isAccepted ? 'bg-emerald-900/10 border-emerald-500/20' : 'bg-slate-800/50 border-slate-700'}`}>
+              <div key={inv.id} className={`flex items-center justify-between p-3 rounded-lg border ${pending ? 'bg-slate-700/30 border-dashed border-slate-600' : 'bg-slate-800/50 border-slate-700'}`}>
                 <div className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isAccepted ? 'bg-emerald-600/20' : 'bg-slate-600/30'}`}>
-                    {isAccepted ? (
-                      <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    ) : (
-                      <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                      </svg>
-                    )}
+                  <div className="w-8 h-8 rounded-full bg-slate-600/30 flex items-center justify-center">
+                    <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
                   </div>
                   <div>
-                    <p className={`font-medium ${isAccepted ? 'text-emerald-300' : 'text-slate-300'}`}>{inv.email}</p>
-                    <p className="text-xs">
-                      {isAccepted ? (
-                        <span className="text-emerald-400">Usuario activado · {formatDate(inv.createdAt)}</span>
-                      ) : expired ? (
-                        <span className="text-slate-500">Invitación expirada · {formatDate(inv.expiresAt)}</span>
-                      ) : (
-                        <span className="text-slate-500">Invitación pendiente · expira {formatDate(inv.expiresAt)}</span>
-                      )}
+                    <p className="text-slate-300 font-medium">{inv.email}</p>
+                    <p className="text-xs text-slate-500">
+                      {expired
+                        ? `Invitación expirada · ${formatDate(inv.expiresAt)}`
+                        : `Invitación pendiente · expira ${formatDate(inv.expiresAt)}`}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`px-3 py-1 rounded-full text-sm capitalize ${isAccepted ? 'bg-emerald-600/20 text-emerald-400' : 'bg-slate-600/50 text-slate-400'}`}>
+                  <span className="px-3 py-1 rounded-full text-sm capitalize bg-slate-600/50 text-slate-400">
                     {inv.role}
                   </span>
-                  {isPending && (
+                  {pending && (
                     <button
                       onClick={() => handleCancelInvite(inv.id)}
                       className="text-slate-500 hover:text-red-400 transition-colors"
@@ -201,7 +190,7 @@ export default function TenantSettings() {
             );
           })}
 
-          {members.length === 0 && invitations.length === 0 && (
+          {members.length === 0 && invitations.filter(i => i.status !== 'accepted').length === 0 && (
             <p className="text-slate-400 text-center py-4">No hay miembros registrados</p>
           )}
         </div>

@@ -58,6 +58,25 @@ export default function AcceptInvitePage() {
     setError(null);
 
     try {
+      const { data: existingLinked, error: linkError } = await supabase.rpc(
+        'complete_invitation_acceptance',
+        { p_token: token, p_user_id: null, p_name: name.trim() }
+      );
+
+      if (linkError) {
+        setError('Error al procesar la invitación. Intenta de nuevo.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (existingLinked) {
+        setSuccessMessage(
+          'Ya tienes una cuenta. Ahora perteneces al equipo. Inicia sesión con tu contraseña habitual.'
+        );
+        setIsSubmitting(false);
+        return;
+      }
+
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: invitation.email,
         password,
@@ -69,26 +88,16 @@ export default function AcceptInvitePage() {
         },
       });
 
-      if (signUpError) {
-        setError(signUpError.message === 'User already registered'
-          ? 'Este email ya está registrado. Intenta iniciar sesión.'
-          : signUpError.message);
+      if (signUpError || !signUpData?.user?.id) {
+        setError(signUpError?.message || 'Error al crear la cuenta. Intenta de nuevo.');
         setIsSubmitting(false);
         return;
       }
 
-      const authUserId = signUpData.user?.id;
-      if (!authUserId) {
-        setError('Error al crear la cuenta. Intenta de nuevo.');
-        setIsSubmitting(false);
-        return;
-      }
-
-      const { data: rpcOk, error: rpcError } = await supabase.rpc('complete_invitation_acceptance', {
-        p_token: token,
-        p_user_id: authUserId,
-        p_name: name.trim(),
-      });
+      const { data: rpcOk, error: rpcError } = await supabase.rpc(
+        'complete_invitation_acceptance',
+        { p_token: token, p_user_id: signUpData.user.id, p_name: name.trim() }
+      );
 
       if (rpcError || !rpcOk) {
         setError('Error al completar el registro. La invitación puede haber expirado o ya fue usada.');
