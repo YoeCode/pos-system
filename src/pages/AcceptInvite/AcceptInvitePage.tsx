@@ -60,7 +60,7 @@ export default function AcceptInvitePage() {
     try {
       const { data: existingLinked, error: linkError } = await supabase.rpc(
         'complete_invitation_acceptance',
-        { p_token: token, p_user_id: null, p_name: name.trim() }
+        { p_invitation_id: invitation.id, p_tenant_role: invitation.role, p_user_id: null }
       );
 
       if (linkError) {
@@ -96,7 +96,7 @@ export default function AcceptInvitePage() {
 
       const { data: rpcOk, error: rpcError } = await supabase.rpc(
         'complete_invitation_acceptance',
-        { p_token: token, p_user_id: signUpData.user.id, p_name: name.trim() }
+        { p_invitation_id: invitation.id, p_tenant_role: invitation.role, p_user_id: signUpData.user.id }
       );
 
       if (rpcError || !rpcOk) {
