@@ -27,15 +27,40 @@ export default function AcceptInvitePage() {
       return;
     }
 
-    getInvitationByToken(token).then((inv) => {
+    getInvitationByToken(token).then(async (inv) => {
       if (!inv) {
         setError('La invitación ha expirado o no es válida');
-      } else {
-        setInvitation(inv);
+        setIsLoading(false);
+        return;
       }
+
+      setInvitation(inv);
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.email && session.user.email.toLowerCase() === inv.email.toLowerCase()) {
+        try {
+          const { data: ok } = await supabase.rpc('complete_invitation_acceptance', {
+            p_token: token,
+            p_user_id: session.user.id,
+            p_name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || '',
+          });
+
+          if (ok) {
+            setHasSession(true);
+            setSuccessMessage(
+              'Ya estás autenticado. Ahora perteneces al equipo. Redirigiendo...'
+            );
+            setTimeout(() => navigate('/pos'), 1500);
+            setIsLoading(false);
+            return;
+          }
+        } catch {
+        }
+      }
+
       setIsLoading(false);
     });
-  }, [token]);
+  }, [token, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,23 +120,8 @@ export default function AcceptInvitePage() {
         return;
       }
 
-      const { data: linked, error: linkError } = await supabase.rpc(
-        'complete_invitation_acceptance',
-        { p_token: token, p_user_id: null, p_name: name.trim() }
-      );
-
-      if (linkError || !linked) {
-        setError(
-          'Este email ya está registrado pero no se pudo vincular la invitación. ' +
-          'Inicia sesión e intenta de nuevo.'
-        );
-        setIsSubmitting(false);
-        return;
-      }
-
-      setSuccessMessage(
-        'Ya tienes una cuenta. Ahora perteneces al equipo. Inicia sesión con tu contraseña habitual.'
-      );
+      const returnUrl = `/accept-invite?token=${encodeURIComponent(token || '')}`;
+      navigate(`/login?redirect=${encodeURIComponent(returnUrl)}`);
     } catch {
       setError('Ocurrió un error inesperado. Intenta de nuevo.');
     } finally {
@@ -148,7 +158,7 @@ export default function AcceptInvitePage() {
       <div className="min-h-screen bg-slate-900 flex items-center justify-center px-4">
         <div className="bg-slate-800 rounded-xl border border-slate-700 p-8 max-w-md w-full text-center">
           <div className="w-12 h-12 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-7 h-7 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
