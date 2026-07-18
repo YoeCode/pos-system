@@ -101,7 +101,10 @@ export default function AcceptInvitePage() {
         );
 
         if (rpcError || !rpcOk) {
-          setError('Error al completar el registro. Es posible que la invitación haya expirado.');
+          setError(
+            rpcError?.message ||
+            'Error al completar el registro. Es posible que la invitación haya expirado.'
+          );
           setIsSubmitting(false);
           return;
         }
