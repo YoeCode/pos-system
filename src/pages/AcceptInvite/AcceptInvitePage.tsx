@@ -16,9 +16,12 @@ export default function AcceptInvitePage() {
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [pin, setPin] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [hasSession, setHasSession] = useState(false);
+
+  const needsPin = invitation && ['supervisor', 'manager', 'admin', 'owner'].includes(invitation.role);
 
   useEffect(() => {
     if (!token) {
@@ -43,6 +46,7 @@ export default function AcceptInvitePage() {
             p_token: token,
             p_user_id: session.user.id,
             p_name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || '',
+            p_pin: '0000',
           });
 
           if (ok) {
@@ -78,6 +82,10 @@ export default function AcceptInvitePage() {
       setError('El nombre es obligatorio');
       return;
     }
+    if (needsPin && pin.length < 4) {
+      setError('El PIN debe tener al menos 4 dígitos');
+      return;
+    }
 
     setIsSubmitting(true);
     setError(null);
@@ -97,7 +105,7 @@ export default function AcceptInvitePage() {
       if (!signUpError && signUpData?.user?.id) {
         const { data: rpcOk, error: rpcError } = await supabase.rpc(
           'complete_invitation_acceptance',
-          { p_token: token, p_user_id: signUpData.user.id, p_name: name.trim() }
+          { p_token: token, p_user_id: signUpData.user.id, p_name: name.trim(), p_pin: pin }
         );
 
         if (rpcError || !rpcOk) {
@@ -249,6 +257,28 @@ export default function AcceptInvitePage() {
               minLength={6}
             />
           </div>
+
+          {needsPin && (
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                PIN de autorización <span className="text-slate-500 text-xs">(4-6 dígitos)</span>
+              </label>
+              <input
+                type="password"
+                inputMode="numeric"
+                value={pin}
+                onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                placeholder="PIN numérico"
+                className="w-full px-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500"
+                required={needsPin}
+                minLength={4}
+                maxLength={6}
+              />
+              <p className="text-xs text-slate-500 mt-1">
+                Este PIN se usará para autorizar acciones en el punto de venta.
+              </p>
+            </div>
+          )}
 
           <button
             type="submit"
