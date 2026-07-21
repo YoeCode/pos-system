@@ -64,6 +64,13 @@ async function resolveTenantForUser(userId: string): Promise<TenantMembership | 
 }
 
 export async function signIn(email: string, password: string): Promise<AuthUser | null> {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const existingUser = sessionData?.session?.user;
+
+  if (existingUser && existingUser.email?.toLowerCase() !== email.toLowerCase()) {
+    throw new Error('Ya hay un usuario logueado en este dispositivo. Cierra sesión primero para iniciar con otro usuario.');
+  }
+
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) {
     throw new Error(error.message === 'Invalid login credentials'
