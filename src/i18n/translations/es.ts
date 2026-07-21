@@ -23,6 +23,9 @@ export const es = {
     inactive: 'Inactivo',
     draft: 'Borrador',
     select: 'Seleccionar...',
+    filtered: 'Filtrado',
+    clearFilters: 'Limpiar filtros',
+    status: 'Estado',
   },
   auth: {
     login: 'Iniciar sesión',
@@ -122,6 +125,8 @@ export const es = {
     accessReports: 'Acceder a Informes',
     startDate: 'Fecha de Inicio',
     deleteConfirm: '¿Estás seguro de que deseas eliminar este empleado?',
+    inactive: 'Inactivos',
+    roles: 'Roles',
   },
   pos: {
     title: 'Punto de Venta',
@@ -311,6 +316,9 @@ export const es = {
     clear: 'Limpiar',
     category: 'Categoría',
     loyalty: 'Fidelización',
+    shifts: 'Turnos',
+    shiftsDesc: 'Turnos disponibles para asignar a empleados',
+    addShiftPlaceholder: 'Ej: Mañana 06:00-14:00',
   },
   pinAuth: {
     title: 'Autorización requerida',

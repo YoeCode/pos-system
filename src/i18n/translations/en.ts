@@ -23,6 +23,9 @@ export const en = {
     inactive: 'Inactive',
     draft: 'Draft',
     select: 'Select...',
+    filtered: 'Filtered',
+    clearFilters: 'Clear filters',
+    status: 'Status',
   },
   auth: {
     login: 'Login',
@@ -122,6 +125,8 @@ export const en = {
     accessReports: 'Access Reports',
     startDate: 'Start Date',
     deleteConfirm: 'Are you sure you want to delete this employee?',
+    inactive: 'Inactive',
+    roles: 'Roles',
   },
   pos: {
     title: 'Point of Sale',
@@ -311,6 +316,9 @@ export const en = {
     clear: 'Clear',
     category: 'Category',
     loyalty: 'Loyalty Program',
+    shifts: 'Shifts',
+    shiftsDesc: 'Available shifts to assign to employees',
+    addShiftPlaceholder: 'E.g. Morning 06:00-14:00',
   },
   pinAuth: {
     title: 'Authorization Required',

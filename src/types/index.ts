@@ -158,13 +158,16 @@ export interface CartItem {
 
 export interface Employee {
   id: string;
+  userId?: string;
   name: string;
   email: string;
   phone: string;
   role: 'Cashier' | 'Supervisor' | 'Admin';
+  tenantRole?: string;
   shift: string;
   pin: string;
   active: boolean;
+  status?: 'active' | 'inactive' | 'pending';
   permissions: {
     processSales: boolean;
     applyDiscounts: boolean;
@@ -275,6 +278,7 @@ export interface PosSettings {
   maxSaleWindows: number;
   refundSettings: RefundSettings;
   ticketSize: '58mm' | '80mm';
+  shifts: string[];
 }
 
 export interface SaleWindow {

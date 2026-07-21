@@ -30,13 +30,16 @@ function mapDbEmployee(row: any): Employee {
   const role = mapDbRole(row.role);
   return {
     id: row.id,
+    userId: row.user_id || undefined,
     name: row.name,
     email: row.email,
     phone: row.phone || '',
     role,
+    tenantRole: row.tenant_role || undefined,
     shift: row.shift || '',
     pin: row.pin || '',
     active: row.active ?? true,
+    status: row.status || undefined,
     permissions: {
       processSales: role === 'Cashier' || role === 'Supervisor' || role === 'Admin',
       applyDiscounts: role === 'Supervisor' || role === 'Admin',
@@ -52,7 +55,6 @@ export async function fetchEmployees(tenantId: string): Promise<Employee[]> {
     .from('employees')
     .select('*')
     .eq('tenant_id', tenantId)
-    .eq('active', true)
     .order('name');
 
   if (error || !data) return [];
@@ -114,4 +116,38 @@ export async function deleteEmployee(id: string, tenantId: string): Promise<bool
     .eq('tenant_id', tenantId);
 
   return !error;
+}
+
+export async function fetchEmployeeSales(employeeId: string, tenantId: string): Promise<{ orderNumber: string; total: number; completedAt: string }[]> {
+  const { data, error } = await supabase
+    .from('sales')
+    .select('order_number, total, completed_at')
+    .eq('employee_id', employeeId)
+    .eq('tenant_id', tenantId)
+    .order('completed_at', { ascending: false })
+    .limit(20);
+
+  if (error || !data) return [];
+  return data.map((row: any) => ({
+    orderNumber: row.order_number,
+    total: row.total,
+    completedAt: row.completed_at,
+  }));
+}
+
+export async function fetchEmployeeSalesStats(employeeId: string, tenantId: string): Promise<{ totalSales: number; totalOrders: number; averageTicket: number }> {
+  const { data, error } = await supabase
+    .from('sales')
+    .select('total')
+    .eq('employee_id', employeeId)
+    .eq('tenant_id', tenantId);
+
+  if (error || !data) return { totalSales: 0, totalOrders: 0, averageTicket: 0 };
+  const totalOrders = data.length;
+  const totalSales = data.reduce((sum: number, row: any) => sum + (row.total || 0), 0);
+  return {
+    totalSales,
+    totalOrders,
+    averageTicket: totalOrders > 0 ? totalSales / totalOrders : 0,
+  };
 }

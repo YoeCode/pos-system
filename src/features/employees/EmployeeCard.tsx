@@ -1,13 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { Employee } from '../../types';
 import Badge from '../../components/ui/Badge';
 import { useAppDispatch } from '../../app/store';
-import { setEditingEmployee, toggleModal, updateEmployeeAsync } from './employeesSlice';
+import { setEditingEmployee, toggleModal, updateEmployeeAsync, deleteEmployeeAsync } from './employeesSlice';
 import { usePermission } from '../../hooks/usePermission';
 import { useI18n } from '../../i18n/I18nProvider';
 
 interface EmployeeCardProps {
   employee: Employee;
+  onViewDetail?: () => void;
 }
 
 const avatarColors = [
@@ -35,10 +36,11 @@ const roleBadgeVariant = (role: Employee['role']): 'info' | 'warning' | 'success
   }
 };
 
-const EmployeeCard: React.FC<EmployeeCardProps> = ({ employee }) => {
+const EmployeeCard: React.FC<EmployeeCardProps> = ({ employee, onViewDetail }) => {
   const dispatch = useAppDispatch();
   const { hasPermission } = usePermission();
   const t = useI18n();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const handleEdit = () => {
     dispatch(setEditingEmployee(employee));
@@ -49,29 +51,32 @@ const EmployeeCard: React.FC<EmployeeCardProps> = ({ employee }) => {
     dispatch(updateEmployeeAsync({ ...employee, active: !employee.active }));
   };
 
+  const handleDelete = () => {
+    dispatch(deleteEmployeeAsync(employee.id));
+    setShowDeleteConfirm(false);
+  };
+
   return (
-    <div className="bg-white rounded-xl border border-border p-4 flex flex-col gap-3 hover:shadow-md transition-shadow duration-150">
-      {/* Avatar + status */}
+    <div className="relative bg-white rounded-xl border border-border p-4 flex flex-col gap-3 hover:shadow-md transition-shadow duration-150">
       <div className="flex items-start justify-between">
-        <div className={`w-12 h-12 rounded-full ${getAvatarColor(employee.name)} flex items-center justify-center text-white font-bold text-sm`}>
+        <button onClick={onViewDetail} className={`w-12 h-12 rounded-full ${getAvatarColor(employee.name)} flex items-center justify-center text-white font-bold text-sm hover:opacity-90 transition-opacity`}>
           {getInitials(employee.name)}
-        </div>
+        </button>
         <div className="flex items-center gap-1.5">
           <span className={`w-2 h-2 rounded-full ${employee.active ? 'bg-primary' : 'bg-error'}`} />
           <span className="text-xs text-text-muted">{employee.active ? t.common.active : t.common.inactive}</span>
         </div>
       </div>
 
-      {/* Info */}
       <div>
-        <p className="font-bold text-text-primary text-sm">{employee.name}</p>
+        <button onClick={onViewDetail} className="text-left">
+          <p className="font-bold text-text-primary text-sm hover:text-primary transition-colors">{employee.name}</p>
+        </button>
         <p className="text-xs text-text-muted mt-0.5">{employee.shift}</p>
       </div>
 
-      {/* Role badge */}
       <Badge variant={roleBadgeVariant(employee.role)}>{employee.role}</Badge>
 
-      {/* Actions */}
       {hasPermission('employee:manage') && (
         <div className="flex items-center gap-2 pt-1 border-t border-border">
           <button
@@ -97,6 +102,39 @@ const EmployeeCard: React.FC<EmployeeCardProps> = ({ employee }) => {
             </svg>
             {employee.active ? t.common.inactive : t.common.active}
           </button>
+          <div className="w-px h-4 bg-border" />
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium text-text-muted hover:text-error hover:bg-error/5 rounded-lg transition-colors"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            {t.common.delete}
+          </button>
+        </div>
+      )}
+
+      {showDeleteConfirm && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center p-4 bg-white/90 rounded-xl">
+          <div className="text-center">
+            <p className="text-sm font-medium text-text-primary mb-1">{t.employees.deleteConfirm}</p>
+            <p className="text-xs text-text-muted mb-3">{employee.name}</p>
+            <div className="flex items-center justify-center gap-2">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="px-3 py-1.5 text-xs font-medium text-text-muted hover:text-text-primary border border-border rounded-lg transition-colors"
+              >
+                {t.common.cancel}
+              </button>
+              <button
+                onClick={handleDelete}
+                className="px-3 py-1.5 text-xs font-medium text-white bg-error rounded-lg hover:bg-error/90 transition-colors"
+              >
+                {t.common.delete}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
