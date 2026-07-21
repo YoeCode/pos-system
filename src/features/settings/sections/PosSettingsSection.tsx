@@ -4,6 +4,7 @@ import {
   selectPosSettings,
   updatePosSettings,
   resetPosSettings,
+  updateShifts,
 } from '../settingsSlice';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
@@ -46,6 +47,8 @@ const PosSettingsSection: React.FC = () => {
   const [customHeader, setCustomHeader] = useState(reduxPos.ticketConfig?.customHeader || '');
   const [customFooter, setCustomFooter] = useState(reduxPos.ticketConfig?.customFooter || '');
   const [ticketSize, setTicketSize] = useState<'58mm' | '80mm'>(reduxPos.ticketSize || '58mm');
+  const [shifts, setShifts] = useState(reduxPos.shifts || []);
+  const [newShift, setNewShift] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -69,6 +72,7 @@ const PosSettingsSection: React.FC = () => {
     setCustomHeader(reduxPos.ticketConfig?.customHeader || '');
     setCustomFooter(reduxPos.ticketConfig?.customFooter || '');
     setTicketSize(reduxPos.ticketSize || '58mm');
+    setShifts(reduxPos.shifts || []);
   }, [reduxPos]);
 
   const parsedSeed = parseInt(orderNumberSeed, 10);
@@ -117,7 +121,34 @@ const PosSettingsSection: React.FC = () => {
     showStoreName !== (reduxPos.ticketConfig?.showStoreName ?? true) ||
     customHeader !== (reduxPos.ticketConfig?.customHeader || '') ||
     customFooter !== (reduxPos.ticketConfig?.customFooter || '') ||
-    ticketSize !== (reduxPos.ticketSize || '58mm');
+    ticketSize !== (reduxPos.ticketSize || '58mm') ||
+    JSON.stringify(shifts) !== JSON.stringify(reduxPos.shifts || []);
+
+  const handleAddShift = () => {
+    if (!newShift.trim()) return;
+    if (shifts.includes(newShift.trim())) return;
+    const updated = [...shifts, newShift.trim()];
+    setShifts(updated);
+    dispatch(updateShifts(updated));
+    setNewShift('');
+    setSavedFeedback(true);
+    setTimeout(() => setSavedFeedback(false), 2000);
+  };
+
+  const handleRemoveShift = (shiftToRemove: string) => {
+    const updated = shifts.filter(s => s !== shiftToRemove);
+    setShifts(updated);
+    dispatch(updateShifts(updated));
+    setSavedFeedback(true);
+    setTimeout(() => setSavedFeedback(false), 2000);
+  };
+
+  const handleShiftKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddShift();
+    }
+  };
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -159,6 +190,7 @@ const PosSettingsSection: React.FC = () => {
           maxRefundDays: parsedMaxDays,
         },
         ticketSize,
+        shifts,
         ticketConfig: {
           showLogo,
           logoUrl: logoUrl || undefined,
@@ -320,6 +352,54 @@ const PosSettingsSection: React.FC = () => {
               />
             </div>
           )}
+        </div>
+
+        <div className="border-t border-border pt-4">
+          <div className="mb-3">
+            <h3 className="text-sm font-semibold text-text-primary">{t.settings.shifts || 'Turnos'}</h3>
+            <p className="text-xs text-text-muted mt-0.5">
+              {t.settings.shiftsDesc || 'Turnos disponibles para asignar a empleados'}
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-2 mb-3">
+            {shifts.map(shift => (
+              <div
+                key={shift}
+                className="flex items-center gap-1 px-3 py-1.5 bg-emerald-50 rounded-full text-sm text-emerald-700"
+              >
+                <span>{shift}</span>
+                <button
+                  type="button"
+                  onClick={() => handleRemoveShift(shift)}
+                  className="ml-1 text-emerald-400 hover:text-error transition-colors"
+                  title={t.common.delete}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <Input
+                placeholder={t.settings.addShiftPlaceholder || 'Ej: Mañana 06:00-14:00'}
+                value={newShift}
+                onChange={e => setNewShift(e.target.value)}
+                onKeyDown={handleShiftKeyDown}
+              />
+            </div>
+            <Button
+              variant="secondary"
+              onClick={handleAddShift}
+              disabled={!newShift.trim() || shifts.includes(newShift.trim())}
+            >
+              {t.common.add}
+            </Button>
+          </div>
         </div>
 
         <div className="border-t border-border pt-4">

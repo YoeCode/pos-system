@@ -63,6 +63,7 @@ const defaultPosSettings: PosSettings = {
     maxRefundDays: 30,
   },
   ticketSize: '58mm',
+  shifts: ['Mañana 06:00-14:00', 'Tarde 14:00-22:00', 'Noche 22:00-06:00', 'Jornada completa 08:00-18:00'],
 };
 
 const defaultLanguageSettings: LanguageSettings = {
@@ -182,6 +183,10 @@ const settingsSlice = createSlice({
       state.pos.sizeGroups = state.pos.sizeGroups.filter(g => g.id !== action.payload);
       localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(state));
     },
+    updateShifts: (state, action: PayloadAction<string[]>) => {
+      state.pos.shifts = action.payload;
+      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(state));
+    },
   },
 });
 
@@ -202,6 +207,7 @@ export const {
   addSizeGroup,
   updateSizeGroup,
   removeSizeGroup,
+  updateShifts,
 } = settingsSlice.actions;
 
 export default settingsSlice.reducer;
@@ -267,3 +273,5 @@ export const selectLanguage = (state: RootState): Language => state.settings.lan
 export const selectLoyaltySettings = (state: RootState): LoyaltySettings => state.settings.loyalty;
 export const selectPointsPerEuro = (state: RootState): number => state.settings.loyalty.pointsPerEuro;
 export const selectLoyaltyTiers = (state: RootState) => state.settings.loyalty.tiers;
+
+export const selectShifts = (state: RootState): string[] => state.settings.pos.shifts;
