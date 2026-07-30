@@ -176,7 +176,7 @@ export async function reduceStock(productId: string, quantity: number, size?: st
   return true;
 }
 
-export async function restoreStock(productId: string, quantity: number, size?: string, tenantId?: string): Promise<boolean> {
+export async function restoreStock(productId: string, quantity: number, size?: string, tenantId?: string, costPrice?: number): Promise<boolean> {
   if (size) {
     const { data: sizeRow } = await supabase
       .from('product_sizes')
@@ -203,7 +203,11 @@ export async function restoreStock(productId: string, quantity: number, size?: s
 
     if (prod) {
       const newStock = prod.stock + quantity;
-      await supabase.from('products').update({ stock: newStock }).eq('id', productId).eq('tenant_id', tenantId || '');
+      const updateData: Record<string, any> = { stock: newStock };
+      if (costPrice !== undefined) {
+        updateData.cost_price = costPrice;
+      }
+      await supabase.from('products').update(updateData).eq('id', productId).eq('tenant_id', tenantId || '');
     }
   }
   return true;

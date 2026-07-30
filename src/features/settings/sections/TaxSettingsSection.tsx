@@ -4,6 +4,7 @@ import {
   selectTaxSettings,
   updateTaxSettings,
   resetTaxSettings,
+  updateTaxSettingsAsync,
   DEFAULT_TAX_NAME,
 } from '../settingsSlice';
 import Input from '../../../components/ui/Input';
@@ -14,6 +15,7 @@ import { useI18n } from '../../../i18n/I18nProvider';
 const TaxSettingsSection: React.FC = () => {
   const dispatch = useAppDispatch();
   const reduxTax = useAppSelector(selectTaxSettings);
+  const tenantId = useAppSelector(state => state.auth.user?.tenantId);
   const t = useI18n();
 
   // Local form state — display taxRate as percentage string
@@ -52,15 +54,15 @@ const TaxSettingsSection: React.FC = () => {
     taxRegistrationNumber !== reduxTax.taxRegistrationNumber;
 
   const handleSave = () => {
-    if (hasErrors || !isDirty) return;
-    dispatch(
-      updateTaxSettings({
-        taxRate: parsedRate / 100,
-        taxName: taxName.trim(),
-        taxIncludedInPrice,
-        taxRegistrationNumber,
-      })
-    );
+    if (hasErrors || !isDirty || !tenantId) return;
+    const tax = {
+      taxRate: parsedRate / 100,
+      taxName: taxName.trim(),
+      taxIncludedInPrice,
+      taxRegistrationNumber,
+    };
+    dispatch(updateTaxSettings(tax));
+    dispatch(updateTaxSettingsAsync({ tenantId, tax }));
     setSavedFeedback(true);
   };
 
@@ -73,7 +75,15 @@ const TaxSettingsSection: React.FC = () => {
 
   const handleReset = () => {
     dispatch(resetTaxSettings());
-    // Local state will sync via the useEffect on reduxTax
+    if (tenantId) {
+      const defaultTax = {
+        taxRate: 0.21,
+        taxName: 'Tax',
+        taxIncludedInPrice: false,
+        taxRegistrationNumber: '',
+      };
+      dispatch(updateTaxSettingsAsync({ tenantId, tax: defaultTax }));
+    }
   };
 
   return (

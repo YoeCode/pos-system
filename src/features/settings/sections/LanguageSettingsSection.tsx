@@ -4,6 +4,7 @@ import {
   selectLanguage,
   updateLanguageSettings,
   resetLanguageSettings,
+  updateLanguageSettingsAsync,
 } from '../settingsSlice';
 import Button from '../../../components/ui/Button';
 import { useI18n } from '../../../i18n/I18nProvider';
@@ -17,6 +18,7 @@ const languageOptions: { value: Language; labelKey: 'spanish' | 'english'; flag:
 const LanguageSettingsSection: React.FC = () => {
   const dispatch = useAppDispatch();
   const currentLanguage = useAppSelector(selectLanguage);
+  const tenantId = useAppSelector(state => state.auth.user?.tenantId);
   const t = useI18n();
 
   const [selectedLanguage, setSelectedLanguage] = useState<Language>(currentLanguage);
@@ -29,8 +31,9 @@ const LanguageSettingsSection: React.FC = () => {
   const isDirty = selectedLanguage !== currentLanguage;
 
   const handleSave = () => {
-    if (!isDirty) return;
+    if (!isDirty || !tenantId) return;
     dispatch(updateLanguageSettings({ language: selectedLanguage }));
+    dispatch(updateLanguageSettingsAsync({ tenantId, language: { language: selectedLanguage } }));
     setSavedFeedback(true);
   };
 
@@ -43,6 +46,9 @@ const LanguageSettingsSection: React.FC = () => {
 
   const handleReset = () => {
     dispatch(resetLanguageSettings());
+    if (tenantId) {
+      dispatch(updateLanguageSettingsAsync({ tenantId, language: { language: 'es' } }));
+    }
   };
 
   return (

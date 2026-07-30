@@ -5,6 +5,7 @@ import {
   updatePosSettings,
   resetPosSettings,
   updateShifts,
+  updatePosSettingsAsync,
 } from '../settingsSlice';
 import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
@@ -22,6 +23,7 @@ const paymentMethodOptions: { value: PaymentMethod; labelKey: 'cash' | 'card' | 
 const PosSettingsSection: React.FC = () => {
   const dispatch = useAppDispatch();
   const reduxPos = useAppSelector(selectPosSettings);
+  const tenantId = useAppSelector(state => state.auth.user?.tenantId);
   const t = useI18n();
 
   const [defaultPaymentMethod, setDefaultPaymentMethod] = useState<PaymentMethod>(
@@ -32,6 +34,7 @@ const PosSettingsSection: React.FC = () => {
   const [orderNumberPrefix, setOrderNumberPrefix] = useState(reduxPos.orderNumberPrefix);
   const [orderNumberSeed, setOrderNumberSeed] = useState(String(reduxPos.orderNumberSeed));
   const [enableManualProduct, setEnableManualProduct] = useState(reduxPos.enableManualProduct);
+  const [enableAiDeliveryNote, setEnableAiDeliveryNote] = useState(reduxPos.enableAiDeliveryNote);
   const [multiTerminalMode, setMultiTerminalMode] = useState(reduxPos.multiTerminalMode);
   const [terminalId, setTerminalId] = useState(reduxPos.terminalId || '');
   const [maxSaleWindows, setMaxSaleWindows] = useState(String(reduxPos.maxSaleWindows));
@@ -58,6 +61,7 @@ const PosSettingsSection: React.FC = () => {
     setOrderNumberPrefix(reduxPos.orderNumberPrefix);
     setOrderNumberSeed(String(reduxPos.orderNumberSeed));
     setEnableManualProduct(reduxPos.enableManualProduct);
+    setEnableAiDeliveryNote(reduxPos.enableAiDeliveryNote);
     setMultiTerminalMode(reduxPos.multiTerminalMode);
     setTerminalId(reduxPos.terminalId || '');
     setMaxSaleWindows(String(reduxPos.maxSaleWindows));
@@ -108,6 +112,7 @@ const PosSettingsSection: React.FC = () => {
     orderNumberPrefix !== reduxPos.orderNumberPrefix ||
     orderNumberSeed !== String(reduxPos.orderNumberSeed) ||
     enableManualProduct !== reduxPos.enableManualProduct ||
+    enableAiDeliveryNote !== reduxPos.enableAiDeliveryNote ||
     multiTerminalMode !== reduxPos.multiTerminalMode ||
     maxSaleWindows !== String(reduxPos.maxSaleWindows) ||
     refundEnabled !== (reduxPos.refundSettings?.enabled ?? true) ||
@@ -171,36 +176,37 @@ const PosSettingsSection: React.FC = () => {
   };
 
   const handleSave = () => {
-    if (hasErrors || !isDirty) return;
-    dispatch(
-      updatePosSettings({
-        defaultPaymentMethod,
-        defaultCategory,
-        walkInCustomerLabel,
-        orderNumberPrefix,
-        orderNumberSeed: parsedSeed,
-        enableManualProduct,
-        multiTerminalMode,
-        maxSaleWindows: parsedMaxWindows,
-        terminalId: multiTerminalMode ? terminalId.trim() || undefined : undefined,
-        refundSettings: {
-          enabled: refundEnabled,
-          requirePin: refundRequirePin,
-          pinThreshold: parsedPinThreshold,
-          maxRefundDays: parsedMaxDays,
-        },
-        ticketSize,
-        shifts,
-        ticketConfig: {
-          showLogo,
-          logoUrl: logoUrl || undefined,
-          showEmployee,
-          showStoreName,
-          customHeader: customHeader || undefined,
-          customFooter: customFooter || undefined,
-        },
-      })
-    );
+    if (hasErrors || !isDirty || !tenantId) return;
+    const pos = {
+      defaultPaymentMethod,
+      defaultCategory,
+      walkInCustomerLabel,
+      orderNumberPrefix,
+      orderNumberSeed: parsedSeed,
+      enableManualProduct,
+      enableAiDeliveryNote,
+      multiTerminalMode,
+      maxSaleWindows: parsedMaxWindows,
+      terminalId: multiTerminalMode ? terminalId.trim() || undefined : undefined,
+      refundSettings: {
+        enabled: refundEnabled,
+        requirePin: refundRequirePin,
+        pinThreshold: parsedPinThreshold,
+        maxRefundDays: parsedMaxDays,
+      },
+      ticketSize,
+      shifts,
+      ticketConfig: {
+        showLogo,
+        logoUrl: logoUrl || undefined,
+        showEmployee,
+        showStoreName,
+        customHeader: customHeader || undefined,
+        customFooter: customFooter || undefined,
+      },
+    };
+    dispatch(updatePosSettings(pos));
+    dispatch(updatePosSettingsAsync({ tenantId, pos }));
     setSavedFeedback(true);
   };
 
@@ -213,6 +219,25 @@ const PosSettingsSection: React.FC = () => {
 
   const handleReset = () => {
     dispatch(resetPosSettings());
+    if (tenantId) {
+      const defaultPos = {
+        defaultPaymentMethod: 'cash',
+        defaultCategory: 'All Items',
+        walkInCustomerLabel: 'Walk-In Customer',
+        orderNumberPrefix: 'ORD-',
+        orderNumberSeed: 1042,
+        enableManualProduct: true,
+        enableAiDeliveryNote: false,
+        multiTerminalMode: false,
+        maxSaleWindows: 5,
+        terminalId: undefined,
+        refundSettings: { enabled: true, requirePin: true, pinThreshold: 50, maxRefundDays: 30 },
+        ticketSize: '58mm',
+        shifts: ['Mañana 06:00-14:00', 'Tarde 14:00-22:00', 'Noche 22:00-06:00', 'Jornada completa 08:00-18:00'],
+        ticketConfig: { showLogo: false, showEmployee: true, showStoreName: true },
+      };
+      dispatch(updatePosSettingsAsync({ tenantId, pos: defaultPos }));
+    }
   };
 
   return (
@@ -330,6 +355,13 @@ const PosSettingsSection: React.FC = () => {
           description={t.settings.enableManualProductDesc}
           checked={enableManualProduct}
           onChange={setEnableManualProduct}
+        />
+
+        <Toggle
+          label={t.settings.enableAiDeliveryNote}
+          description={t.settings.enableAiDeliveryNoteDesc}
+          checked={enableAiDeliveryNote}
+          onChange={setEnableAiDeliveryNote}
         />
 
         <div className="border-t border-border pt-4">

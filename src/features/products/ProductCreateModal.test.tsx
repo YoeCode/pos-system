@@ -162,7 +162,7 @@ describe('ProductCreateModal', () => {
     const product = store.getState().products.items.find(p => p.sku === 'TW-100')!;
     expect(product.name).toBe('Test Widget');
     expect(product.sku).toBe('TW-100');
-    expect(product.category).toBe('Electronics');
+    expect(product.category).toBe('Uncategorized');
     expect(product.status).toBe('draft');
     expect(product.publishedOnline).toBe(false);
   });

@@ -4,6 +4,7 @@ import {
   selectLoyaltySettings,
   updateLoyaltySettings,
   resetLoyaltySettings,
+  updateLoyaltySettingsAsync,
 } from '../settingsSlice';
 import Button from '../../../components/ui/Button';
 import Toggle from '../../../components/ui/Toggle';
@@ -19,6 +20,7 @@ const TIER_LABELS: Record<LoyaltyTier, string> = {
 const LoyaltySettingsSection: React.FC = () => {
   const dispatch = useAppDispatch();
   const reduxLoyalty = useAppSelector(selectLoyaltySettings);
+  const tenantId = useAppSelector(state => state.auth.user?.tenantId);
 
   const [enabled, setEnabled] = useState(reduxLoyalty.enabled);
   const [pointsPerEuro, setPointsPerEuro] = useState(String(reduxLoyalty.pointsPerEuro));
@@ -48,18 +50,22 @@ const LoyaltySettingsSection: React.FC = () => {
   };
 
   const handleSave = () => {
-    dispatch(
-      updateLoyaltySettings({
-        enabled,
-        pointsPerEuro: parseFloat(pointsPerEuro) || 1,
-        tiers,
-      })
-    );
+    if (!tenantId) return;
+    const loyalty = {
+      enabled,
+      pointsPerEuro: parseFloat(pointsPerEuro) || 1,
+      tiers,
+    };
+    dispatch(updateLoyaltySettings(loyalty));
+    dispatch(updateLoyaltySettingsAsync({ tenantId, loyalty }));
     setSavedFeedback(true);
   };
 
   const handleReset = () => {
     dispatch(resetLoyaltySettings());
+    if (tenantId) {
+      dispatch(updateLoyaltySettingsAsync({ tenantId, loyalty: { enabled: true, pointsPerEuro: 1, tiers: [{ tier: 'bronze', threshold: 0, discountPct: 0 }, { tier: 'silver', threshold: 500, discountPct: 0.05 }, { tier: 'gold', threshold: 1500, discountPct: 0.10 }, { tier: 'platinum', threshold: 5000, discountPct: 0.15 }] } }));
+    }
   };
 
   useEffect(() => {

@@ -4,6 +4,7 @@ import {
   selectStoreSettings,
   updateStoreSettings,
   resetStoreSettings,
+  updateStoreSettingsAsync,
 } from '../settingsSlice';
 import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
@@ -14,6 +15,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const StoreSettingsSection: React.FC = () => {
   const dispatch = useAppDispatch();
   const reduxStore = useAppSelector(selectStoreSettings);
+  const tenantId = useAppSelector(state => state.auth.user?.tenantId);
   const t = useI18n();
 
   const [storeName, setStoreName] = useState(reduxStore.storeName);
@@ -49,16 +51,16 @@ const StoreSettingsSection: React.FC = () => {
     receiptFooterMessage !== reduxStore.receiptFooterMessage;
 
   const handleSave = () => {
-    if (hasErrors || !isDirty) return;
-    dispatch(
-      updateStoreSettings({
-        storeName: storeName.trim(),
-        storeAddress,
-        storePhone,
-        storeEmail,
-        receiptFooterMessage,
-      })
-    );
+    if (hasErrors || !isDirty || !tenantId) return;
+    const store = {
+      storeName: storeName.trim(),
+      storeAddress,
+      storePhone,
+      storeEmail,
+      receiptFooterMessage,
+    };
+    dispatch(updateStoreSettings(store));
+    dispatch(updateStoreSettingsAsync({ tenantId, store }));
     setSavedFeedback(true);
   };
 
@@ -71,6 +73,16 @@ const StoreSettingsSection: React.FC = () => {
 
   const handleReset = () => {
     dispatch(resetStoreSettings());
+    if (tenantId) {
+      const defaultStore = {
+        storeName: 'Casa Lis',
+        storeAddress: '',
+        storePhone: '',
+        storeEmail: '',
+        receiptFooterMessage: 'Thank you!',
+      };
+      dispatch(updateStoreSettingsAsync({ tenantId, store: defaultStore }));
+    }
   };
 
   return (

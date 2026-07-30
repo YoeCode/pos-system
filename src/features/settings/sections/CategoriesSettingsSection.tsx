@@ -1,6 +1,12 @@
 import React, { useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../../../app/store';
-import { selectCategories, selectBrands, selectSizes, selectSizeGroups, updateCategories, updateBrands, updateSizes, addSizeGroup, updateSizeGroup, removeSizeGroup } from '../settingsSlice';
+import {
+  selectCategories, selectBrands, selectSizes, selectSizeGroups,
+  addCategoryAsync, removeCategoryAsync,
+  addBrandAsync, removeBrandAsync,
+  addSizeAsync, removeSizeAsync,
+  addSizeGroupAsync, updateSizeGroupAsync, removeSizeGroupAsync,
+} from '../settingsSlice';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import { useI18n } from '../../../i18n/I18nProvider';
@@ -12,6 +18,7 @@ const CategoriesSettingsSection: React.FC = () => {
   const brands = useAppSelector(selectBrands);
   const sizes = useAppSelector(selectSizes);
   const sizeGroups = useAppSelector(selectSizeGroups);
+  const tenantId = useAppSelector(state => state.auth.user?.tenantId);
   const t = useI18n();
   
   const [newCategory, setNewCategory] = useState('');
@@ -28,17 +35,17 @@ const CategoriesSettingsSection: React.FC = () => {
   const handleAddCategory = () => {
     if (!newCategory.trim()) return;
     if (categories.includes(newCategory.trim())) return;
+    if (!tenantId) return;
     
-    const updated = [...categories, newCategory.trim()];
-    dispatch(updateCategories(updated));
+    dispatch(addCategoryAsync({ tenantId, name: newCategory.trim() }));
     setNewCategory('');
     setSavedFeedback(true);
     setTimeout(() => setSavedFeedback(false), 2000);
   };
 
   const handleRemoveCategory = (categoryToRemove: string) => {
-    const updated = categories.filter(c => c !== categoryToRemove);
-    dispatch(updateCategories(updated));
+    if (!tenantId) return;
+    dispatch(removeCategoryAsync({ tenantId, name: categoryToRemove }));
     setSavedFeedback(true);
     setTimeout(() => setSavedFeedback(false), 2000);
   };
@@ -46,17 +53,17 @@ const CategoriesSettingsSection: React.FC = () => {
   const handleAddBrand = () => {
     if (!newBrand.trim()) return;
     if (brands.includes(newBrand.trim())) return;
+    if (!tenantId) return;
     
-    const updated = [...brands, newBrand.trim()];
-    dispatch(updateBrands(updated));
+    dispatch(addBrandAsync({ tenantId, name: newBrand.trim() }));
     setNewBrand('');
     setSavedFeedback(true);
     setTimeout(() => setSavedFeedback(false), 2000);
   };
 
   const handleRemoveBrand = (brandToRemove: string) => {
-    const updated = brands.filter(b => b !== brandToRemove);
-    dispatch(updateBrands(updated));
+    if (!tenantId) return;
+    dispatch(removeBrandAsync({ tenantId, name: brandToRemove }));
     setSavedFeedback(true);
     setTimeout(() => setSavedFeedback(false), 2000);
   };
@@ -78,17 +85,17 @@ const CategoriesSettingsSection: React.FC = () => {
   const handleAddSize = () => {
     if (!newSize.trim()) return;
     if (sizes.includes(newSize.trim())) return;
+    if (!tenantId) return;
     
-    const updated = [...sizes, newSize.trim()];
-    dispatch(updateSizes(updated));
+    dispatch(addSizeAsync({ tenantId, name: newSize.trim() }));
     setNewSize('');
     setSavedFeedback(true);
     setTimeout(() => setSavedFeedback(false), 2000);
   };
 
   const handleRemoveSize = (sizeToRemove: string) => {
-    const updated = sizes.filter(s => s !== sizeToRemove);
-    dispatch(updateSizes(updated));
+    if (!tenantId) return;
+    dispatch(removeSizeAsync({ tenantId, name: sizeToRemove }));
     setSavedFeedback(true);
     setTimeout(() => setSavedFeedback(false), 2000);
   };
@@ -121,12 +128,12 @@ const CategoriesSettingsSection: React.FC = () => {
   };
 
   const handleSaveGroup = () => {
-    if (!groupName.trim() || selectedSizes.length === 0) return;
+    if (!groupName.trim() || selectedSizes.length === 0 || !tenantId) return;
     
     if (editingGroup) {
-      dispatch(updateSizeGroup({ id: editingGroup.id, name: groupName.trim(), sizes: selectedSizes }));
+      dispatch(updateSizeGroupAsync({ tenantId, group: { id: editingGroup.id, name: groupName.trim(), sizes: selectedSizes } }));
     } else {
-      dispatch(addSizeGroup({ id: `custom-${Date.now()}`, name: groupName.trim(), sizes: selectedSizes }));
+      dispatch(addSizeGroupAsync({ tenantId, group: { id: `custom-${Date.now()}`, name: groupName.trim(), sizes: selectedSizes } }));
     }
     
     setShowSizeGroupForm(false);
@@ -135,7 +142,8 @@ const CategoriesSettingsSection: React.FC = () => {
   };
 
   const handleDeleteGroup = (groupId: string) => {
-    dispatch(removeSizeGroup(groupId));
+    if (!tenantId) return;
+    dispatch(removeSizeGroupAsync({ tenantId, id: groupId }));
     setSavedFeedback(true);
     setTimeout(() => setSavedFeedback(false), 2000);
   };

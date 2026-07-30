@@ -10,6 +10,7 @@ import {
   reduceStock,
   restoreStock,
 } from './productsService';
+import { addCategory } from '../settings/settingsService';
 
 export const DEFAULT_CATEGORIES = ['Electronics', 'Food', 'Drinks', 'Apparel', 'Lencería', 'Bakery', 'Merchandise'];
 
@@ -33,7 +34,7 @@ export interface ProductFormState {
 export const createEmptyForm = (): ProductFormState => ({
   name: '',
   sku: '',
-  category: DEFAULT_CATEGORIES[0],
+  category: 'Uncategorized',
   brand: '',
   price: 0,
   costPrice: 0,
@@ -55,6 +56,8 @@ interface ProductsState {
   statusFilter: string;
   stockFilter: string;
   publishedFilter: string;
+  brandFilter: string;
+  stockMovements: import('../../types').StockMovement[];
   isLoading: boolean;
   error: string | null;
 }
@@ -67,6 +70,8 @@ const initialState: ProductsState = {
   statusFilter: 'all',
   stockFilter: 'all',
   publishedFilter: 'all',
+  brandFilter: 'all',
+  stockMovements: [],
   isLoading: false,
   error: null,
 };
@@ -113,18 +118,63 @@ export const deleteProductAsync = createAsyncThunk(
 export const reduceStockAsync = createAsyncThunk(
   'products/reduceStockAsync',
   async ({ productId, quantity, size }: { productId: string; quantity: number; size?: string }, { getState }) => {
-    const tenantId = (getState() as RootState).auth.user?.tenantId || '';
+    const state = getState() as RootState;
+    const tenantId = state.auth.user?.tenantId || '';
+    const employeeId = state.auth.user?.id;
+    const employeeName = state.auth.user?.name;
     await reduceStock(productId, quantity, size, tenantId);
-    return { productId, quantity, size };
+    return { productId, quantity, size, employeeId, employeeName };
   }
 );
 
 export const restoreStockAsync = createAsyncThunk(
   'products/restoreStockAsync',
   async ({ productId, quantity, size }: { productId: string; quantity: number; size?: string }, { getState }) => {
-    const tenantId = (getState() as RootState).auth.user?.tenantId || '';
+    const state = getState() as RootState;
+    const tenantId = state.auth.user?.tenantId || '';
+    const employeeId = state.auth.user?.id;
+    const employeeName = state.auth.user?.name;
     await restoreStock(productId, quantity, size, tenantId);
-    return { productId, quantity, size };
+    return { productId, quantity, size, employeeId, employeeName };
+  }
+);
+
+export const processDeliveryNoteAsync = createAsyncThunk(
+  'products/processDeliveryNoteAsync',
+  async (
+    { restocks, creates }: {
+      restocks: { productId: string; quantity: number; costPrice?: number }[];
+      creates: Product[];
+    },
+    { getState }
+  ) => {
+    const state = getState() as RootState;
+    const tenantId = state.auth.user?.tenantId || '';
+    const employeeId = state.auth.user?.id;
+    const employeeName = state.auth.user?.name;
+
+    const createdProducts: Product[] = [];
+    const newCategories = new Set<string>();
+    for (const product of creates) {
+      const result = await createProduct(product, tenantId);
+      if (result) {
+        createdProducts.push(result);
+        if (product.category) newCategories.add(product.category);
+      }
+    }
+
+    for (const restock of restocks) {
+      await restoreStock(restock.productId, restock.quantity, undefined, tenantId, restock.costPrice);
+    }
+
+    const existingCategories = state.settings.pos.categories;
+    for (const cat of newCategories) {
+      if (!existingCategories.includes(cat)) {
+        await addCategory(tenantId, cat);
+      }
+    }
+
+    return { restocks, creates: createdProducts, tenantId, employeeId, employeeName };
   }
 );
 
@@ -150,6 +200,12 @@ const productsSlice = createSlice({
     setPublishedFilter: (state, action: PayloadAction<string>) => {
       state.publishedFilter = action.payload;
     },
+    setBrandFilter: (state, action: PayloadAction<string>) => {
+      state.brandFilter = action.payload;
+    },
+    addStockMovement: (state, action: PayloadAction<import('../../types').StockMovement>) => {
+      state.stockMovements.unshift(action.payload);
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -170,15 +226,31 @@ const productsSlice = createSlice({
       })
       .addCase(updateProductAsync.fulfilled, (state, action: PayloadAction<Product>) => {
         const idx = state.items.findIndex(p => p.id === action.payload.id);
-        if (idx !== -1) state.items[idx] = action.payload;
+        if (idx === -1) return;
+        const previousStock = state.items[idx].stock;
+        state.items[idx] = action.payload;
+        const newStock = action.payload.stock;
+        if (previousStock !== newStock) {
+          state.stockMovements.unshift({
+            id: crypto.randomUUID(),
+            productId: action.payload.id,
+            productName: action.payload.name,
+            type: 'adjustment',
+            quantity: newStock - previousStock,
+            previousStock,
+            newStock,
+            createdAt: new Date().toISOString(),
+          });
+        }
       })
       .addCase(deleteProductAsync.fulfilled, (state, action: PayloadAction<string>) => {
         state.items = state.items.filter(p => p.id !== action.payload);
       })
       .addCase(reduceStockAsync.fulfilled, (state, action) => {
-        const { productId, quantity, size } = action.payload;
+        const { productId, quantity, size, employeeId, employeeName } = action.payload;
         const product = state.items.find(p => p.id === productId);
         if (!product) return;
+        const previousStock = product.stock;
 
         if (size && product.sizes) {
           const sizeEntry = product.sizes.find(s => s.size === size);
@@ -189,11 +261,26 @@ const productsSlice = createSlice({
         } else {
           product.stock = Math.max(0, product.stock - quantity);
         }
+
+        state.stockMovements.unshift({
+          id: crypto.randomUUID(),
+          productId,
+          productName: product.name,
+          type: 'sale',
+          quantity: -quantity,
+          previousStock,
+          newStock: product.stock,
+          size,
+          employeeId,
+          employeeName,
+          createdAt: new Date().toISOString(),
+        });
       })
       .addCase(restoreStockAsync.fulfilled, (state, action) => {
-        const { productId, quantity, size } = action.payload;
+        const { productId, quantity, size, employeeId, employeeName } = action.payload;
         const product = state.items.find(p => p.id === productId);
         if (!product) return;
+        const previousStock = product.stock;
 
         if (size && product.sizes) {
           const sizeEntry = product.sizes.find(s => s.size === size);
@@ -204,6 +291,61 @@ const productsSlice = createSlice({
         } else {
           product.stock += quantity;
         }
+
+        state.stockMovements.unshift({
+          id: crypto.randomUUID(),
+          productId,
+          productName: product.name,
+          type: 'restock',
+          quantity,
+          previousStock,
+          newStock: product.stock,
+          size,
+          employeeId,
+          employeeName,
+          createdAt: new Date().toISOString(),
+        });
+      })
+      .addCase(processDeliveryNoteAsync.fulfilled, (state, action) => {
+        const { restocks, creates, employeeId, employeeName } = action.payload;
+
+        restocks.forEach(({ productId, quantity, costPrice }) => {
+          const product = state.items.find(p => p.id === productId);
+          if (!product) return;
+          const previousStock = product.stock;
+          product.stock += quantity;
+          if (costPrice !== undefined) {
+            product.costPrice = costPrice;
+          }
+          state.stockMovements.unshift({
+            id: crypto.randomUUID(),
+            productId,
+            productName: product.name,
+            type: 'restock',
+            quantity,
+            previousStock,
+            newStock: product.stock,
+            employeeId,
+            employeeName,
+            createdAt: new Date().toISOString(),
+          });
+        });
+
+        creates.forEach(product => {
+          state.items.push(product);
+          state.stockMovements.unshift({
+            id: crypto.randomUUID(),
+            productId: product.id,
+            productName: product.name,
+            type: 'restock',
+            quantity: product.stock,
+            previousStock: 0,
+            newStock: product.stock,
+            employeeId,
+            employeeName,
+            createdAt: new Date().toISOString(),
+          });
+        });
       });
   },
 });
@@ -215,6 +357,8 @@ export const {
   setStatusFilter,
   setStockFilter,
   setPublishedFilter,
+  setBrandFilter,
+  addStockMovement,
 } = productsSlice.actions;
 export default productsSlice.reducer;
 
@@ -282,3 +426,6 @@ export const selectCriticalStockCount = createSelector(
   [selectLowStockAlerts],
   (alerts) => alerts.filter(a => a.severity === 'critical').length
 );
+
+export const selectStockMovementsForProduct = (state: RootState, productId: string) =>
+  state.products.stockMovements.filter(m => m.productId === productId).slice(0, 50);

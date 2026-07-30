@@ -8,8 +8,10 @@ const PAGE_SIZE = 5;
 
 const ProductsTable: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { items, selectedProduct, searchQuery, selectedCategory, statusFilter, stockFilter, publishedFilter } = useAppSelector(state => state.products);
+  const { items, selectedProduct, searchQuery, selectedCategory, statusFilter, stockFilter, publishedFilter, brandFilter } = useAppSelector(state => state.products);
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortColumn, setSortColumn] = useState<string | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   const fuse = React.useMemo(() => {
     return new Fuse(items, {
@@ -26,7 +28,6 @@ const ProductsTable: React.FC = () => {
 
   const filtered = items.filter(p => {
     const matchesSearch = searchResults ? searchResults.has(p.id) : true;
-    
     const matchesCategory = selectedCategory === 'All' || p.category === selectedCategory;
     const matchesStatus = statusFilter === 'all' || p.status === statusFilter;
     const matchesPublished = publishedFilter === 'all' ||
@@ -36,16 +37,89 @@ const ProductsTable: React.FC = () => {
       (stockFilter === 'low' && p.stock > 0 && p.stock <= p.minStock) ||
       (stockFilter === 'out' && p.stock === 0) ||
       (stockFilter === 'in' && p.stock > p.minStock);
-    return matchesSearch && matchesCategory && matchesStatus && matchesPublished && matchesStock;
+    const matchesBrand = brandFilter === 'all' || p.brand === brandFilter;
+    return matchesSearch && matchesCategory && matchesStatus && matchesPublished && matchesStock && matchesBrand;
   });
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const sorted = React.useMemo(() => {
+    if (!sortColumn) return filtered;
+    const dir = sortDirection === 'asc' ? 1 : -1;
+    return [...filtered].sort((a, b) => {
+      let aVal: string | number;
+      let bVal: string | number;
+      switch (sortColumn) {
+        case 'name':
+          aVal = a.name.toLowerCase();
+          bVal = b.name.toLowerCase();
+          break;
+        case 'brand':
+          aVal = (a.brand || '').toLowerCase();
+          bVal = (b.brand || '').toLowerCase();
+          break;
+        case 'sku':
+          aVal = a.sku.toLowerCase();
+          bVal = b.sku.toLowerCase();
+          break;
+        case 'category':
+          aVal = a.category.toLowerCase();
+          bVal = b.category.toLowerCase();
+          break;
+        case 'price':
+          aVal = a.price;
+          bVal = b.price;
+          break;
+        case 'stock':
+          aVal = a.stock;
+          bVal = b.stock;
+          break;
+        case 'minStock':
+          aVal = a.minStock;
+          bVal = b.minStock;
+          break;
+        default:
+          return 0;
+      }
+      if (aVal < bVal) return -1 * dir;
+      if (aVal > bVal) return 1 * dir;
+      return 0;
+    });
+  }, [filtered, sortColumn, sortDirection]);
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
   const startIndex = (currentPage - 1) * PAGE_SIZE;
-  const paginatedItems = filtered.slice(startIndex, startIndex + PAGE_SIZE);
+  const paginatedItems = sorted.slice(startIndex, startIndex + PAGE_SIZE);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedCategory, statusFilter, stockFilter, publishedFilter]);
+  }, [searchQuery, selectedCategory, statusFilter, stockFilter, publishedFilter, brandFilter]);
+
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  const sortIcon = (column: string) => {
+    if (sortColumn !== column) {
+      return (
+        <svg className="w-3 h-3 text-text-muted/40 inline-block ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 12V4m0 0l-4 4m4-4l4 4" />
+        </svg>
+      );
+    }
+    return sortDirection === 'asc' ? (
+      <svg className="w-3 h-3 text-primary inline-block ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+      </svg>
+    ) : (
+      <svg className="w-3 h-3 text-primary inline-block ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+      </svg>
+    );
+  };
 
   const categoryBadgeVariant = (cat: string): 'info' | 'success' | 'warning' | 'neutral' => {
     switch (cat) {
@@ -57,18 +131,24 @@ const ProductsTable: React.FC = () => {
     }
   };
 
+  const stockStatusBadge = (stock: number, minStock: number): { variant: 'error' | 'warning' | 'success'; label: string } => {
+    if (stock === 0) return { variant: 'error', label: 'Sin stock' };
+    if (stock <= minStock) return { variant: 'warning', label: 'Stock bajo' };
+    return { variant: 'success', label: 'OK' };
+  };
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-border">
-            <th className="text-left py-3 px-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Product</th>
-            <th className="text-left py-3 px-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Brand</th>
-            <th className="text-left py-3 px-4 text-xs font-semibold text-text-muted uppercase tracking-wider">SKU</th>
-            <th className="text-left py-3 px-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Category</th>
-            <th className="text-right py-3 px-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Price</th>
-            <th className="text-right py-3 px-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Stock</th>
-            <th className="text-right py-3 px-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Min. Stock</th>
+            <th className="text-left py-3 px-4 text-xs font-semibold text-text-muted uppercase tracking-wider cursor-pointer select-none hover:text-text-primary transition-colors" onClick={() => handleSort('name')}>Product{sortIcon('name')}</th>
+            <th className="text-left py-3 px-4 text-xs font-semibold text-text-muted uppercase tracking-wider cursor-pointer select-none hover:text-text-primary transition-colors" onClick={() => handleSort('brand')}>Brand{sortIcon('brand')}</th>
+            <th className="text-left py-3 px-4 text-xs font-semibold text-text-muted uppercase tracking-wider cursor-pointer select-none hover:text-text-primary transition-colors" onClick={() => handleSort('sku')}>SKU{sortIcon('sku')}</th>
+            <th className="text-left py-3 px-4 text-xs font-semibold text-text-muted uppercase tracking-wider cursor-pointer select-none hover:text-text-primary transition-colors" onClick={() => handleSort('category')}>Category{sortIcon('category')}</th>
+            <th className="text-right py-3 px-4 text-xs font-semibold text-text-muted uppercase tracking-wider cursor-pointer select-none hover:text-text-primary transition-colors" onClick={() => handleSort('price')}>Price{sortIcon('price')}</th>
+            <th className="text-right py-3 px-4 text-xs font-semibold text-text-muted uppercase tracking-wider cursor-pointer select-none hover:text-text-primary transition-colors" onClick={() => handleSort('stock')}>Stock{sortIcon('stock')}</th>
+            <th className="text-right py-3 px-4 text-xs font-semibold text-text-muted uppercase tracking-wider cursor-pointer select-none hover:text-text-primary transition-colors" onClick={() => handleSort('minStock')}>Min. Stock{sortIcon('minStock')}</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-border">
@@ -136,6 +216,9 @@ const ProductsTable: React.FC = () => {
                 <span className={`font-mono text-sm font-semibold ${displayStock <= product.minStock ? 'text-error' : 'text-text-primary'}`}>
                   {displayStock}
                 </span>
+                <div className="mt-1">
+                  <Badge variant={stockStatusBadge(displayStock, product.minStock).variant}>{stockStatusBadge(displayStock, product.minStock).label}</Badge>
+                </div>
               </td>
 
               {/* Min. Stock */}
@@ -148,17 +231,17 @@ const ProductsTable: React.FC = () => {
         </tbody>
       </table>
 
-      {filtered.length === 0 && (
+      {sorted.length === 0 && (
         <div className="text-center py-12 text-text-muted text-sm">
           No products match your search.
         </div>
       )}
 
       {/* Pagination bar */}
-      {filtered.length > 0 && (
+      {sorted.length > 0 && (
         <div className="px-4 py-3 border-t border-border flex items-center justify-between">
           <p className="text-xs text-text-muted">
-            Showing {startIndex + 1}–{Math.min(startIndex + PAGE_SIZE, filtered.length)} of {filtered.length} products
+            Showing {startIndex + 1}–{Math.min(startIndex + PAGE_SIZE, sorted.length)} of {sorted.length} products
           </p>
           <div className="flex items-center gap-1">
             <button

@@ -257,6 +257,8 @@ export const en = {
     orderNumberSeed: 'Order Number Seed',
     enableManualProduct: 'Enable Manual Product',
     enableManualProductDesc: 'Allow creating custom products directly at POS',
+    enableAiDeliveryNote: 'Enable AI Delivery Note Scanning',
+    enableAiDeliveryNoteDesc: 'Allow importing products by scanning delivery notes with AI (Gemini)',
     multiTerminalMode: 'Multi-Terminal Mode',
     multiTerminalModeDesc: 'Enable multiple POS terminals with unique terminal IDs',
     terminalId: 'Terminal ID',

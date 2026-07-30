@@ -1,20 +1,30 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/store';
-import { setSearchQuery, setSelectedCategory, setStatusFilter, setStockFilter, setPublishedFilter, selectProduct } from '../../features/products/productsSlice';
+import { setSearchQuery, setSelectedCategory, setStatusFilter, setStockFilter, setPublishedFilter, setBrandFilter, selectProduct, createProductAsync, processDeliveryNoteAsync } from '../../features/products/productsSlice';
+import { selectCategories, selectBrands, selectPosSettings } from '../../features/settings/settingsSlice';
 import ProductsTable from '../../features/products/ProductsTable';
 import ProductDetailPanel from '../../features/products/ProductDetailPanel';
 import ProductCreateModal from '../../features/products/ProductCreateModal';
+import DeliveryNoteReviewModal from '../../features/products/DeliveryNoteReviewModal';
+import type { DeliveryAction } from '../../features/products/DeliveryNoteReviewModal';
+import { processDeliveryNote, processDeliveryNoteVision, assignCategories } from '../../features/products/deliveryNoteService';
+import type { ParsedDeliveryNote } from '../../features/products/deliveryNoteService';
+import StockAlertBanner from '../../components/StockAlertBanner';
 import Button from '../../components/ui/Button';
 import { usePermission } from '../../hooks/usePermission';
 import { useI18n } from '../../i18n/I18nProvider';
-
-const CATEGORIES = ['All', 'Electronics', 'Food', 'Drinks', 'Apparel', 'Bakery', 'Merchandise'];
+import type { ProductFormState } from '../../features/products/productsSlice';
+import type { Product } from '../../types';
+import Tesseract from 'tesseract.js';
 
 const ProductsPage: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { searchQuery, selectedCategory, selectedProduct, statusFilter, stockFilter, publishedFilter } = useAppSelector(state => state.products);
+  const { searchQuery, selectedCategory, selectedProduct, statusFilter, stockFilter, publishedFilter, brandFilter } = useAppSelector(state => state.products);
+  const categories = useAppSelector(selectCategories);
+  const brands = useAppSelector(selectBrands);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const [duplicatingProduct, setDuplicatingProduct] = useState<ProductFormState | null>(null);
   const filterRef = useRef<HTMLDivElement>(null);
   const { hasPermission } = usePermission();
   const t = useI18n();
@@ -22,6 +32,180 @@ const ProductsPage: React.FC = () => {
   const handleCloseProduct = () => {
     dispatch(selectProduct(null));
   };
+
+  const handleDuplicate = (form: ProductFormState) => {
+    setDuplicatingProduct(form);
+    setIsCreateModalOpen(true);
+  };
+
+  const handleCloseCreateModal = () => {
+    setIsCreateModalOpen(false);
+    setDuplicatingProduct(null);
+  };
+
+  const allItems = useAppSelector(state => state.products.items);
+  const posSettings = useAppSelector(selectPosSettings);
+  const tenantId = useAppSelector(state => state.auth.user?.tenantId);
+  const [parsedNote, setParsedNote] = useState<ParsedDeliveryNote | null>(null);
+  const [isReviewOpen, setIsReviewOpen] = useState(false);
+  const [isProcessingDelivery, setIsProcessingDelivery] = useState(false);
+
+  const handleExportCsv = useCallback(() => {
+    const headers = ['name', 'sku', 'category', 'brand', 'price', 'costPrice', 'stock', 'minStock', 'status', 'publishedOnline'];
+    const rows = allItems.map(p => [
+      `"${(p.name || '').replace(/"/g, '""')}"`,
+      `"${(p.sku || '').replace(/"/g, '""')}"`,
+      `"${(p.category || '').replace(/"/g, '""')}"`,
+      `"${(p.brand || '').replace(/"/g, '""')}"`,
+      p.price,
+      p.costPrice,
+      p.stock,
+      p.minStock,
+      p.status,
+      p.publishedOnline ? 'true' : 'false',
+    ]);
+    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `products-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, [allItems]);
+
+  const handleImportCsv = useCallback((file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      if (!text) return;
+      const lines = text.split('\n').filter(l => l.trim());
+      if (lines.length < 2) return;
+      const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+      const headerMap: Record<string, number> = {};
+      headers.forEach((h, i) => { headerMap[h] = i; });
+
+      const rows = lines.slice(1);
+      let imported = 0;
+      rows.forEach(line => {
+        const cols = line.split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+        const name = cols[headerMap['name']];
+        const sku = cols[headerMap['sku']];
+        if (!name || !sku) return;
+
+        const newProduct: Product = {
+          id: crypto.randomUUID(),
+          name,
+          sku,
+          category: cols[headerMap['category']] || 'Uncategorized',
+          brand: cols[headerMap['brand']] || undefined,
+          price: parseFloat(cols[headerMap['price']]) || 0,
+          costPrice: parseFloat(cols[headerMap['costPrice']]) || 0,
+          stock: parseInt(cols[headerMap['stock']]) || 0,
+          minStock: parseInt(cols[headerMap['minStock']]) || 0,
+          status: (cols[headerMap['status']] as Product['status']) || 'draft',
+          publishedOnline: cols[headerMap['publishedOnline']]?.toLowerCase() === 'true',
+        };
+        dispatch(createProductAsync(newProduct));
+        imported++;
+      });
+      alert(`Imported ${imported} products.`);
+    };
+    reader.readAsText(file);
+  }, [dispatch]);
+
+  const handleDeliveryNoteUpload = useCallback(async (file: File) => {
+    if (!tenantId) return;
+    setIsProcessingDelivery(true);
+    let rawResult: ParsedDeliveryNote | null = null;
+
+    try {
+      const { data: { text } } = await Tesseract.recognize(file, 'spa', {
+        logger: m => console.log(m),
+      });
+
+      console.log('OCR extracted text length:', text?.length, 'text:', text?.substring(0, 200));
+
+      const hasEnoughText = text && text.trim().length >= 50;
+
+      if (hasEnoughText) {
+        try {
+          rawResult = await processDeliveryNote(text, tenantId);
+          console.log('Text-based LLM result:', rawResult);
+        } catch (textErr) {
+          console.warn('Text-based LLM failed:', textErr);
+          rawResult = null;
+        }
+      }
+
+      const textFailed = !hasEnoughText || !rawResult || rawResult.error || !rawResult.items || rawResult.items.length === 0;
+
+      if (textFailed) {
+        console.log('Tesseract/text pipeline failed or empty. Falling back to vision LLM...');
+        try {
+          rawResult = await processDeliveryNoteVision(file, tenantId);
+          console.log('Vision LLM result:', rawResult);
+        } catch (visionErr) {
+          console.error('Vision LLM also failed:', visionErr);
+          alert(`No se pudo procesar este documento.\n\nEl OCR local (Tesseract) extrajo texto ilegible (${text?.length || 0} caracteres de basura), y el análisis visual (IA) también falló.\n\nEste tipo de documento digital con tablas complejas puede requerir:\n1. Exportar a PDF y subir el PDF (próximamente)\n2. Usar una foto más nítida del documento impreso\n3. Escanear el documento en lugar de fotografiarlo`);
+          setIsProcessingDelivery(false);
+          return;
+        }
+      }
+
+      if (!rawResult || rawResult.error || !rawResult.items || rawResult.items.length === 0) {
+        alert(`Error: ${rawResult?.error || 'No se pudo procesar el albarán'}`);
+        return;
+      }
+
+      const result = assignCategories(rawResult, categories);
+      console.log('Keyword categorization:', result.items.map(i => ({ name: i.nombre, cat: i.categoria })));
+      setParsedNote(result);
+      setIsReviewOpen(true);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to process delivery note');
+    } finally {
+      setIsProcessingDelivery(false);
+    }
+  }, [tenantId]);
+
+  const handleDeliveryNoteConfirm = useCallback((actions: DeliveryAction[]) => {
+    const restocks = actions
+      .filter(a => a.type === 'restock' && a.matchedProduct)
+      .map(a => ({
+        productId: a.matchedProduct!.id,
+        quantity: a.quantity,
+        costPrice: a.costPrice ?? undefined,
+      }));
+
+    const creates = actions
+      .filter(a => a.type === 'create')
+      .map(a => {
+        const item = a.parsedItem;
+        const newProduct: Product = {
+          id: crypto.randomUUID(),
+          name: item.nombre,
+          sku: item.referenciaProveedor || `ALB-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          category: item.categoria || 'Uncategorized',
+          brand: item.marca || undefined,
+          price: 0,
+          costPrice: item.precioCoste || 0,
+          stock: a.quantity,
+          minStock: 0,
+          description: `Imported from delivery note. Supplier ref: ${item.referenciaProveedor || 'N/A'}`,
+          status: 'draft',
+          publishedOnline: false,
+        };
+        return newProduct;
+      });
+
+    dispatch(processDeliveryNoteAsync({ restocks, creates }));
+    setIsReviewOpen(false);
+    setParsedNote(null);
+    alert(`Processed: ${restocks.length} restocked, ${creates.length} created.`);
+  }, [dispatch]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -37,6 +221,7 @@ const ProductsPage: React.FC = () => {
     statusFilter !== 'all',
     stockFilter !== 'all',
     publishedFilter !== 'all',
+    brandFilter !== 'all',
   ].filter(Boolean).length;
 
 return (
@@ -57,10 +242,11 @@ return (
             <span className="text-text-muted">/</span>
             <span className="text-primary">{selectedProduct.name}</span>
           </div>
-          <ProductDetailPanel />
+          <ProductDetailPanel onDuplicate={handleDuplicate} />
         </div>
       ) : (
         <>
+          <StockAlertBanner />
           <div className="px-6 pt-6 pb-4 border-b border-border bg-white">
             <div className="flex items-center justify-between mb-4">
               <div>
@@ -68,12 +254,61 @@ return (
                 <p className="text-sm text-text-muted mt-0.5">{t.products.title}</p>
               </div>
               {hasPermission('product:create') && (
-                <Button variant="primary" size="sm" onClick={() => setIsCreateModalOpen(true)}>
-                  <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                  {t.products.addProduct}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="file"
+                    accept=".csv"
+                    className="hidden"
+                    id="csv-import"
+                    onChange={e => {
+                      const file = e.target.files?.[0];
+                      if (file) handleImportCsv(file);
+                      (e.target as HTMLInputElement).value = '';
+                    }}
+                  />
+                  <label htmlFor="csv-import" className="cursor-pointer inline-flex items-center justify-center font-semibold rounded-lg transition-all duration-150 focus:outline-none px-3 py-1.5 text-sm bg-transparent border border-border text-text-primary hover:bg-gray-50 active:scale-[0.98]">
+                    <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
+                    Import CSV
+                  </label>
+                  {posSettings.enableAiDeliveryNote && (
+                    <>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        id="delivery-note-upload"
+                        onChange={e => {
+                          const file = e.target.files?.[0];
+                          if (file) handleDeliveryNoteUpload(file);
+                          (e.target as HTMLInputElement).value = '';
+                        }}
+                      />
+                      <label
+                        htmlFor="delivery-note-upload"
+                        className={`cursor-pointer inline-flex items-center justify-center font-semibold rounded-lg transition-all duration-150 focus:outline-none px-3 py-1.5 text-sm bg-transparent border border-border text-text-primary hover:bg-gray-50 active:scale-[0.98] ${isProcessingDelivery ? 'opacity-50 pointer-events-none' : ''}`}
+                      >
+                        <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                        {isProcessingDelivery ? 'Processing...' : 'Scan Albarán'}
+                      </label>
+                    </>
+                  )}
+                  <Button variant="secondary" size="sm" onClick={handleExportCsv}>
+                    <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Export CSV
+                  </Button>
+                  <Button variant="primary" size="sm" onClick={() => setIsCreateModalOpen(true)}>
+                    <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    {t.products.addProduct}
+                  </Button>
+                </div>
               )}
             </div>
 
@@ -96,8 +331,20 @@ return (
                 onChange={e => dispatch(setSelectedCategory(e.target.value))}
                 className="px-3 py-2 text-sm bg-background border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
               >
-                {CATEGORIES.map(cat => (
-                  <option key={cat} value={cat}>{cat === 'All' ? t.products.allCategories : cat}</option>
+                <option value="All">{t.products.allCategories}</option>
+                {categories.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+
+              <select
+                value={brandFilter}
+                onChange={e => dispatch(setBrandFilter(e.target.value))}
+                className="px-3 py-2 text-sm bg-background border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+              >
+                <option value="all">{t.common.all} Brands</option>
+                {brands.map(brand => (
+                  <option key={brand} value={brand}>{brand}</option>
                 ))}
               </select>
 
@@ -163,6 +410,7 @@ return (
                           dispatch(setStatusFilter('all'));
                           dispatch(setStockFilter('all'));
                           dispatch(setPublishedFilter('all'));
+                          dispatch(setBrandFilter('all'));
                         }}
                         className="text-xs text-primary hover:text-primary-dark font-medium transition-colors text-left"
                       >
@@ -183,7 +431,14 @@ return (
         </>
       )}
 
-      <ProductCreateModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} />
+      <ProductCreateModal isOpen={isCreateModalOpen} onClose={handleCloseCreateModal} initialForm={duplicatingProduct || undefined} />
+
+      <DeliveryNoteReviewModal
+        isOpen={isReviewOpen}
+        onClose={() => { setIsReviewOpen(false); setParsedNote(null); }}
+        parsedNote={parsedNote}
+        onConfirm={handleDeliveryNoteConfirm}
+      />
     </div>
   );
 };

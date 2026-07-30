@@ -1,11 +1,16 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/store';
-import { updateProductAsync, DEFAULT_CATEGORIES } from './productsSlice';
+import { updateProductAsync, deleteProductAsync, selectProduct, type ProductFormState, selectStockMovementsForProduct } from './productsSlice';
 import { usePermission } from '../../hooks/usePermission';
+import { selectCategories } from '../../features/settings/settingsSlice';
 import type { Product, Employee } from '../../types';
 import Toggle from '../../components/ui/Toggle';
 import Button from '../../components/ui/Button';
 import PinAuthModal from '../pos/PinAuthModal';
+
+interface ProductDetailPanelProps {
+  onDuplicate?: (form: ProductFormState) => void;
+}
 
 interface FormState {
   id: string;
@@ -23,10 +28,12 @@ interface FormState {
   image: string;
 }
 
-const ProductDetailPanel: React.FC = () => {
+const ProductDetailPanel: React.FC<ProductDetailPanelProps> = ({ onDuplicate }) => {
   const dispatch = useAppDispatch();
   const product = useAppSelector(state => state.products.selectedProduct);
+  const movements = useAppSelector(state => product ? selectStockMovementsForProduct(state, product.id) : []);
   const { hasPermission } = usePermission();
+  const categories = useAppSelector(selectCategories);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -177,6 +184,14 @@ const ProductDetailPanel: React.FC = () => {
     setPendingAuthAction(null);
   };
 
+  const handleDelete = () => {
+    if (!product) return;
+    const t = window.confirm('¿Estás seguro de que deseas eliminar este producto?');
+    if (!t) return;
+    dispatch(deleteProductAsync(product.id));
+    dispatch(selectProduct(null));
+  };
+
   const requestAuth = (action: 'stock' | 'publish') => {
     setPendingAuthAction(action);
     setShowPinModal(true);
@@ -207,17 +222,60 @@ const ProductDetailPanel: React.FC = () => {
             )}
           </div>
         ) : (
-          hasPermission('product:edit') ? (
-            <button
-              onClick={handleEdit}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary border border-primary rounded-lg hover:bg-primary/5 transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-              </svg>
-              Edit
-            </button>
-          ) : null
+          <div className="flex items-center gap-2">
+            {hasPermission('product:create') && onDuplicate && (
+              <button
+                onClick={() => {
+                  if (!product) return;
+                  const dupForm: ProductFormState = {
+                    name: `${product.name} (Copy)`,
+                    sku: `${product.sku}-COPY`,
+                    category: product.category,
+                    brand: product.brand || '',
+                    price: product.price,
+                    costPrice: product.costPrice,
+                    stock: product.stock,
+                    minStock: product.minStock,
+                    description: product.description || '',
+                    publishedOnline: product.publishedOnline,
+                    status: product.status,
+                    sizes: product.sizes ? product.sizes.map(s => ({ ...s })) : [],
+                    hasSizes: !!(product.sizes && product.sizes.length > 0),
+                    sizeGroupId: product.sizeGroupId || '',
+                  };
+                  onDuplicate(dupForm);
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-text-muted border border-border rounded-lg hover:bg-gray-50 hover:text-text-primary transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-4 10h6a2 2 0 002-2v-8a2 2 0 00-2-2h-6a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                Duplicate
+              </button>
+            )}
+            {hasPermission('product:edit') && (
+              <button
+                onClick={handleEdit}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary border border-primary rounded-lg hover:bg-primary/5 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Edit
+              </button>
+            )}
+            {hasPermission('product:delete') && (
+              <button
+                onClick={handleDelete}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-error border border-error rounded-lg hover:bg-error/5 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Delete
+              </button>
+            )}
+          </div>
         )}
       </div>
 
@@ -333,9 +391,15 @@ const ProductDetailPanel: React.FC = () => {
                 onChange={e => setForm(prev => ({ ...prev, category: e.target.value }))}
                 className="w-full px-3 py-2.5 text-sm border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors bg-white"
               >
-                {DEFAULT_CATEGORIES.map(cat => (
+                {form.category && !categories.includes(form.category) && (
+                  <option value={form.category}>{form.category} (actual)</option>
+                )}
+                {categories.map(cat => (
                   <option key={cat} value={cat}>{cat}</option>
                 ))}
+                {!form.category && (
+                  <option value="">Sin categoría</option>
+                )}
               </select>
             ) : (
               <p className="text-sm text-text-primary py-2">{form.category}</p>
@@ -596,6 +660,36 @@ const ProductDetailPanel: React.FC = () => {
           )}
         </div>
       </div>
+
+        {movements.length > 0 && (
+          <div className="px-6 py-5 border-t border-border">
+            <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-3">Stock Movement History</p>
+            <div className="flex flex-col gap-2 max-h-48 overflow-y-auto">
+              {movements.map(m => (
+                <div key={m.id} className="flex items-center justify-between text-sm py-1.5 px-2 rounded-lg hover:bg-gray-50">
+                  <div className="flex items-center gap-2">
+                    <span className={`w-2 h-2 rounded-full ${
+                      m.type === 'sale' ? 'bg-red-400' :
+                      m.type === 'restock' ? 'bg-green-400' :
+                      'bg-amber-400'
+                    }`} />
+                    <span className="text-text-primary font-medium capitalize">{m.type}</span>
+                    {m.size && <span className="text-xs text-text-muted">({m.size})</span>}
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <span className="font-mono text-xs text-text-muted">{m.previousStock} → {m.newStock}</span>
+                    <span className={`font-mono text-xs font-semibold ${m.quantity >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {m.quantity >= 0 ? '+' : ''}{m.quantity}
+                    </span>
+                    <span className="text-xs text-text-muted w-28 text-right">
+                      {new Date(m.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
       <PinAuthModal
         isOpen={showPinModal}

@@ -1,7 +1,7 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/store';
-import { createProductAsync, DEFAULT_CATEGORIES, createEmptyForm, type ProductFormState } from './productsSlice';
-import { selectSizeGroups } from '../settings/settingsSlice';
+import { createProductAsync, createEmptyForm, type ProductFormState } from './productsSlice';
+import { selectSizeGroups, selectCategories } from '../settings/settingsSlice';
 import type { Product } from '../../types';
 import Modal from '../../components/ui/Modal';
 import Input from '../../components/ui/Input';
@@ -11,13 +11,21 @@ import { useI18n } from '../../i18n/I18nProvider';
 interface ProductCreateModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialForm?: ProductFormState;
 }
 
-const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose }) => {
+const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose, initialForm }) => {
   const dispatch = useAppDispatch();
   const sizeGroups = useAppSelector(selectSizeGroups);
+  const categories = useAppSelector(selectCategories);
   const [form, setForm] = useState<ProductFormState>(createEmptyForm());
   const t = useI18n();
+
+  useEffect(() => {
+    if (isOpen) {
+      setForm(initialForm ? { ...initialForm } : createEmptyForm());
+    }
+  }, [isOpen, initialForm]);
 
   const handleClose = useCallback(() => {
     setForm(createEmptyForm());
@@ -101,9 +109,15 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
               onChange={e => setForm(prev => ({ ...prev, category: e.target.value }))}
               className="w-full px-3 py-2.5 text-sm border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors bg-white"
             >
-              {DEFAULT_CATEGORIES.map(cat => (
+              {form.category && !categories.includes(form.category) && (
+                <option value={form.category}>{form.category} (actual)</option>
+              )}
+              {categories.map(cat => (
                 <option key={cat} value={cat}>{cat}</option>
               ))}
+              {!form.category && (
+                <option value="">Sin categoría</option>
+              )}
             </select>
 </div>
         </div>

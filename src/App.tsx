@@ -9,6 +9,7 @@ import { initializeAuth } from './features/auth/authSlice';
 import { fetchProductsAsync } from './features/products/productsSlice';
 import { fetchSalesAsync, loadNextOrderNumberAsync } from './features/sales/salesSlice';
 import { fetchEmployeesAsync } from './features/employees/employeesSlice';
+import { fetchSettingsFromSupabase, syncCategoriesToSupabase, syncBrandsToSupabase, syncSizesToSupabase, syncSizeGroupsToSupabase } from './features/settings/settingsSlice';
 import { useAppDispatch, useAppSelector } from './app/store';
 
 function AppInner() {
@@ -26,6 +27,15 @@ function AppInner() {
       dispatch(fetchSalesAsync());
       dispatch(loadNextOrderNumberAsync());
       dispatch(fetchEmployeesAsync());
+      dispatch(fetchSettingsFromSupabase(tenantId)).then((result: any) => {
+        if (result.meta.requestStatus === 'fulfilled' && !result.payload.hasData) {
+          const { tax, store: storeSettings, pos, language, loyalty } = store.getState().settings;
+          dispatch(syncCategoriesToSupabase({ tenantId, categories: pos.categories }));
+          dispatch(syncBrandsToSupabase({ tenantId, brands: pos.brands }));
+          dispatch(syncSizesToSupabase({ tenantId, sizes: pos.sizes }));
+          dispatch(syncSizeGroupsToSupabase({ tenantId, sizeGroups: pos.sizeGroups }));
+        }
+      });
     }
   }, [dispatch, isAuthenticated, tenantId]);
 

@@ -620,6 +620,10 @@ export type Database = {
           store_phone: string | null
           tax_included: boolean
           tax_rate: number
+          tax_name: string
+          tax_registration_number: string
+          pos_config: Json
+          loyalty_config: Json
           tenant_id: string
           updated_at: string
         }
@@ -633,6 +637,10 @@ export type Database = {
           store_phone?: string | null
           tax_included?: boolean
           tax_rate?: number
+          tax_name?: string
+          tax_registration_number?: string
+          pos_config?: Json
+          loyalty_config?: Json
           tenant_id: string
           updated_at?: string
         }
@@ -646,6 +654,10 @@ export type Database = {
           store_phone?: string | null
           tax_included?: boolean
           tax_rate?: number
+          tax_name?: string
+          tax_registration_number?: string
+          pos_config?: Json
+          loyalty_config?: Json
           tenant_id?: string
           updated_at?: string
         }
@@ -654,6 +666,125 @@ export type Database = {
             foreignKeyName: "settings_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      categories: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "categories_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brands: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brands_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sizes: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sizes_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      size_groups: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          sizes: string[]
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          sizes?: string[]
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          sizes?: string[]
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "size_groups_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },

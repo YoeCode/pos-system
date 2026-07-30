@@ -257,6 +257,8 @@ export const es = {
     orderNumberSeed: 'Semilla de Número de Pedido',
     enableManualProduct: 'Habilitar Producto Manual',
     enableManualProductDesc: 'Permitir crear productos personalizados directamente en POS',
+    enableAiDeliveryNote: 'Habilitar Escaneo de Albaranes con IA',
+    enableAiDeliveryNoteDesc: 'Permite importar productos escaneando albaranes con inteligencia artificial (Gemini)',
     multiTerminalMode: 'Múltiples Cajas',
     multiTerminalModeDesc: 'Habilitar múltiples puntos de venta con ID de terminal único',
     terminalId: 'ID de Terminal',

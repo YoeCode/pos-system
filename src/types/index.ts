@@ -273,6 +273,7 @@ export interface PosSettings {
   orderNumberSeed: number;
   enableManualProduct: boolean;
   multiTerminalMode: boolean;
+  enableAiDeliveryNote: boolean;
   terminalId?: string;
   ticketConfig: TicketConfig;
   maxSaleWindows: number;
@@ -352,10 +353,26 @@ export interface CashBoxClosure {
   authorizedBy?: string;
 }
 
+export interface StockMovement {
+  id: string;
+  productId: string;
+  productName: string;
+  type: 'sale' | 'restock' | 'adjustment';
+  quantity: number;
+  previousStock: number;
+  newStock: number;
+  size?: string;
+  employeeId?: string;
+  employeeName?: string;
+  createdAt: string;
+}
+
 export interface SettingsState {
   tax: TaxSettings;
   store: StoreSettings;
   pos: PosSettings;
   language: LanguageSettings;
   loyalty: LoyaltySettings;
+  isLoading?: boolean;
+  error?: string | null;
 }
