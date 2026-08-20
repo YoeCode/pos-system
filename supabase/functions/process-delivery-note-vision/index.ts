@@ -153,7 +153,7 @@ serve(async (req) => {
       })
     }
 
-    let mimeType = file.type || detectMimeType(bytes)
+    const mimeType = file.type || detectMimeType(bytes)
     if (mimeType === 'application/pdf' || !mimeType.startsWith('image/')) {
       return new Response(
         JSON.stringify({ error: `Unsupported file type: ${mimeType}. Only images are supported.` }),

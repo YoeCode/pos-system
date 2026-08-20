@@ -12,9 +12,12 @@ serve(async (req) => {
   }
 
   try {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const payload = await req.text()
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const signature = req.headers.get('stripe-signature') || ''
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
