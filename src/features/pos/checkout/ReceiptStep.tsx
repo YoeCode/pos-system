@@ -13,6 +13,7 @@ import { generateTicketPDF } from '../../../utils/exportUtils';
 import { sendTicketEmail, isEmailConfigured } from '../../../utils/emailService';
 import { useToast } from '../../../components/useToast';
 import { useI18n } from '../../../i18n/useI18n';
+import type { PaymentMethod } from '../../../types';
 
 interface ReceiptStepProps {
   saleId: string;
@@ -77,6 +78,10 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, 
   };
 
   const handlePDF = () => {
+    if (!sale) {
+      addToast(t.pos.pdfError, 'error');
+      return;
+    }
     try {
       generateTicketPDF(sale, storeName, taxLabel, footerMessage, employeeName || undefined);
       addToast(t.pos.pdfDownloaded, 'success');

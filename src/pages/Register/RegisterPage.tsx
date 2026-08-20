@@ -53,8 +53,9 @@ export default function RegisterPage() {
         p_slug: slug,
       });
 
-      if (rpcError || (rpcResult && rpcResult.error)) {
-        setError(rpcError?.message || rpcResult?.error || 'Error al crear negocio');
+      if (rpcError || (rpcResult && typeof rpcResult === 'object' && 'error' in rpcResult && rpcResult.error)) {
+        const resultError = typeof rpcResult === 'object' && rpcResult && 'error' in rpcResult ? String(rpcResult.error) : undefined;
+        setError(rpcError?.message || resultError || 'Error al crear negocio');
         setIsLoading(false);
         return;
       }

@@ -207,7 +207,7 @@ export async function restoreStock(productId: string, quantity: number, size?: s
       if (costPrice !== undefined) {
         updateData.cost_price = costPrice;
       }
-      await supabase.from('products').update(updateData).eq('id', productId).eq('tenant_id', tenantId || '');
+      await supabase.from('products').update(updateData as any).eq('id', productId).eq('tenant_id', tenantId || '');
     }
   }
   return true;

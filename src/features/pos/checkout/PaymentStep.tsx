@@ -118,7 +118,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
         if (!product || product.status !== 'active') return;
         if (product.sizes && product.sizes.length > 0 && item.selectedSize) {
           const sizeEntry = product.sizes.find(s => s.size === item.selectedSize);
-          if (sizeEntry && sizeEntry.stock - item.quantity <= sizeEntry.minStock) {
+          if (sizeEntry && sizeEntry.minStock !== undefined && sizeEntry.stock - item.quantity <= sizeEntry.minStock) {
             lowStockItems.push(`${product.name} (${item.selectedSize})`);
           }
         } else if (product.stock - item.quantity <= product.minStock) {

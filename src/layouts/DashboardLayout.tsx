@@ -53,7 +53,7 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, label, submenus, badge }) =
               <span className="w-5 h-5 lg:w-4 lg:h-4 flex-shrink-0">{icon}</span>
               <span className="hidden sm:inline">{label}</span>
             </div>
-            {badge > 0 && (
+            {badge && badge > 0 && (
               <span className="ml-auto bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
                 {badge}
               </span>
@@ -94,7 +94,7 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, label, submenus, badge }) =
         >
           <span className="w-5 h-5 lg:w-4 lg:h-4 flex-shrink-0">{icon}</span>
           <span className="hidden sm:inline">{label}</span>
-          {badge > 0 && (
+          {badge && badge > 0 && (
             <span className="ml-auto bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
               {badge}
             </span>

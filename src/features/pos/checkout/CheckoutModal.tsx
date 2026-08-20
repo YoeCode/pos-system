@@ -61,7 +61,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const handleClose = () => {
     setStep('payment');
     setCompletedSaleId(null);
-    setConfirmedOrderNumber(null);
     setLoyaltyPointsEarned(0);
     onClose();
   };

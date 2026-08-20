@@ -843,10 +843,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_invitation_by_token: {
+        Args: { p_token: string }
+        Returns: boolean
+      }
       can_add_employee: { Args: { p_tenant_id: string }; Returns: boolean }
       can_create_product: { Args: { p_tenant_id: string }; Returns: boolean }
       complete_invitation_acceptance: {
-        Args: { p_name: string; p_token: string; p_user_id: string }
+        Args: { p_name: string; p_pin: string; p_token: string; p_user_id: string }
         Returns: boolean
       }
       current_tenant_id: { Args: never; Returns: string }

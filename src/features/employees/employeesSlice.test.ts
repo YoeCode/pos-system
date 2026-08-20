@@ -8,7 +8,8 @@ import employeesReducer, {
   selectFilteredEmployees,
   deleteEmployeeAsync,
 } from './employeesSlice';
-import type { Employee, RootState } from '../../types';
+import type { Employee } from '../../types';
+import type { RootState } from '../../app/store';
 
 const mockEmployee = (overrides: Partial<Employee> = {}): Employee => ({
   id: 'emp-1',

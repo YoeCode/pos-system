@@ -12,7 +12,7 @@ import Select from '../../../components/ui/Select';
 import Button from '../../../components/ui/Button';
 import Toggle from '../../../components/ui/Toggle';
 import { useI18n } from '../../../i18n/useI18n';
-import type { PaymentMethod } from '../../../types';
+import type { PaymentMethod, PosSettings } from '../../../types';
 
 const paymentMethodOptions: { value: PaymentMethod; labelKey: 'cash' | 'card' | 'bizum' }[] = [
     { value: 'cash', labelKey: 'cash' },
@@ -177,7 +177,8 @@ const PosSettingsSection: React.FC = () => {
 
   const handleSave = () => {
     if (hasErrors || !isDirty || !tenantId) return;
-    const pos = {
+    const pos: PosSettings = {
+      ...reduxPos,
       defaultPaymentMethod,
       defaultCategory,
       walkInCustomerLabel,
@@ -220,7 +221,8 @@ const PosSettingsSection: React.FC = () => {
   const handleReset = () => {
     dispatch(resetPosSettings());
     if (tenantId) {
-      const defaultPos = {
+      const defaultPos: PosSettings = {
+        ...reduxPos,
         defaultPaymentMethod: 'cash',
         defaultCategory: 'All Items',
         walkInCustomerLabel: 'Walk-In Customer',

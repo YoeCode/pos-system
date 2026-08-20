@@ -69,7 +69,7 @@ export default function AcceptInvitePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!invitation) return;
+    if (!invitation || !token) return;
 
     if (password !== confirmPassword) {
       setError('Las contraseñas no coinciden');
