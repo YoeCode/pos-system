@@ -3,7 +3,7 @@ import { useAppDispatch } from '../../app/store';
 import { createCustomerAsync, updateCustomerAsync, deactivateCustomerAsync } from './customersSlice';
 import Modal from '../../components/ui/Modal';
 import Button from '../../components/ui/Button';
-import { useToast } from '../../components/ToastProvider';
+import { useToast } from '../../components/useToast';
 import type { Customer } from '../../types';
 
 interface CustomerModalProps {

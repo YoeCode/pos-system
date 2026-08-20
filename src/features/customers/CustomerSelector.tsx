@@ -51,7 +51,7 @@ const CustomerSelector: React.FC = () => {
               <p className="text-sm font-medium text-text-primary truncate">{selectedCustomer.name}</p>
               <p className="text-xs text-text-muted">{selectedCustomer.loyaltyPoints} pts</p>
             </div>
-            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border uppercase ${tierColors[selectedCustomer.tier]}`}>
+            <span className={`text-xs font-bold px-1.5 py-0.5 rounded border uppercase ${tierColors[selectedCustomer.tier]}`}>
               {selectedCustomer.tier}
             </span>
           </>
@@ -102,14 +102,22 @@ const CustomerSelector: React.FC = () => {
                   <p className="text-sm font-medium text-text-primary truncate">{customer.name}</p>
                   <p className="text-xs text-text-muted">{customer.phone}</p>
                 </div>
-                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border uppercase ${tierColors[customer.tier]}`}>
+                <span className={`text-xs font-bold px-1.5 py-0.5 rounded border uppercase ${tierColors[customer.tier]}`}>
                   {customer.tier}
                 </span>
               </button>
             ))}
 
             {filtered.length === 0 && (
-              <p className="text-sm text-text-muted text-center py-4">No customers found</p>
+              <div className="flex flex-col items-center justify-center py-6 gap-2 text-center">
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                  <svg className="w-4 h-4 text-primary/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+                <p className="text-sm font-medium text-text-primary">No hay clientes</p>
+                <p className="text-xs text-text-muted">Registra clientes desde la página de Clientes</p>
+              </div>
             )}
           </div>
         </div>

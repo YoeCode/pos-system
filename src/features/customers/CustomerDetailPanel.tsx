@@ -40,7 +40,7 @@ const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({ customerId, o
 
   return (
     <>
-      <div className="flex-1 flex flex-col h-full overflow-y-auto">
+      <div className="flex-1 flex flex-col h-full overflow-hidden">
         <div className="px-6 py-5 border-b border-border flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xl">
@@ -48,7 +48,7 @@ const CustomerDetailPanel: React.FC<CustomerDetailPanelProps> = ({ customerId, o
             </div>
             <div>
               <h2 className="text-xl font-bold text-text-primary">{customer.name}</h2>
-              <span className={`text-[10px] font-bold px-2 py-1 rounded border uppercase ${tierColors[customer.tier]}`}>
+              <span className={`text-xs font-bold px-2 py-1 rounded border uppercase ${tierColors[customer.tier]}`}>
                 {customer.tier}
               </span>
             </div>

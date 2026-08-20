@@ -68,7 +68,7 @@ const CustomersPage: React.FC = () => {
             breadcrumbLabel={selectedSaleLabel}
           />
         ) : (
-          <div className="flex-1 p-6 flex flex-col gap-6 overflow-auto">
+          <div className="flex-1 p-6 flex flex-col gap-6 overflow-y-auto">
             <div className="flex items-center gap-2 text-sm">
               <button
                 onClick={handleBackToList}
@@ -146,7 +146,23 @@ const CustomersPage: React.FC = () => {
               <tbody>
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-5 py-10 text-center text-sm text-text-muted">No customers found</td>
+                    <td colSpan={5} className="px-5 py-10 text-center">
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-1">
+                          <svg className="w-6 h-6 text-primary/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                          </svg>
+                        </div>
+                        <p className="text-sm font-medium text-text-primary">No hay clientes registrados</p>
+                        <p className="text-xs text-text-muted max-w-xs">Registra clientes para ofrecer descuentos por fidelización y seguimiento de compras.</p>
+                        <button
+                          onClick={() => setIsAddOpen(true)}
+                          className="mt-2 px-4 py-2 bg-primary text-white rounded-lg text-xs font-medium hover:bg-primary-dark transition-colors"
+                        >
+                          Añadir primer cliente
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ) : (
                   filtered.map(customer => (
@@ -165,13 +181,13 @@ const CustomersPage: React.FC = () => {
                       </td>
                       <td className="px-5 py-3.5 text-sm text-text-muted">{customer.phone}</td>
                       <td className="px-5 py-3.5">
-                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border uppercase ${tierColors[customer.tier]}`}>
+                        <span className={`text-xs font-bold px-1.5 py-0.5 rounded border uppercase ${tierColors[customer.tier]}`}>
                           {customer.tier}
                         </span>
                       </td>
                       <td className="px-5 py-3.5 text-right text-sm font-mono text-text-primary">{customer.loyaltyPoints}</td>
                       <td className="px-5 py-3.5 text-center">
-                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${customer.active ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${customer.active ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-text-muted'}`}>
                           {customer.active ? 'Active' : 'Inactive'}
                         </span>
                       </td>
