@@ -29,4 +29,4 @@ dist-ssr
 # Tooling directories
 .playwright-mcp/
 .impeccable/
-.claude/skills/
+.claude/
