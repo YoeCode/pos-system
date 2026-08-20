@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../app/store';
 import { loginUser, clearError } from '../../features/auth/authSlice';
-import { useI18n } from '../../i18n/I18nProvider';
+import { useI18n } from '../../i18n/useI18n';
 
 const LoginPage: React.FC = () => {
   const dispatch = useAppDispatch();

@@ -23,7 +23,7 @@ const loadStoredSession = (): { isAuthenticated: boolean; user: AuthUser | null 
       }
     }
   } catch {
-    try { localStorage.removeItem('nexopos_session'); } catch {}
+    try { localStorage.removeItem('nexopos_session'); } catch { /* storage access denied */ }
   }
   return { isAuthenticated: false, user: null };
 };
