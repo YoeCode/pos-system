@@ -9,7 +9,7 @@ import type { TenantRole } from '../../types';
 import Modal from '../../components/ui/Modal';
 import Toggle from '../../components/ui/Toggle';
 import Button from '../../components/ui/Button';
-import { useI18n } from '../../i18n/I18nProvider';
+import { useI18n } from '../../i18n/useI18n';
 
 const ROLES: Employee['role'][] = ['Cashier', 'Supervisor', 'Admin'];
 
@@ -73,7 +73,7 @@ const EmployeeModal: React.FC = () => {
         setForm({ ...defaultForm, shift: defaultShift });
       }
     }
-  }, [isOpen, editingEmployee]);
+  }, [isOpen, editingEmployee, defaultShift]);
 
   const handleClose = () => {
     dispatch(toggleModal());

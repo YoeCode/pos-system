@@ -4,7 +4,7 @@ import Badge from '../../components/ui/Badge';
 import { useAppDispatch } from '../../app/store';
 import { setEditingEmployee, toggleModal, updateEmployeeAsync, deleteEmployeeAsync } from './employeesSlice';
 import { usePermission } from '../../hooks/usePermission';
-import { useI18n } from '../../i18n/I18nProvider';
+import { useI18n } from '../../i18n/useI18n';
 
 interface EmployeeCardProps {
   employee: Employee;

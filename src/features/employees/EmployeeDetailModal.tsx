@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useLayoutEffect } from 'react';
 import { useAppSelector } from '../../app/store';
 import type { Employee } from '../../types';
 import Modal from '../../components/ui/Modal';
-import { useI18n } from '../../i18n/I18nProvider';
+import { useI18n } from '../../i18n/useI18n';
 import { fetchEmployeeSales, fetchEmployeeSalesStats } from './employeesService';
 
 interface EmployeeDetailModalProps {
@@ -34,7 +34,7 @@ const EmployeeDetailModal: React.FC<EmployeeDetailModalProps> = ({ employee, onC
   const [stats, setStats] = useState<{ totalSales: number; totalOrders: number; averageTicket: number } | null>(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!employee || !currentUser?.tenantId) return;
     setLoading(true);
     Promise.all([
