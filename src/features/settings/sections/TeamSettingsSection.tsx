@@ -1,15 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useAppSelector } from '../../app/store';
-import { getTenantMembers, getTenantInfo } from '../../features/tenants/tenantsService';
-import type { TenantMemberInfo, TenantInfo } from '../../features/tenants/tenantsService';
-import { createInvitation, getInvitationsByTenant, cancelInvitation } from '../../features/invitations/invitationsService';
-import type { Invitation } from '../../features/invitations/invitationsService';
-import InviteMemberModal from '../../features/tenants/InviteMemberModal';
-import BillingSection from '../../features/tenants/BillingSection';
-import { sendInvitationEmail, isEmailConfigured } from '../../utils/invitationEmail';
-import type { TenantRole } from '../../types';
+import { useAppSelector } from '../../../app/store';
+import { getTenantMembers, getTenantInfo } from '../../tenants/tenantsService';
+import type { TenantMemberInfo, TenantInfo } from '../../tenants/tenantsService';
+import { createInvitation, getInvitationsByTenant, cancelInvitation } from '../../invitations/invitationsService';
+import type { Invitation } from '../../invitations/invitationsService';
+import InviteMemberModal from '../../tenants/InviteMemberModal';
+import BillingSection from '../../tenants/BillingSection';
+import { sendInvitationEmail, isEmailConfigured } from '../../../utils/invitationEmail';
+import type { TenantRole } from '../../../types';
 
-export default function TenantSettings() {
+const TeamSettingsSection: React.FC = () => {
   const user = useAppSelector(state => state.auth.user);
   const tenantId = user?.tenantId;
   const authUserId = user?.authUserId;
@@ -107,23 +107,15 @@ export default function TenantSettings() {
   };
 
   return (
-    <div className="p-6 max-w-3xl mx-auto space-y-6">
-      <h2 className="text-2xl font-bold text-white">Configuración del Negocio</h2>
-
-      {actionError && (
-        <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg text-amber-400 text-sm">
-          {actionError}
-        </div>
-      )}
-
+    <div className="space-y-6">
       {tenantId && <BillingSection tenantId={tenantId} />}
 
-      <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
+      <div>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-white">Miembros del equipo</h3>
+          <h3 className="text-lg font-semibold text-text-primary">Miembros del equipo</h3>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-white text-sm font-medium transition-colors"
+            className="px-4 py-2 bg-primary hover:bg-primary-dark rounded-lg text-white text-sm font-medium transition-colors"
           >
             Invitar miembro
           </button>
@@ -131,19 +123,19 @@ export default function TenantSettings() {
 
         <div className="space-y-2">
           {members.map((member) => (
-            <div key={member.id} className="flex items-center justify-between p-3 bg-slate-700/50 rounded-lg">
+            <div key={member.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-border">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-emerald-600/20 rounded-full flex items-center justify-center">
-                  <span className="text-emerald-400 font-bold text-sm">
+                <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                  <span className="text-primary font-bold text-sm">
                     {member.name.charAt(0).toUpperCase()}
                   </span>
                 </div>
                 <div>
-                  <p className="text-white font-medium">{member.name}</p>
-                  <p className="text-slate-400 text-sm">{member.email}</p>
+                  <p className="text-text-primary font-medium">{member.name}</p>
+                  <p className="text-text-muted text-sm">{member.email}</p>
                 </div>
               </div>
-              <span className="px-3 py-1 bg-slate-600 rounded-full text-sm text-slate-300 capitalize">
+              <span className="px-3 py-1 bg-gray-100 rounded-full text-sm text-text-muted capitalize">
                 {member.role}
               </span>
             </div>
@@ -154,16 +146,16 @@ export default function TenantSettings() {
             const pending = inv.status === 'pending';
 
             return (
-              <div key={inv.id} className={`flex items-center justify-between p-3 rounded-lg border ${pending ? 'bg-slate-700/30 border-dashed border-slate-600' : 'bg-slate-800/50 border-slate-700'}`}>
+              <div key={inv.id} className={`flex items-center justify-between p-3 rounded-lg border ${pending ? 'bg-gray-50/50 border-dashed border-border' : 'bg-gray-50 border-border'}`}>
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-slate-600/30 flex items-center justify-center">
-                    <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                    <svg className="w-4 h-4 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
                   </div>
                   <div>
-                    <p className="text-slate-300 font-medium">{inv.email}</p>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-text-primary font-medium">{inv.email}</p>
+                    <p className="text-xs text-text-muted">
                       {expired
                         ? `Invitación expirada · ${formatDate(inv.expiresAt)}`
                         : `Invitación pendiente · expira ${formatDate(inv.expiresAt)}`}
@@ -171,13 +163,13 @@ export default function TenantSettings() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="px-3 py-1 rounded-full text-sm capitalize bg-slate-600/50 text-slate-400">
+                  <span className="px-3 py-1 rounded-full text-sm capitalize bg-gray-50 text-text-muted">
                     {inv.role}
                   </span>
                   {pending && (
                     <button
                       onClick={() => handleCancelInvite(inv.id)}
-                      className="text-slate-500 hover:text-red-400 transition-colors"
+                      className="text-text-muted hover:text-error transition-colors"
                       title="Cancelar invitación"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -204,6 +196,12 @@ export default function TenantSettings() {
         </div>
       </div>
 
+      {actionError && (
+        <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-700 text-sm">
+          {actionError}
+        </div>
+      )}
+
       <InviteMemberModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -212,4 +210,6 @@ export default function TenantSettings() {
       />
     </div>
   );
-}
+};
+
+export default TeamSettingsSection;

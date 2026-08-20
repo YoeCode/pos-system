@@ -176,7 +176,7 @@ export async function fetchTenantSettings(tenantId: string): Promise<TenantSetti
     .single();
 
   if (error || !data) {
-    console.error('Error fetching tenant settings:', error);
+    /* console.error($$$) */;
     return null;
   }
   return mapDbSettings(data as DbSettings);
@@ -194,7 +194,7 @@ export async function updateTaxSettings(tenantId: string, tax: TaxSettings): Pro
     .eq('tenant_id', tenantId);
 
   if (error) {
-    console.error('Error updating tax settings:', error);
+    /* console.error($$$) */;
     return false;
   }
   return true;
@@ -213,7 +213,7 @@ export async function updateStoreSettings(tenantId: string, store: StoreSettings
     .eq('tenant_id', tenantId);
 
   if (error) {
-    console.error('Error updating store settings:', error);
+    /* console.error($$$) */;
     return false;
   }
   return true;
@@ -228,7 +228,7 @@ export async function updatePosSettings(tenantId: string, pos: PosSettings): Pro
     .eq('tenant_id', tenantId);
 
   if (error) {
-    console.error('Error updating POS settings:', error);
+    /* console.error($$$) */;
     return false;
   }
   return true;
@@ -241,7 +241,7 @@ export async function updateLanguageSettings(tenantId: string, language: Languag
     .eq('tenant_id', tenantId);
 
   if (error) {
-    console.error('Error updating language settings:', error);
+    /* console.error($$$) */;
     return false;
   }
   return true;
@@ -254,7 +254,7 @@ export async function updateLoyaltySettings(tenantId: string, loyalty: LoyaltySe
     .eq('tenant_id', tenantId);
 
   if (error) {
-    console.error('Error updating loyalty settings:', error);
+    /* console.error($$$) */;
     return false;
   }
   return true;
@@ -281,7 +281,7 @@ export async function upsertTenantSettings(tenantId: string, settings: TenantSet
     }, { onConflict: 'tenant_id' });
 
   if (error) {
-    console.error('Error upserting tenant settings:', error);
+    /* console.error($$$) */;
     return false;
   }
   return true;
@@ -295,7 +295,7 @@ export async function fetchCategories(tenantId: string): Promise<string[]> {
     .order('name');
 
   if (error || !data) {
-    console.error('Error fetching categories:', error);
+    /* console.error($$$) */;
     return [];
   }
   return (data as DbCategory[]).map(c => c.name);
@@ -309,7 +309,7 @@ export async function fetchBrands(tenantId: string): Promise<string[]> {
     .order('name');
 
   if (error || !data) {
-    console.error('Error fetching brands:', error);
+    /* console.error($$$) */;
     return [];
   }
   return (data as DbBrand[]).map(b => b.name);
@@ -323,7 +323,7 @@ export async function fetchSizes(tenantId: string): Promise<string[]> {
     .order('name');
 
   if (error || !data) {
-    console.error('Error fetching sizes:', error);
+    /* console.error($$$) */;
     return [];
   }
   return (data as DbSize[]).map(s => s.name);
@@ -337,7 +337,7 @@ export async function fetchSizeGroups(tenantId: string): Promise<SizeGroup[]> {
     .order('name');
 
   if (error || !data) {
-    console.error('Error fetching size groups:', error);
+    /* console.error($$$) */;
     return [];
   }
   return (data as DbSizeGroup[]).map(g => ({
@@ -366,7 +366,7 @@ export async function syncCategories(
     const inserts = toAdd.map(name => ({ tenant_id: tenantId, name }));
     const { error } = await supabase.from('categories').insert(inserts);
     if (error) {
-      console.error('Error adding categories:', error);
+      /* console.error($$$) */;
       return false;
     }
   }
@@ -378,7 +378,7 @@ export async function syncCategories(
       .eq('tenant_id', tenantId)
       .in('name', toRemove);
     if (error) {
-      console.error('Error removing categories:', error);
+      /* console.error($$$) */;
       return false;
     }
   }
@@ -405,7 +405,7 @@ export async function syncBrands(
     const inserts = toAdd.map(name => ({ tenant_id: tenantId, name }));
     const { error } = await supabase.from('brands').insert(inserts);
     if (error) {
-      console.error('Error adding brands:', error);
+      /* console.error($$$) */;
       return false;
     }
   }
@@ -417,7 +417,7 @@ export async function syncBrands(
       .eq('tenant_id', tenantId)
       .in('name', toRemove);
     if (error) {
-      console.error('Error removing brands:', error);
+      /* console.error($$$) */;
       return false;
     }
   }
@@ -444,7 +444,7 @@ export async function syncSizes(
     const inserts = toAdd.map(name => ({ tenant_id: tenantId, name }));
     const { error } = await supabase.from('sizes').insert(inserts);
     if (error) {
-      console.error('Error adding sizes:', error);
+      /* console.error($$$) */;
       return false;
     }
   }
@@ -456,7 +456,7 @@ export async function syncSizes(
       .eq('tenant_id', tenantId)
       .in('name', toRemove);
     if (error) {
-      console.error('Error removing sizes:', error);
+      /* console.error($$$) */;
       return false;
     }
   }
@@ -491,7 +491,7 @@ export async function syncSizeGroups(
     }));
     const { error } = await supabase.from('size_groups').insert(inserts);
     if (error) {
-      console.error('Error adding size groups:', error);
+      /* console.error($$$) */;
       return false;
     }
   }
@@ -504,7 +504,7 @@ export async function syncSizeGroups(
         .update({ sizes: group.sizes })
         .eq('id', existing.id);
       if (error) {
-        console.error('Error updating size group:', error);
+        /* console.error($$$) */;
         return false;
       }
     }
@@ -516,7 +516,7 @@ export async function syncSizeGroups(
       .delete()
       .in('id', toRemove);
     if (error) {
-      console.error('Error removing size groups:', error);
+      /* console.error($$$) */;
       return false;
     }
   }
@@ -529,7 +529,7 @@ export async function addCategory(tenantId: string, name: string): Promise<boole
     .from('categories')
     .insert({ tenant_id: tenantId, name });
   if (error) {
-    console.error('Error adding category:', error);
+    /* console.error($$$) */;
     return false;
   }
   return true;
@@ -542,7 +542,7 @@ export async function removeCategory(tenantId: string, name: string): Promise<bo
     .eq('tenant_id', tenantId)
     .eq('name', name);
   if (error) {
-    console.error('Error removing category:', error);
+    /* console.error($$$) */;
     return false;
   }
   return true;
@@ -553,7 +553,7 @@ export async function addBrand(tenantId: string, name: string): Promise<boolean>
     .from('brands')
     .insert({ tenant_id: tenantId, name });
   if (error) {
-    console.error('Error adding brand:', error);
+    /* console.error($$$) */;
     return false;
   }
   return true;
@@ -566,7 +566,7 @@ export async function removeBrand(tenantId: string, name: string): Promise<boole
     .eq('tenant_id', tenantId)
     .eq('name', name);
   if (error) {
-    console.error('Error removing brand:', error);
+    /* console.error($$$) */;
     return false;
   }
   return true;
@@ -577,7 +577,7 @@ export async function addSize(tenantId: string, name: string): Promise<boolean> 
     .from('sizes')
     .insert({ tenant_id: tenantId, name });
   if (error) {
-    console.error('Error adding size:', error);
+    /* console.error($$$) */;
     return false;
   }
   return true;
@@ -590,7 +590,7 @@ export async function removeSize(tenantId: string, name: string): Promise<boolea
     .eq('tenant_id', tenantId)
     .eq('name', name);
   if (error) {
-    console.error('Error removing size:', error);
+    /* console.error($$$) */;
     return false;
   }
   return true;
@@ -605,7 +605,7 @@ export async function addSizeGroup(tenantId: string, group: SizeGroup): Promise<
       sizes: group.sizes,
     });
   if (error) {
-    console.error('Error adding size group:', error);
+    /* console.error($$$) */;
     return false;
   }
   return true;
@@ -618,7 +618,7 @@ export async function updateSizeGroup(tenantId: string, group: SizeGroup): Promi
     .eq('tenant_id', tenantId)
     .eq('name', group.name);
   if (error) {
-    console.error('Error updating size group:', error);
+    /* console.error($$$) */;
     return false;
   }
   return true;
@@ -631,7 +631,7 @@ export async function removeSizeGroupById(tenantId: string, id: string): Promise
     .eq('tenant_id', tenantId)
     .eq('id', id);
   if (error) {
-    console.error('Error removing size group:', error);
+    /* console.error($$$) */;
     return false;
   }
   return true;

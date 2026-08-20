@@ -9,7 +9,7 @@ import {
 } from '../settingsSlice';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
-import { useI18n } from '../../../i18n/I18nProvider';
+import { useI18n } from '../../../i18n/useI18n';
 import type { SizeGroup } from '../../../types';
 
 const CategoriesSettingsSection: React.FC = () => {

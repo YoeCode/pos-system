@@ -10,7 +10,7 @@ import {
 import Input from '../../../components/ui/Input';
 import Toggle from '../../../components/ui/Toggle';
 import Button from '../../../components/ui/Button';
-import { useI18n } from '../../../i18n/I18nProvider';
+import { useI18n } from '../../../i18n/useI18n';
 
 const TaxSettingsSection: React.FC = () => {
   const dispatch = useAppDispatch();

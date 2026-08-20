@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../../../app/store';
 import {
   selectPosSettings,
@@ -11,7 +11,7 @@ import Input from '../../../components/ui/Input';
 import Select from '../../../components/ui/Select';
 import Button from '../../../components/ui/Button';
 import Toggle from '../../../components/ui/Toggle';
-import { useI18n } from '../../../i18n/I18nProvider';
+import { useI18n } from '../../../i18n/useI18n';
 import type { PaymentMethod } from '../../../types';
 
 const paymentMethodOptions: { value: PaymentMethod; labelKey: 'cash' | 'card' | 'bizum' }[] = [
@@ -54,7 +54,7 @@ const PosSettingsSection: React.FC = () => {
   const [newShift, setNewShift] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setDefaultPaymentMethod(reduxPos.defaultPaymentMethod);
     setDefaultCategory(reduxPos.defaultCategory);
     setWalkInCustomerLabel(reduxPos.walkInCustomerLabel);

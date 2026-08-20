@@ -7,7 +7,7 @@ import {
   updateLanguageSettingsAsync,
 } from '../settingsSlice';
 import Button from '../../../components/ui/Button';
-import { useI18n } from '../../../i18n/I18nProvider';
+import { useI18n } from '../../../i18n/useI18n';
 import type { Language } from '../../../types';
 
 const languageOptions: { value: Language; labelKey: 'spanish' | 'english'; flag: string }[] = [

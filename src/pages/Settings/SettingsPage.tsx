@@ -5,21 +5,23 @@ import PosSettingsSection from '../../features/settings/sections/PosSettingsSect
 import LanguageSettingsSection from '../../features/settings/sections/LanguageSettingsSection';
 import LoyaltySettingsSection from '../../features/settings/sections/LoyaltySettingsSection';
 import CategoriesSettingsSection from '../../features/settings/sections/CategoriesSettingsSection';
-import { useI18n } from '../../i18n/I18nProvider';
+import TeamSettingsSection from '../../features/settings/sections/TeamSettingsSection';
+import { useI18n } from '../../i18n/useI18n';
 import { useAppSelector } from '../../app/store';
 
-type SettingsTab = 'tax' | 'store' | 'pos' | 'products' | 'language' | 'loyalty';
+type SettingsTab = 'tax' | 'store' | 'pos' | 'products' | 'language' | 'loyalty' | 'team';
 
 const SettingsPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<SettingsTab>('tax');
+  const [activeTab, setActiveTab] = useState<SettingsTab>('store');
   const t = useI18n();
   const user = useAppSelector(state => state.auth.user);
 
   const tabs: { id: SettingsTab; label: string }[] = [
-    { id: 'tax', label: t.settings.tax },
     { id: 'store', label: t.settings.store },
+    { id: 'tax', label: t.settings.tax },
     { id: 'pos', label: t.settings.pos },
     { id: 'products', label: t.settings.products },
+    { id: 'team', label: t.settings.team },
     { id: 'language', label: t.settings.language },
     ...(user?.role === 'admin' ? [{ id: 'loyalty' as SettingsTab, label: t.settings.loyalty }] : []),
   ];
@@ -58,6 +60,7 @@ const SettingsPage: React.FC = () => {
           {activeTab === 'store' && <StoreSettingsSection />}
           {activeTab === 'pos' && <PosSettingsSection />}
           {activeTab === 'products' && <CategoriesSettingsSection />}
+          {activeTab === 'team' && <TeamSettingsSection />}
           {activeTab === 'language' && <LanguageSettingsSection />}
           {activeTab === 'loyalty' && <LoyaltySettingsSection />}
         </div>
