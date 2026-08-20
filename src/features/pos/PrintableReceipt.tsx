@@ -9,6 +9,7 @@ import {
   selectTicketConfig,
   selectTicketSize,
 } from '../../features/settings/settingsSlice';
+import { useI18n } from '../../i18n/useI18n';
 import type { PaymentMethod } from '../../types';
 
 interface PrintableReceiptProps {
@@ -17,11 +18,11 @@ interface PrintableReceiptProps {
   giftMode?: boolean;
 }
 
-const paymentMethodLabel: Record<PaymentMethod, string> = {
-  cash: 'Efectivo',
-  card: 'Tarjeta',
-  bizum: 'Bizum',
-};
+const paymentMethodLabel = (t: ReturnType<typeof useI18n>): Record<PaymentMethod, string> => ({
+  cash: t.pos.cash,
+  card: t.pos.card,
+  bizum: t.pos.bizum,
+});
 
 const PrintableReceipt: React.FC<PrintableReceiptProps> = ({ saleId, loyaltyPointsEarned = 0, giftMode = false }) => {
   const sale = useAppSelector(state => selectSaleById(state, saleId));
@@ -31,6 +32,7 @@ const PrintableReceipt: React.FC<PrintableReceiptProps> = ({ saleId, loyaltyPoin
   const allEmployees = useAppSelector(selectActiveEmployees);
   const ticketConfig = useAppSelector(selectTicketConfig);
   const ticketSize = useAppSelector(selectTicketSize);
+  const t = useI18n();
 
   if (!sale) return null;
 
@@ -79,8 +81,8 @@ const PrintableReceipt: React.FC<PrintableReceiptProps> = ({ saleId, loyaltyPoin
         )}
         {giftMode && (
           <>
-            <p className="font-bold text-xs mt-1">TICKET REGALO</p>
-            <p className="text-gray-500 text-[9px]">GIFT RECEIPT</p>
+            <p className="font-bold text-xs mt-1">{t.pos.ticketGift}</p>
+            <p className="text-gray-500 text-[9px]">{t.pos.noAmountForExchanges || 'Sin importe — para cambios'}</p>
           </>
         )}
       </div>
@@ -95,7 +97,7 @@ const PrintableReceipt: React.FC<PrintableReceiptProps> = ({ saleId, loyaltyPoin
               <span className="text-gray-500 ml-1">×{item.quantity}</span>
             </span>
             {!giftMode ? (
-              <span className="flex-shrink-0">${item.lineTotal.toFixed(2)}</span>
+              <span className="flex-shrink-0">€{item.lineTotal.toFixed(2)}</span>
             ) : (
               <span className="flex-shrink-0 text-gray-400">---</span>
             )}
@@ -108,32 +110,32 @@ const PrintableReceipt: React.FC<PrintableReceiptProps> = ({ saleId, loyaltyPoin
       {!giftMode && (
         <div className="flex flex-col gap-0.5">
           <div className="flex justify-between">
-            <span className="text-gray-500">Subtotal</span>
-            <span>${order.subtotal.toFixed(2)}</span>
+            <span className="text-gray-500">{t.pos.subtotal}</span>
+            <span>€{order.subtotal.toFixed(2)}</span>
           </div>
           {order.discount > 0 && (
             <div className="flex justify-between text-green-600">
-              <span>Descuento</span>
-              <span>-${order.discount.toFixed(2)}</span>
+              <span>{t.pos.discountLabel}</span>
+              <span>-€{order.discount.toFixed(2)}</span>
             </div>
           )}
           <div className="flex justify-between">
             <span className="text-gray-500">{taxLabel}</span>
-            <span className="text-gray-500">${order.tax.toFixed(2)}</span>
+            <span className="text-gray-500">€{order.tax.toFixed(2)}</span>
           </div>
           <div className="flex justify-between font-bold text-xs mt-0.5">
-            <span>TOTAL</span>
-            <span>${order.total.toFixed(2)}</span>
+            <span>{t.pos.totalLabel}</span>
+            <span>€{order.total.toFixed(2)}</span>
           </div>
           {loyaltyPointsEarned > 0 && (
             <div className="flex justify-between text-purple-600 mt-0.5">
-              <span>Puntos ganados</span>
+              <span>{t.pos.pointsEarned}</span>
               <span>+{loyaltyPointsEarned} pts</span>
             </div>
           )}
           {sale.loyaltyPointsRedeemed > 0 && (
             <div className="flex justify-between text-purple-600 mt-0.5">
-              <span>Puntos usados</span>
+              <span>{t.pos.pointsUsed}</span>
               <span>-{sale.loyaltyPointsRedeemed} pts</span>
             </div>
           )}
@@ -145,18 +147,18 @@ const PrintableReceipt: React.FC<PrintableReceiptProps> = ({ saleId, loyaltyPoin
           <div className="border-t border-dashed border-gray-400 my-2" />
           <div className="flex flex-col gap-0.5">
             <div className="flex justify-between">
-              <span className="text-gray-500">Pago</span>
-              <span>{paymentMethodLabel[paymentMethod]}</span>
+              <span className="text-gray-500">{t.pos.paymentLabel}</span>
+              <span>{paymentMethodLabel(t)[paymentMethod]}</span>
             </div>
             {paymentMethod === 'cash' && amountReceived !== null && change !== null && (
               <>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Recibido</span>
-                  <span>${amountReceived.toFixed(2)}</span>
+                  <span className="text-gray-500">{t.pos.received}</span>
+                  <span>€{amountReceived.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Cambio</span>
-                  <span>${change.toFixed(2)}</span>
+                  <span className="text-gray-500">{t.pos.change}</span>
+                  <span>€{change.toFixed(2)}</span>
                 </div>
               </>
             )}
@@ -170,7 +172,7 @@ const PrintableReceipt: React.FC<PrintableReceiptProps> = ({ saleId, loyaltyPoin
         {ticketConfig?.customFooter || footerMessage}
       </p>
       <p className="text-center text-gray-400 text-[8px] mt-1">
-        Gracias por su compra
+        {t.pos.thankYou || 'Gracias por su compra'}
       </p>
     </div>
   );

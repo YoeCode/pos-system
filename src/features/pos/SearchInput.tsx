@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/store';
 import { setSearchQuery } from './posSlice';
 
-const SearchInput: React.FC = () => {
+const SearchInput = forwardRef<HTMLInputElement>((_, ref) => {
   const dispatch = useAppDispatch();
   const searchQuery = useAppSelector(state => state.pos.searchQuery);
 
@@ -22,10 +22,11 @@ const SearchInput: React.FC = () => {
         </svg>
       </div>
       <input
+        ref={ref}
         type="text"
         value={searchQuery}
         onChange={handleChange}
-        placeholder="Search products..."
+        placeholder="Buscar productos..."
         className="w-full pl-10 pr-8 py-2 text-sm border border-border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-text-muted"
       />
       {searchQuery && (
@@ -40,6 +41,8 @@ const SearchInput: React.FC = () => {
       )}
     </div>
   );
-};
+});
+
+SearchInput.displayName = 'SearchInput';
 
 export default SearchInput;

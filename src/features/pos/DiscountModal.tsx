@@ -1,8 +1,8 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useLayoutEffect } from 'react';
 import Modal from '../../components/ui/Modal';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
-import { useI18n } from '../../i18n/I18nProvider';
+import { useI18n } from '../../i18n/useI18n';
 import { useAppSelector } from '../../app/store';
 import { selectEmployees } from '../employees/employeesSlice';
 import type { Employee } from '../../types';
@@ -76,7 +76,7 @@ const DiscountModal: React.FC<DiscountModalProps> = ({ isOpen, onClose, onSucces
     }
   };
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (isOpen) {
       setPin('');
       setDiscountValue('');

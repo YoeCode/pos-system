@@ -6,7 +6,8 @@ import { selectTaxLabel, selectPointsPerEuro, selectLoyaltyTiers, selectMultiTer
 import { addLoyaltyPointsAsync, deductLoyaltyPointsAsync } from '../../customers/customersSlice';
 import { startNewSale } from '../posSlice';
 import { selectActiveEmployees } from '../../employees/employeesSlice';
-import { useToast } from '../../../components/ToastProvider';
+import { useToast } from '../../../components/useToast';
+import { useI18n } from '../../../i18n/useI18n';
 import type { CartItem, Order, PaymentMethod, Sale } from '../../../types';
 
 interface PaymentStepProps {
@@ -21,12 +22,6 @@ interface PaymentStepProps {
   pointsToRedeem?: number;
   onComplete: (saleId: string, pointsEarned: number) => void;
 }
-
-const paymentMethodLabel: Record<PaymentMethod, string> = {
-  cash: 'Cash',
-  card: 'Card',
-  bizum: 'Bizum',
-};
 
 const PaymentStep: React.FC<PaymentStepProps> = ({
   cart,
@@ -51,6 +46,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
   const allEmployees = useAppSelector(selectActiveEmployees);
   const products = useAppSelector(selectAllProducts);
   const { addToast } = useToast();
+  const t = useI18n();
   const [amountReceived, setAmountReceived] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -159,8 +155,15 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
 
       onComplete(sale.id, loyaltyPointsEarned);
       dispatch(startNewSale());
-    } catch {
-      addToast('Error al completar la venta', 'error');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.toLowerCase().includes('stock')) {
+        addToast(t.pos.stockInsufficient || 'Stock insuficiente: uno o más productos no tienen unidades disponibles', 'error');
+      } else if (msg.toLowerCase().includes('network') || msg.toLowerCase().includes('fetch')) {
+        addToast(t.pos.networkError || 'Error de conexión. Verifica tu red e inténtalo de nuevo.', 'error');
+      } else {
+        addToast(t.pos.saleError || 'Error al completar la venta. Inténtalo de nuevo.', 'error');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -168,9 +171,8 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
 
   return (
     <div className="flex flex-col gap-5">
-      {/* Order summary */}
       <div>
-        <p className="text-xs font-semibold text-text-muted uppercase tracking-widest mb-3">Order Summary</p>
+        <p className="text-xs font-semibold text-text-muted uppercase tracking-widest mb-3">{t.pos.orderSummary}</p>
         <div className="flex flex-col gap-2">
           {cart.map(item => (
             <div key={item.product.id} className="flex items-center justify-between text-sm">
@@ -179,54 +181,50 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
                 <span className="text-text-muted ml-1.5">× {item.quantity}</span>
               </span>
               <span className="font-mono text-text-primary">
-                ${(item.product.price * item.quantity).toFixed(2)}
+                €{(item.product.price * item.quantity).toFixed(2)}
               </span>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Divider */}
       <div className="h-px bg-border" />
 
-      {/* Totals */}
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between text-sm">
-          <span className="text-text-muted">Subtotal</span>
-          <span className="font-mono text-text-primary">${(subtotal + discountApplied).toFixed(2)}</span>
+          <span className="text-text-muted">{t.pos.subtotal}</span>
+          <span className="font-mono text-text-primary">€{(subtotal + discountApplied).toFixed(2)}</span>
         </div>
         {discountApplied > 0 && (
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-green-600">Discount</span>
-            <span className="font-mono text-green-600">-${discountApplied.toFixed(2)}</span>
-          </div>
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-green-600">{t.pos.discountLabel}</span>
+          <span className="font-mono text-green-600">-€{discountApplied.toFixed(2)}</span>
+        </div>
         )}
         <div className="flex items-center justify-between text-sm">
           <span className="text-text-muted">{taxLabel}</span>
-          <span className="font-mono text-text-muted">${tax.toFixed(2)}</span>
+          <span className="font-mono text-text-muted">€{tax.toFixed(2)}</span>
         </div>
         <div className="h-px bg-border" />
         <div className="flex items-center justify-between">
-          <span className="font-bold text-text-primary text-sm">Total Amount</span>
-          <span className="font-mono text-primary font-bold text-xl">${total.toFixed(2)}</span>
+          <span className="font-bold text-text-primary text-sm">{t.pos.totalToPay}</span>
+          <span className="font-mono text-primary font-bold text-xl">€{total.toFixed(2)}</span>
         </div>
       </div>
 
-      {/* Payment method */}
       <div className="flex items-center justify-between text-sm py-3 px-4 bg-gray-50 rounded-lg border border-border">
-        <span className="text-text-muted font-medium">Payment Method</span>
-        <span className="font-semibold text-text-primary">{paymentMethodLabel[paymentMethod]}</span>
+        <span className="text-text-muted font-medium">{t.pos.paymentMethod}</span>
+        <span className="font-semibold text-text-primary">{t.pos[paymentMethod]}</span>
       </div>
 
-      {/* Cash input */}
       {isCash && (
         <div className="flex flex-col gap-3">
           <div>
             <label className="text-xs font-semibold text-text-muted uppercase tracking-widest block mb-1.5">
-              Amount Received
+              {t.pos.amountReceived}
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted font-mono text-sm">$</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted font-mono text-sm">€</span>
               <input
                 type="number"
                 min={0}
@@ -240,17 +238,16 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
           </div>
 
           {change !== null && (
-            <div className="flex items-center justify-between text-sm py-2.5 px-4 rounded-lg bg-green-50 border border-green-200">
-              <span className="text-green-700 font-medium">Change</span>
-              <span className={`font-mono font-bold ${change < 0 ? 'text-error' : 'text-green-700'}`}>
-                ${change.toFixed(2)}
+            <div className="flex items-center justify-between text-sm py-2.5 px-4 rounded-lg bg-success/10 border border-success/20">
+              <span className="text-success font-medium">{t.pos.change}</span>
+              <span className={`font-mono font-bold ${change < 0 ? 'text-error' : 'text-success'}`}>
+                €{change.toFixed(2)}
               </span>
             </div>
           )}
         </div>
       )}
 
-      {/* Confirm button */}
       <button
         onClick={handleConfirm}
         disabled={!canConfirm || isSubmitting}
@@ -262,10 +259,10 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
-            Procesando...
+            {t.pos.processing}
           </>
         ) : (
-          'CONFIRM PAYMENT'
+          t.pos.confirmPayment
         )}
       </button>
     </div>

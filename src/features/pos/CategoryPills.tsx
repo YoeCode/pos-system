@@ -10,14 +10,14 @@ const CategoryPills: React.FC = () => {
   const allCategories = ['All Items', ...categories];
 
   return (
-    <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+    <div className="flex gap-2 overflow-x-auto pb-2 px-1 -mx-1 scrollbar-hide snap-x snap-mandatory">
       {allCategories.map(cat => (
         <button
           key={cat}
           onClick={() => dispatch(setCategory(cat))}
-          className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all duration-150 ${
+          className={`flex-shrink-0 px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-150 snap-start ${
             selected === cat
-              ? 'bg-[#1B2B4B] text-white shadow-sm'
+              ? 'bg-dark-navy text-white shadow-sm'
               : 'bg-white border border-border text-text-muted hover:border-primary hover:text-text-primary'
           }`}
         >

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/store';
 import { selectActiveEmployees } from '../employees/employeesSlice';
 import { addCashBoxEmployee, selectCashBoxEmployeeIds } from './posSlice';
@@ -13,6 +13,14 @@ const AddEmployeeToCashBoxModal: React.FC<AddEmployeeToCashBoxModalProps> = ({ i
   const employees = useAppSelector(selectActiveEmployees);
   const cashBoxEmployeeIds = useAppSelector(selectCashBoxEmployeeIds);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) onClose();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   const availableEmployees = employees.filter(e => !cashBoxEmployeeIds.includes(e.id));
 

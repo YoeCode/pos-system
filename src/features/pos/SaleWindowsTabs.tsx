@@ -9,6 +9,7 @@ import {
   setActiveWindow,
 } from './posSlice';
 import Modal from '../../components/ui/Modal';
+import { useI18n } from '../../i18n/useI18n';
 
 const SaleWindowsTabs: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -16,6 +17,7 @@ const SaleWindowsTabs: React.FC = () => {
   const activeWindowId = useAppSelector(selectActiveWindowId);
   const canCreate = useAppSelector(selectCanCreateWindow);
   const [confirmCloseId, setConfirmCloseId] = useState<string | null>(null);
+  const t = useI18n();
 
   const activeWindow = windows.find(w => w.id === activeWindowId);
 
@@ -64,27 +66,29 @@ const SaleWindowsTabs: React.FC = () => {
               <span className="truncate flex-1">{window.name}</span>
               {itemCount > 0 && (
                 <span className={`
-                  flex-shrink-0 text-[10px] px-2 py-0.5 rounded-full font-bold
+                  flex-shrink-0 text-xs px-2 py-0.5 rounded-full font-bold
                   ${isActive ? 'bg-primary text-white' : 'bg-gray-300 text-gray-600'}
                 `}>
                   {itemCount}
                 </span>
               )}
               {windows.length > 1 && (
-                <button
+                  <button
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleClose(window.id);
                   }}
                   className={`
-                    flex-shrink-0 w-5 h-5 flex items-center justify-center rounded-full text-xs
+                    flex-shrink-0 w-11 h-11 flex items-center justify-center rounded-full text-sm
                     transition-colors ml-1 opacity-60 hover:opacity-100
                     ${isActive
                       ? 'hover:bg-gray-100 text-gray-400 hover:text-gray-600'
                       : 'hover:bg-gray-400/30 text-gray-400 hover:text-gray-600'
                     }
                   `}
+                  title={t.pos.closeWindow || 'Cerrar ventana de venta'}
+                  aria-label={t.pos.closeWindow || 'Cerrar ventana de venta'}
                 >
                   ×
                 </button>
@@ -96,8 +100,9 @@ const SaleWindowsTabs: React.FC = () => {
           <button
             type="button"
             onClick={() => dispatch(createWindow())}
-            className="flex-shrink-0 flex items-center justify-center w-8 h-8 mb-2 ml-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-200 transition-colors"
-            title="Nueva venta"
+            className="flex-shrink-0 flex items-center justify-center w-11 h-11 mb-2 ml-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-200 transition-colors"
+            title={t.pos.newSale || 'Nueva venta'}
+            aria-label={t.pos.newSale || 'Nueva venta'}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -110,11 +115,11 @@ const SaleWindowsTabs: React.FC = () => {
         <Modal
           isOpen={true}
           onClose={() => setConfirmCloseId(null)}
-          title="Cerrar venta"
+          title={t.pos.closeSale || 'Cerrar venta'}
         >
           <div className="p-6">
             <p className="text-text-primary mb-4">
-              Esta venta tiene <strong>{activeWindow?.cart.reduce((sum, item) => sum + item.quantity, 0)} productos</strong> sin completar. ¿Descartar?
+              {t.pos.closeSaleConfirm || `Esta venta tiene {{count}} productos sin completar. ¿Descartar?`.replace('{{count}}', String(activeWindow?.cart.reduce((sum, item) => sum + item.quantity, 0) || 0))}
             </p>
             <div className="flex gap-3 justify-end">
               <button
@@ -122,14 +127,14 @@ const SaleWindowsTabs: React.FC = () => {
                 onClick={() => setConfirmCloseId(null)}
                 className="px-4 py-2 text-sm font-medium text-text-muted border border-border rounded-lg hover:bg-gray-50"
               >
-                Cancelar
+                {t.pos.cancel}
               </button>
               <button
                 type="button"
                 onClick={confirmClose}
                 className="px-4 py-2 text-sm font-bold text-white bg-red-600 rounded-lg hover:bg-red-700"
               >
-                Descartar y cerrar
+                {t.pos.discardAndClose || 'Descartar y cerrar'}
               </button>
             </div>
           </div>

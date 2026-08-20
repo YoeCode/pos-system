@@ -1,6 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import { useAppDispatch } from '../../app/store';
 import { addToCart } from './posSlice';
+import { useToast } from '../../components/useToast';
+import { useI18n } from '../../i18n/useI18n';
 import type { Product } from '../../types';
 
 interface SizeSelectorModalProps {
@@ -11,6 +13,8 @@ interface SizeSelectorModalProps {
 
 const SizeSelectorModal: React.FC<SizeSelectorModalProps> = ({ isOpen, onClose, product }) => {
   const dispatch = useAppDispatch();
+  const { addToast } = useToast();
+  const t = useI18n();
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
 
   const handleClose = useCallback(() => {
@@ -20,7 +24,13 @@ const SizeSelectorModal: React.FC<SizeSelectorModalProps> = ({ isOpen, onClose, 
 
   const handleAddToCart = () => {
     if (!selectedSize) return;
+    const sizeEntry = product.sizes?.find(s => s.size === selectedSize);
+    if (!sizeEntry || sizeEntry.stock === 0) {
+      addToast(`${t.pos.outOfStockAdd}: ${product.name} (${selectedSize})`, 'error');
+      return;
+    }
     dispatch(addToCart({ product, size: selectedSize }));
+    addToast(`${t.pos.addedToCart}: ${product.name} (${selectedSize})`, 'success');
     handleClose();
   };
 
@@ -34,11 +44,13 @@ const SizeSelectorModal: React.FC<SizeSelectorModalProps> = ({ isOpen, onClose, 
           <div className="flex items-center justify-between">
             <div>
               <h3 className="font-semibold text-text-primary">{product.name}</h3>
-              <p className="text-sm text-text-muted mt-0.5">Select size</p>
+              <p className="text-sm text-text-muted mt-0.5">{t.pos.selectSize}</p>
             </div>
             <button
               onClick={handleClose}
-              className="w-8 h-8 flex items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-gray-100 transition-colors"
+              className="w-11 h-11 flex items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-gray-100 transition-colors"
+              title={t.pos.close}
+              aria-label={t.pos.closeSizeSelector}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -79,7 +91,7 @@ const SizeSelectorModal: React.FC<SizeSelectorModalProps> = ({ isOpen, onClose, 
 
           {selectedSize && (
             <p className="text-xs text-text-muted mt-3 text-center">
-              {product.sizes.find(s => s.size === selectedSize)?.stock} units available
+              {product.sizes.find(s => s.size === selectedSize)?.stock} {t.pos.unitsAvailable}
             </p>
           )}
         </div>
@@ -90,7 +102,7 @@ const SizeSelectorModal: React.FC<SizeSelectorModalProps> = ({ isOpen, onClose, 
             disabled={!selectedSize}
             className="w-full py-3.5 bg-primary hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold rounded-xl text-sm transition-all duration-150 active:scale-[0.98]"
           >
-            Add to Cart — ${product.price.toFixed(2)}
+            {t.pos.addToCartPrice} — €{product.price.toFixed(2)}
           </button>
         </div>
       </div>

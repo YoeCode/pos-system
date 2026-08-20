@@ -11,21 +11,23 @@ import {
 } from '../../settings/settingsSlice';
 import { generateTicketPDF } from '../../../utils/exportUtils';
 import { sendTicketEmail, isEmailConfigured } from '../../../utils/emailService';
-import { useToast } from '../../../components/ToastProvider';
+import { useToast } from '../../../components/useToast';
+import { useI18n } from '../../../i18n/useI18n';
 
 interface ReceiptStepProps {
   saleId: string;
   loyaltyPointsEarned: number;
   onDone: () => void;
+  isGiftReceipt?: boolean;
 }
 
-const paymentMethodLabel: Record<PaymentMethod, string> = {
-  cash: 'Cash',
-  card: 'Card',
-  bizum: 'Bizum',
-};
+const paymentMethodLabel = (t: ReturnType<typeof useI18n>): Record<PaymentMethod, string> => ({
+  cash: t.pos.cash,
+  card: t.pos.card,
+  bizum: t.pos.bizum,
+});
 
-const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, onDone }) => {
+const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, onDone, isGiftReceipt = false }) => {
   const dispatch = useAppDispatch();
   const sale = useAppSelector(state => selectSaleById(state, saleId));
   const storeName = useAppSelector(selectStoreName);
@@ -36,55 +38,62 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, 
   const ticketRef = useRef<HTMLDivElement>(null);
   const [email, setEmail] = useState('');
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [isGiftMode, setIsGiftMode] = useState(isGiftReceipt);
   const { addToast } = useToast();
+  const t = useI18n();
 
   const handlePrint = (giftMode: boolean) => {
-    if (!ticketRef.current) return;
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Ticket ${order.orderNumber}</title>
-          <style>
-            @media print {
-              body { margin: 0; padding: 0; }
-              .no-print { display: none !important; }
-            }
-            body { font-family: monospace; background: white; padding: 20px; }
-          </style>
-          <script src="https://cdn.tailwindcss.com"></script>
-        </head>
-        <body>
-          ${ticketRef.current.outerHTML}
-          <div class="no-print flex justify-center gap-3 p-6">
-            <button onclick="window.print()" class="px-5 py-2.5 bg-primary text-white rounded-lg font-bold">Imprimir</button>
-            <button onclick="window.close()" class="px-5 py-2.5 border border-border rounded-lg font-medium">Cerrar</button>
-          </div>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
+    setIsGiftMode(giftMode);
+    // Wait for React re-render then print
+    setTimeout(() => {
+      if (!ticketRef.current) return;
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) return;
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Ticket ${order.orderNumber}</title>
+            <style>
+              @media print {
+                body { margin: 0; padding: 0; }
+                .no-print { display: none !important; }
+              }
+              body { font-family: monospace; background: white; padding: 20px; }
+            </style>
+            <script src="https://cdn.tailwindcss.com"></script>
+          </head>
+          <body>
+            ${ticketRef.current.outerHTML}
+            <div class="no-print flex justify-center gap-3 p-6">
+              <button onclick="window.print()" class="px-5 py-2.5 bg-primary text-white rounded-lg font-bold">Imprimir</button>
+              <button onclick="window.close()" class="px-5 py-2.5 border border-border rounded-lg font-medium">Cerrar</button>
+            </div>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      setTimeout(() => setIsGiftMode(false), 100);
+    }, 50);
   };
 
   const handlePDF = () => {
     try {
       generateTicketPDF(sale, storeName, taxLabel, footerMessage, employeeName || undefined);
-      addToast('PDF descargado', 'success');
+      addToast(t.pos.pdfDownloaded, 'success');
     } catch {
-      addToast('Error al generar PDF', 'error');
+      addToast(t.pos.pdfError, 'error');
     }
   };
 
   const handleEmail = async () => {
     if (!email.trim() || !ticketRef.current) return;
     if (!isEmailConfigured()) {
-      addToast('Email no configurado. Revisa la documentación.', 'error');
+      addToast(t.pos.emailNotConfigured, 'error');
       return;
     }
     setSendingEmail(true);
     try {
-      const itemsText = order.items.map(i => `${i.product.name} x${i.quantity} = $${i.lineTotal.toFixed(2)}`).join('\n');
+      const itemsText = order.items.map(i => `${i.product.name} x${i.quantity} = €${i.lineTotal.toFixed(2)}`).join('\n');
       await sendTicketEmail({
         to_email: email.trim(),
         to_name: email.trim().split('@')[0],
@@ -92,16 +101,16 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, 
         order_number: order.orderNumber,
         order_date: `${formattedDate} ${formattedTime}`,
         order_items: itemsText,
-        subtotal: `$${order.subtotal.toFixed(2)}`,
-        tax: `$${order.tax.toFixed(2)}`,
-        total: `$${order.total.toFixed(2)}`,
-        payment_method: paymentMethodLabel[paymentMethod],
+        subtotal: `€${order.subtotal.toFixed(2)}`,
+        tax: `€${order.tax.toFixed(2)}`,
+        total: `€${order.total.toFixed(2)}`,
+        payment_method: paymentMethodLabel(t)[paymentMethod],
         receipt_html: ticketRef.current.outerHTML,
       });
-      addToast('Ticket enviado por email', 'success');
+      addToast(t.pos.emailSent, 'success');
       setEmail('');
     } catch {
-      addToast('Error al enviar email', 'error');
+      addToast(t.pos.emailError, 'error');
     } finally {
       setSendingEmail(false);
     }
@@ -128,7 +137,6 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, 
 
   return (
     <div className="flex flex-col gap-5">
-      {/* Normal ticket */}
       <div ref={ticketRef} className="mx-auto w-full max-w-xs bg-white border border-dashed border-gray-300 rounded-lg p-5 font-mono text-xs">
         <div className="text-center mb-4">
           {ticketConfig?.showLogo && ticketConfig?.logoUrl && (
@@ -139,6 +147,9 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, 
           )}
           {ticketConfig?.customHeader && (
             <p className="text-text-muted mt-0.5">{ticketConfig.customHeader}</p>
+          )}
+          {isGiftMode && (
+            <p className="font-bold text-sm text-text-primary mt-2">{t.pos.ticketGift}</p>
           )}
           <p className="text-text-muted mt-0.5">{formattedDate} — {formattedTime}</p>
           <p className="text-text-muted mt-0.5">{order.orderNumber}</p>
@@ -156,68 +167,76 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, 
                 {item.product.name || item.product.category}
                 <span className="text-text-muted ml-1">×{item.quantity}</span>
               </span>
-              <span className="flex-shrink-0 text-text-primary">
-                ${item.lineTotal.toFixed(2)}
-              </span>
+              {!isGiftMode ? (
+                <span className="flex-shrink-0 text-text-primary">
+                  €{item.lineTotal.toFixed(2)}
+                </span>
+              ) : (
+                <span className="flex-shrink-0 text-gray-400">---</span>
+              )}
             </div>
           ))}
         </div>
 
-        <div className="border-t border-dashed border-gray-300 my-3" />
+        {!isGiftMode && (
+          <>
+            <div className="border-t border-dashed border-gray-300 my-3" />
 
-        <div className="flex flex-col gap-1">
-          <div className="flex justify-between">
-            <span className="text-text-muted">Subtotal</span>
-            <span className="text-text-primary">${order.subtotal.toFixed(2)}</span>
-          </div>
-          {order.discount > 0 && (
-            <div className="flex justify-between text-green-600">
-              <span>Discount</span>
-              <span>-${order.discount.toFixed(2)}</span>
-            </div>
-          )}
-          <div className="flex justify-between">
-            <span className="text-text-muted">{taxLabel}</span>
-            <span className="text-text-muted">${order.tax.toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between font-bold text-sm mt-0.5">
-            <span className="text-text-primary">TOTAL</span>
-            <span className="text-primary">${order.total.toFixed(2)}</span>
-          </div>
-          {loyaltyPointsEarned > 0 && (
-            <div className="flex justify-between text-purple-600 mt-0.5">
-              <span>Points Earned</span>
-              <span>+{loyaltyPointsEarned} pts</span>
-            </div>
-          )}
-          {sale.loyaltyPointsRedeemed > 0 && (
-            <div className="flex justify-between text-purple-600 mt-0.5">
-              <span>Points Used</span>
-              <span>-{sale.loyaltyPointsRedeemed} pts</span>
-            </div>
-          )}
-        </div>
-
-        <div className="border-t border-dashed border-gray-300 my-3" />
-
-        <div className="flex flex-col gap-1">
-          <div className="flex justify-between">
-            <span className="text-text-muted">Payment</span>
-            <span className="text-text-primary">{paymentMethodLabel[paymentMethod]}</span>
-          </div>
-          {paymentMethod === 'cash' && amountReceived !== null && change !== null && (
-            <>
+            <div className="flex flex-col gap-1">
               <div className="flex justify-between">
-                <span className="text-text-muted">Received</span>
-                <span className="text-text-primary">${amountReceived.toFixed(2)}</span>
+                <span className="text-text-muted">{t.pos.subtotal}</span>
+                <span className="text-text-primary">€{order.subtotal.toFixed(2)}</span>
               </div>
+              {order.discount > 0 && (
+                <div className="flex justify-between text-green-600">
+                  <span>{t.pos.discountLabel}</span>
+                  <span>-€{order.discount.toFixed(2)}</span>
+                </div>
+              )}
               <div className="flex justify-between">
-                <span className="text-text-muted">Change</span>
-                <span className="text-text-primary">${change.toFixed(2)}</span>
+                <span className="text-text-muted">{taxLabel}</span>
+                <span className="text-text-muted">€{order.tax.toFixed(2)}</span>
               </div>
-            </>
-          )}
-        </div>
+              <div className="flex justify-between font-bold text-sm mt-0.5">
+                <span className="text-text-primary">{t.pos.totalLabel}</span>
+                <span className="text-primary">€{order.total.toFixed(2)}</span>
+              </div>
+              {loyaltyPointsEarned > 0 && (
+                <div className="flex justify-between text-purple-600 mt-0.5">
+                  <span>{t.pos.pointsEarned}</span>
+                  <span>+{loyaltyPointsEarned} pts</span>
+                </div>
+              )}
+              {sale.loyaltyPointsRedeemed > 0 && (
+                <div className="flex justify-between text-purple-600 mt-0.5">
+                  <span>{t.pos.pointsUsed}</span>
+                  <span>-{sale.loyaltyPointsRedeemed} pts</span>
+                </div>
+              )}
+            </div>
+
+            <div className="border-t border-dashed border-gray-300 my-3" />
+
+            <div className="flex flex-col gap-1">
+                <div className="flex justify-between">
+                  <span className="text-text-muted">{t.pos.paymentLabel}</span>
+                <span className="text-text-primary">{paymentMethodLabel(t)[paymentMethod]}</span>
+              </div>
+              {paymentMethod === 'cash' && amountReceived !== null && change !== null && (
+                <>
+                  <div className="flex justify-between">
+                    <span className="text-text-muted">{t.pos.received}</span>
+                    <span className="text-text-primary">€{amountReceived.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-text-muted">{t.pos.change}</span>
+                    <span className="text-text-primary">€{change.toFixed(2)}</span>
+                  </div>
+                </>
+              )}
+            </div>
+          </>
+        )}
 
         <div className="border-t border-dashed border-gray-300 my-3" />
 
@@ -232,14 +251,14 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, 
           className="py-3 bg-primary hover:bg-primary-dark text-white font-bold rounded-xl text-sm transition-all duration-150 active:scale-[0.98] flex items-center justify-center gap-2"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-          Imprimir
+          {t.pos.print}
         </button>
         <button
           onClick={() => handlePrint(true)}
           className="py-3 bg-white border border-border hover:border-text-primary text-text-primary font-bold rounded-xl text-sm transition-all duration-150 active:scale-[0.98] flex items-center justify-center gap-2"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-          Regalo
+          {t.pos.gift}
         </button>
         <button
           onClick={handlePDF}
@@ -253,7 +272,7 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, 
           className="py-3 bg-white border border-border hover:border-text-primary text-text-primary font-bold rounded-xl text-sm transition-all duration-150 active:scale-[0.98] flex items-center justify-center gap-2"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-          Cerrar
+          {t.pos.close}
         </button>
       </div>
 
@@ -276,7 +295,7 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, 
             ) : (
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
             )}
-            Enviar
+            {t.pos.send}
           </button>
         </div>
       </div>
@@ -285,7 +304,7 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, 
         onClick={() => { dispatch(startNewSale()); onDone(); }}
         className="w-full py-3.5 bg-gray-100 hover:bg-gray-200 text-text-primary font-bold rounded-xl text-sm transition-all duration-150 active:scale-[0.98]"
       >
-        Nueva venta
+        {t.pos.newSaleBtn}
       </button>
 
 

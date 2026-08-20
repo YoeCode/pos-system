@@ -1,32 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/store';
 import CategoryPills from '../../features/pos/CategoryPills';
 import ProductCard from '../../features/pos/ProductCard';
 import Cart from '../../features/pos/Cart';
 import ManualProductModal from '../../features/pos/ManualProductModal';
 import CheckoutModal from '../../features/pos/checkout/CheckoutModal';
-import CustomerSelector from '../../features/customers/CustomerSelector';
 import SearchInput from '../../features/pos/SearchInput';
+import Modal from '../../components/ui/Modal';
 import EmployeeSelector from '../../features/pos/EmployeeSelector';
 import CashBoxOpenModal from '../../features/pos/CashBoxOpenModal';
 import CashBoxCloseModal from '../../features/pos/CashBoxCloseModal';
 import AddEmployeeToCashBoxModal from '../../features/pos/AddEmployeeToCashBoxModal';
 import RefundModal from '../../features/refunds/RefundModal';
 import DiscountModal from '../../features/pos/DiscountModal';
-import { useI18n } from '../../i18n/I18nProvider';
+import { useI18n } from '../../i18n/useI18n';
 import {
-  addCustomProductToCart, updateQuantity, removeFromCart, splitLine, setPaymentMethod,
-  startNewSale, selectIsCashBoxOpen, closeCashBox,
+  addCustomProductToCart, setPaymentMethod, undoCartAction, setSearchQuery,
+  selectIsCashBoxOpen,
   selectActiveWindowCart, selectActiveWindowPaymentMethod, selectActiveWindowCustomerId,
   selectActiveWindowItemDiscounts, selectActiveWindowManualDiscount, selectActiveWindowPointsToRedeem,
-  setWindowItemDiscounts, setWindowManualDiscount,
+  selectActiveWindowIsGiftReceipt,
+  setWindowManualDiscount,
 } from '../../features/pos/posSlice';
-import { selectEnableManualProduct, selectFormattedOrderNumber, selectTaxRate, selectTaxLabel, selectTaxIncludedInPrice, selectLoyaltyTiers } from '../../features/settings/settingsSlice';
+import { selectEnableManualProduct, selectFormattedOrderNumber, selectTaxRate, selectTaxIncludedInPrice, selectLoyaltyTiers } from '../../features/settings/settingsSlice';
 import { selectCustomerById } from '../../features/customers/customersSlice';
 import { calculateCart } from '../../features/pos/calculation';
 import Fuse from 'fuse.js';
 import { usePermission } from '../../hooks/usePermission';
-import type { PaymentMethod, Employee } from '../../types';
+
 
 const POSPage: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -37,12 +38,12 @@ const POSPage: React.FC = () => {
   const itemDiscounts = useAppSelector(selectActiveWindowItemDiscounts);
   const manualDiscount = useAppSelector(selectActiveWindowManualDiscount);
   const pointsToRedeem = useAppSelector(selectActiveWindowPointsToRedeem);
+  const isGiftReceipt = useAppSelector(selectActiveWindowIsGiftReceipt);
   const products = useAppSelector(state => state.products.items);
   const enableManualProduct = useAppSelector(selectEnableManualProduct);
   const orderNumber = useAppSelector(selectFormattedOrderNumber);
   const taxRate = useAppSelector(selectTaxRate);
   const taxIncludedInPrice = useAppSelector(selectTaxIncludedInPrice);
-  const taxLabel = useAppSelector(selectTaxLabel);
   const tiers = useAppSelector(selectLoyaltyTiers);
   const selectedCustomer = useAppSelector(s =>
     selectedCustomerId ? selectCustomerById(s, selectedCustomerId) : null
@@ -56,12 +57,77 @@ const POSPage: React.FC = () => {
   const [showCashBoxModal, setShowCashBoxModal] = useState(false);
   const [showCashBoxCloseModal, setShowCashBoxCloseModal] = useState(false);
   const [showDiscountModal, setShowDiscountModal] = useState(false);
-  const [showItemDiscountModal, setShowItemDiscountModal] = useState(false);
   const [showAddEmployeeModal, setShowAddEmployeeModal] = useState(false);
   const [showRefundModal, setShowRefundModal] = useState(false);
-  const [itemDiscountTarget, setItemDiscountTarget] = useState<string | null>(null);
-  const [authorizedBy, setAuthorizedBy] = useState<Employee | null>(null);
+  const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
+  const [showShortcutsModal, setShowShortcutsModal] = useState(false);
+  const actionsMenuRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const { hasPermission } = usePermission();
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (actionsMenuRef.current && !actionsMenuRef.current.contains(e.target as Node)) {
+        setIsActionsMenuOpen(false);
+      }
+    };
+    if (isActionsMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isActionsMenuOpen]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      const isTyping = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
+      if (isTyping) return;
+
+      switch (e.key) {
+        case 'f':
+        case 'F':
+          e.preventDefault();
+          searchInputRef.current?.focus();
+          break;
+        case 'z':
+        case 'Z':
+          if ((e.ctrlKey || e.metaKey) && !e.shiftKey) {
+            e.preventDefault();
+            dispatch(undoCartAction());
+          }
+          break;
+        case 'Escape':
+          if (isCheckoutOpen) { setIsCheckoutOpen(false); }
+          else if (isCartOpen) { setIsCartOpen(false); }
+          else if (isManualModalOpen) { setIsManualModalOpen(false); }
+          else if (showRefundModal) { setShowRefundModal(false); }
+          else if (showDiscountModal) { setShowDiscountModal(false); }
+          else if (showCashBoxCloseModal) { setShowCashBoxCloseModal(false); }
+          else if (showCashBoxModal) { setShowCashBoxModal(false); }
+          else if (showAddEmployeeModal) { setShowAddEmployeeModal(false); }
+          else if (isActionsMenuOpen) { setIsActionsMenuOpen(false); }
+          break;
+        case 'F1':
+          e.preventDefault();
+          if (isCashBoxOpen && cart.length > 0) dispatch(setPaymentMethod('cash'));
+          break;
+        case 'F2':
+          e.preventDefault();
+          if (isCashBoxOpen && cart.length > 0) dispatch(setPaymentMethod('card'));
+          break;
+        case 'F3':
+          e.preventDefault();
+          if (isCashBoxOpen && cart.length > 0) dispatch(setPaymentMethod('bizum'));
+          break;
+        case 'F4':
+          e.preventDefault();
+          if (isCashBoxOpen && cart.length > 0) setIsCheckoutOpen(true);
+          break;
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isCashBoxOpen, cart.length, isCheckoutOpen, isCartOpen, isManualModalOpen, showRefundModal, showDiscountModal, showCashBoxCloseModal, showCashBoxModal, showAddEmployeeModal, isActionsMenuOpen, dispatch]);
 
   const filtered = selectedCategory === 'All Items'
     ? products
@@ -97,19 +163,9 @@ const POSPage: React.FC = () => {
   });
 
   const { grossSubtotal, totalDiscount, tax, total } = calc;
-  const loyaltyPct = selectedCustomer && tierConfig ? tierConfig.discountPct : 0;
-  const itemDiscountTotal = calc.lines.reduce((sum, l) => sum + l.itemDiscountAmount, 0);
-  const loyaltyTotal = calc.lines.reduce((sum, l) => sum + (l.discountSource === 'loyalty' ? l.appliedDiscount : 0), 0);
-  const appliedGlobalDiscount = loyaltyTotal;
-  const isLoyaltyGlobal = loyaltyTotal > 0;
-
-  const handleCheckout = () => {
-    setIsCartOpen(false);
-    setIsCheckoutOpen(true);
-  };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-57px)] lg:flex-row w-full min-w-0 overflow-x-hidden">
+    <div className="flex flex-col h-full md:flex-row w-full min-w-0 overflow-hidden">
       {/* Products area */}
       <div className="flex-1 flex flex-col overflow-hidden min-w-0 pb-20 lg:pb-0">
         <div className="px-3 lg:px-6 pt-3 lg:pt-4 pb-2 flex-shrink-0">
@@ -117,55 +173,71 @@ const POSPage: React.FC = () => {
             {isCashBoxOpen ? (
               <>
                 <EmployeeSelector />
-                <div className="flex items-center gap-2">
-                  {hasPermission('cashbox:add_employee') && (
-                    <button
-                      onClick={() => setShowAddEmployeeModal(true)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 border border-blue-200 rounded-full hover:bg-blue-50 transition-colors"
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                      </svg>
-                      Añadir vendedor
-                    </button>
-                  )}
-                  {hasPermission('pos:refund') && (
-                    <button
-                      onClick={() => setShowRefundModal(true)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-600 border border-amber-200 rounded-full hover:bg-amber-50 transition-colors"
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                      </svg>
-                      Devolución
-                    </button>
-                  )}
-                  {hasPermission('cashbox:close') && (
-                    <button
-                      onClick={() => setShowCashBoxCloseModal(true)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 border border-red-200 rounded-full hover:bg-red-50 transition-colors"
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m0 0v2m0-2h2m-2 0H8m13-6a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      Cerrar caja
-                    </button>
+                <div className="relative" ref={actionsMenuRef}>
+                  <button
+                    onClick={() => setIsActionsMenuOpen(o => !o)}
+                    className="w-11 h-11 flex items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-gray-100 transition-colors"
+                    title={t.pos.actions || 'Acciones'}
+                    aria-label={t.pos.actions || 'Acciones'}
+                    aria-expanded={isActionsMenuOpen}
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                    </svg>
+                  </button>
+                  {isActionsMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-52 bg-white rounded-xl border border-border shadow-lg z-50 py-1.5">
+                      {hasPermission('cashbox:add_employee') && (
+                        <button
+                          onClick={() => { setShowAddEmployeeModal(true); setIsActionsMenuOpen(false); }}
+                          className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-text-primary hover:bg-gray-50 transition-colors text-left"
+                        >
+                          <svg className="w-4 h-4 text-info flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                          </svg>
+                          {t.pos.addSeller || 'Añadir vendedor'}
+                        </button>
+                      )}
+                      {hasPermission('pos:refund') && (
+                        <button
+                          onClick={() => { setShowRefundModal(true); setIsActionsMenuOpen(false); }}
+                          className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-text-primary hover:bg-gray-50 transition-colors text-left"
+                        >
+                          <svg className="w-4 h-4 text-warning flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                          </svg>
+                          {t.pos.refund || 'Devolución'}
+                        </button>
+                      )}
+                      {hasPermission('cashbox:close') && (
+                        <>
+                          <div className="mx-3.5 my-1 h-px bg-border" />
+                        <button
+                          onClick={() => { setShowCashBoxCloseModal(true); setIsActionsMenuOpen(false); }}
+                          className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-error hover:bg-error/5 transition-colors text-left"
+                        >
+                          <svg className="w-4 h-4 text-error flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m0 0v2m0-2h2m-2 0H8m13-6a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          {t.pos.closeCashBox || 'Cerrar caja'}
+                        </button>
+                        </>
+                      )}
+                      <div className="mx-3.5 my-1 h-px bg-border" />
+                      <button
+                        onClick={() => { setShowShortcutsModal(true); setIsActionsMenuOpen(false); }}
+                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-text-muted hover:bg-gray-50 transition-colors text-left"
+                      >
+                        <svg className="w-4 h-4 text-text-muted flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        {t.pos.keyboardShortcuts || 'Atajos de teclado'}
+                      </button>
+                    </div>
                   )}
                 </div>
               </>
-            ) : (
-              hasPermission('cashbox:open') && (
-                <button
-                  onClick={() => setShowCashBoxModal(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 border border-green-200 bg-green-50 rounded-full hover:bg-green-100 transition-colors"
-                >
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Abrir caja
-                </button>
-              )
-            )}
+            ) : null}
           </div>
         </div>
 
@@ -178,27 +250,43 @@ const POSPage: React.FC = () => {
               {enableManualProduct && hasPermission('pos:manual_product') && (
                 <button
                   onClick={() => setIsManualModalOpen(true)}
-                  className="hidden sm:flex px-3 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors items-center gap-2 whitespace-nowrap"
+                  className="flex px-3 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors items-center gap-2 whitespace-nowrap"
+                  title={t.settings.addManualProduct}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </svg>
-                  <span className="hidden md:inline">{t.settings.addManualProduct}</span>
+                  <span className="hidden sm:inline">{t.settings.addManualProduct}</span>
                 </button>
               )}
             </div>
-            <SearchInput />
+            <SearchInput ref={searchInputRef} />
           </div>
         )}
 
         {isCashBoxOpen ? (
           <div className="flex-1 overflow-y-auto px-3 lg:px-6 pb-4">
             {filteredBySearch.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full gap-2 text-center">
-                <p className="text-text-muted text-sm">{searchQuery ? t.common.noResults : t.common.noResults}</p>
+              <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
+                <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center">
+                  <svg className="w-8 h-8 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                <p className="text-text-muted text-sm font-medium">
+                  {searchQuery ? t.pos.noSearchResults || 'No se encontraron productos' : t.common.noResults}
+                </p>
+                {searchQuery && (
+                  <button
+                    onClick={() => dispatch(setSearchQuery(''))}
+                    className="text-sm text-primary hover:text-primary-dark font-medium"
+                  >
+                    {t.pos.clearSearch || 'Ver todos los productos'}
+                  </button>
+                )}
               </div>
             ) : (
-              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 lg:gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 lg:gap-4">
                 {filteredBySearch.map(product => (
                   <ProductCard key={product.id} product={product} />
                 ))}
@@ -207,253 +295,72 @@ const POSPage: React.FC = () => {
           </div>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center px-3 lg:px-6 pb-4 text-center">
-            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-              <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mb-5">
+              <svg className="w-12 h-12 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
             </div>
-            <p className="text-text-muted font-medium">Caja cerrada</p>
-            <p className="text-text-muted text-sm mt-1">Abre la caja para empezar a vender</p>
+            <h3 className="text-xl font-bold text-text-primary mb-2">{t.pos.cashBoxClosedTitle || 'Caja cerrada'}</h3>
+            <p className="text-sm text-text-muted max-w-sm mb-6 leading-relaxed">
+              {t.pos.cashBoxClosedDesc || 'Abre la caja registradora para registrar tu turno y empezar a procesar ventas.'}
+            </p>
+            {hasPermission('cashbox:open') ? (
+              <button
+                onClick={() => setShowCashBoxModal(true)}
+                className="px-6 py-3 bg-primary text-white rounded-xl font-semibold text-sm hover:bg-primary-dark transition-colors shadow-sm"
+              >
+                {t.pos.openCashBox || 'Abrir caja'}
+              </button>
+            ) : (
+              <div className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 rounded-lg text-sm text-text-muted">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                {t.pos.cashBoxPermissionRequired || 'Solo un supervisor puede abrir la caja'}
+              </div>
+            )}
           </div>
         )}
       </div>
 
       {isCashBoxOpen && (
-        <div className="hidden lg:flex lg:w-[320px] xl:w-[360px] flex-shrink-0">
+        <div className="hidden md:flex md:w-[340px] lg:w-[380px] xl:w-[420px] flex-shrink-0 h-full">
           <Cart />
         </div>
       )}
 
       {isCashBoxOpen && (
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30">
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-30 pb-[env(safe-area-inset-bottom)]">
           {cart.length > 0 ? (
             <button
               onClick={() => setIsCartOpen(true)}
-              className="w-full bg-primary hover:bg-primary-dark text-white py-4 px-4 flex items-center justify-between shadow-lg"
+              className="w-full bg-white border-t border-border text-text-primary py-3.5 px-4 flex items-center justify-between shadow-[0_-4px_20px_rgba(0,0,0,0.08)] hover:bg-gray-50 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <span className="bg-white/20 px-2 py-1 rounded text-sm font-medium">
-                  {cart.length} {cart.length === 1 ? 'item' : 'items'}
+                <span className="bg-primary text-white px-2.5 py-1 rounded-lg text-sm font-semibold">
+                  {cart.length}
                 </span>
-                <span className="font-semibold">View Cart</span>
+                <span className="font-medium text-sm">{t.pos.viewCart || 'Ver carrito'}</span>
               </div>
-              <span className="font-bold text-lg">${total.toFixed(2)}</span>
+              <span className="font-bold text-lg text-primary">€{total.toFixed(2)}</span>
             </button>
           ) : (
-            <div className="w-full bg-gray-100 border-t border-border py-2 px-4 text-center text-sm text-text-muted">
-              Add products to cart
-            </div>
+            <button
+              onClick={() => setIsCartOpen(true)}
+              className="w-full bg-white border-t border-border py-3 px-4 text-center text-sm text-text-muted hover:bg-gray-50 transition-colors"
+            >
+              {t.pos.emptyCart}
+            </button>
           )}
         </div>
       )}
 
       {/* Full Bottom Sheet Cart Modal */}
       {isCartOpen && (
-        <div className="lg:hidden fixed inset-0 z-40 flex flex-col">
+        <div className="md:hidden fixed inset-0 z-40 flex flex-col">
           <div className="absolute inset-0 bg-black/60" onClick={() => setIsCartOpen(false)} />
-          <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl max-h-[85vh] flex flex-col">
-            {/* Header */}
-            <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-              <h2 className="font-bold text-lg">{t.pos.cart}</h2>
-              <div className="flex items-center gap-2">
-                {cart.length > 0 && (
-                  <button
-                    onClick={() => dispatch(startNewSale())}
-                    className="p-2 text-text-muted hover:text-error"
-                    title="Clear cart"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
-                )}
-                <button onClick={() => setIsCartOpen(false)} className="p-2 text-text-muted hover:text-text-primary">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            {/* Customer Selector */}
-            <div className="px-4 py-2 border-b border-border">
-              <CustomerSelector />
-            </div>
-
-            {/* Items */}
-            <div className="flex-1 overflow-y-auto p-4">
-              {cart.length === 0 ? (
-                <p className="text-center text-text-muted py-8">Cart is empty</p>
-              ) : (
-                <div className="flex flex-col gap-3">
-                  {cart.map(item => (
-                    <div key={item.lineId} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
-                      <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center text-gray-500 font-bold flex-shrink-0">
-                        {(item.product.name || item.product.category).charAt(0)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-text-primary truncate">{item.product.name || item.product.category}</p>
-                        {item.selectedSize && (
-                          <p className="text-xs text-blue-600 font-medium">Talla: {item.selectedSize}</p>
-                        )}
-                        <div className="flex items-center gap-1.5">
-                          <p className="text-xs text-text-muted">€{(item.product.price * item.quantity).toFixed(2)}</p>
-                          {itemDiscounts[item.lineId] && (
-                            <span className="text-xs font-mono text-green-600">-€{(item.product.price * item.quantity * (itemDiscounts[item.lineId] || 0) / 100).toFixed(2)}</span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => dispatch(updateQuantity({ lineId: item.lineId, quantity: item.quantity - 1 }))}
-                          className="w-6 h-6 rounded border border-border text-text-muted hover:border-error hover:text-error flex items-center justify-center"
-                        >
-                          −
-                        </button>
-                        <span className="w-6 text-center text-sm font-semibold font-mono">{item.quantity}</span>
-                        <button
-                          onClick={() => dispatch(updateQuantity({ lineId: item.lineId, quantity: item.quantity + 1 }))}
-                          className="w-6 h-6 rounded border border-border text-text-muted hover:border-primary hover:text-primary flex items-center justify-center"
-                        >
-                          +
-                        </button>
-                        {item.quantity > 1 && (
-                          <button
-                            onClick={() => dispatch(splitLine(item.lineId))}
-                            className="w-6 h-6 rounded text-blue-500 hover:text-blue-600 flex items-center justify-center"
-                            title="Split line"
-                          >
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                            </svg>
-                          </button>
-                        )}
-                        <button
-                          onClick={() => {
-                            setItemDiscountTarget(item.lineId);
-                            setShowItemDiscountModal(true);
-                          }}
-                          className="w-6 h-6 rounded text-amber-500 hover:text-amber-600 flex items-center justify-center"
-                          title={t.pos.itemDiscount || 'Discount'}
-                        >
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => dispatch(removeFromCart(item.lineId))}
-                          className="w-6 h-6 rounded text-text-muted hover:text-error flex items-center justify-center"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Footer with totals and checkout */}
-            {cart.length > 0 && (
-              <div className="p-4 border-t border-border bg-gray-50">
-                {itemDiscountTotal > 0 && (
-                  <div className="flex items-center justify-between text-sm mb-2">
-                    <span className="text-green-600">Item Discounts</span>
-                    <span className="font-mono text-green-600">-${itemDiscountTotal.toFixed(2)}</span>
-                  </div>
-                )}
-                {appliedGlobalDiscount > 0 && (
-                  <div className="flex items-center justify-between text-sm mb-2">
-                    <span className={isLoyaltyGlobal ? 'text-blue-600' : 'text-green-600'}>
-                      {isLoyaltyGlobal ? `Loyalty (${selectedCustomer?.tier})` : 'Manual Discount'}
-                    </span>
-                    <span className={`font-mono ${isLoyaltyGlobal ? 'text-blue-600' : 'text-green-600'}`}>-${appliedGlobalDiscount.toFixed(2)}</span>
-                  </div>
-                )}
-                <div className="flex items-center justify-between text-sm mb-2">
-                  <span className="text-text-muted">{t.pos.subtotal}</span>
-                  <span className="font-mono text-text-primary">${grossSubtotal.toFixed(2)}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm mb-3">
-                  <span className="text-text-muted">{taxLabel}</span>
-                  <span className="font-mono text-text-muted">${tax.toFixed(2)}</span>
-                </div>
-
-                {hasPermission('pos:discount') && manualDiscount === 0 && loyaltyPct === 0 ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowDiscountModal(true)}
-                    className="w-full py-2 mb-3 bg-amber-50 border border-amber-200 text-amber-700 rounded-lg text-xs font-semibold hover:bg-amber-100 transition-colors"
-                  >
-                    {t.pos.manualDiscount || 'Apply Discount'}
-                  </button>
-                ) : (
-                  <div className="flex flex-col gap-2 mb-3">
-                    {manualDiscount > 0 && (
-                      <div className="flex items-center gap-2 p-2 bg-green-50 border border-green-200 rounded-lg">
-                        <svg className="w-4 h-4 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <span className="text-xs text-green-700 flex-1">
-                          Authorized by {authorizedBy?.name}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => { dispatch(setWindowManualDiscount(0)); setAuthorizedBy(null); }}
-                          className="text-xs text-green-600 hover:text-green-800 font-medium"
-                        >
-                          {t.common.cancel}
-                        </button>
-                      </div>
-                    )}
-                    {loyaltyPct > 0 && (
-                      <div className="flex items-center gap-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
-                        <svg className="w-4 h-4 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <span className="text-xs text-blue-700 flex-1">
-                          Loyalty {((selectedCustomer?.tier || '') as string).charAt(0).toUpperCase() + ((selectedCustomer?.tier || '') as string).slice(1)}: {loyaltyPct * 100}%
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                <div className="flex items-center justify-between mb-3">
-                  <span className="font-bold text-text-primary">{t.pos.total}</span>
-                  <span className="font-bold text-xl text-primary">${total.toFixed(2)}</span>
-                </div>
-                
-                {/* Payment method */}
-                <div className="mb-3">
-                  <p className="text-xs font-semibold text-text-muted uppercase tracking-widest mb-2">{t.pos.paymentMethod}</p>
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {(['cash', 'card', 'bizum'] as PaymentMethod[]).map(method => (
-                      <button
-                        key={method}
-                        onClick={() => dispatch(setPaymentMethod(method))}
-                        className={`py-2 rounded-lg text-xs font-semibold ${
-                          paymentMethod === method
-                            ? 'bg-[#1B2B4B] text-white'
-                            : 'bg-white border border-border text-text-muted'
-                        }`}
-                      >
-                        {t.pos[method].toUpperCase()}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <button
-                  onClick={handleCheckout}
-                  className="w-full py-3 bg-primary hover:bg-primary-dark text-white font-bold rounded-xl"
-                >
-                  {t.pos.checkout.toUpperCase()} ${total.toFixed(2)}
-                </button>
-              </div>
-            )}
+          <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-xl max-h-[85vh] flex flex-col">
+            <Cart variant="bottomSheet" onClose={() => setIsCartOpen(false)} />
           </div>
         </div>
       )}
@@ -476,6 +383,7 @@ const POSPage: React.FC = () => {
         customerId={selectedCustomerId ?? undefined}
         discountApplied={totalDiscount}
         pointsToRedeem={pointsToRedeem}
+        isGiftReceipt={isGiftReceipt}
       />
 
       <CashBoxOpenModal isOpen={showCashBoxModal} onClose={() => setShowCashBoxModal(false)} />
@@ -487,35 +395,33 @@ const POSPage: React.FC = () => {
       <DiscountModal
         isOpen={showDiscountModal}
         onClose={() => setShowDiscountModal(false)}
-        onSuccess={(employee, discountAmount) => {
-          setAuthorizedBy(employee);
+        onSuccess={(_, discountAmount) => {
           dispatch(setWindowManualDiscount(discountAmount));
           setShowDiscountModal(false);
         }}
         subtotal={rawSubtotal}
       />
 
-      <DiscountModal
-        isOpen={showItemDiscountModal}
-        onClose={() => setShowItemDiscountModal(false)}
-        onSuccess={(employee, discountAmount) => {
-          if (itemDiscountTarget) {
-            const item = cart.find(i => i.lineId === itemDiscountTarget);
-            const itemTotal = item ? item.product.price * item.quantity : 0;
-            const discountPct = itemTotal > 0 ? Math.round((discountAmount / itemTotal) * 10000) / 100 : 0;
-            dispatch(setWindowItemDiscounts({ ...itemDiscounts, [itemDiscountTarget]: discountPct }));
-          }
-          setAuthorizedBy(employee);
-          setShowItemDiscountModal(false);
-          setItemDiscountTarget(null);
-        }}
-        subtotal={(() => {
-          const item = cart.find(i => i.lineId === itemDiscountTarget);
-          return item ? item.product.price * item.quantity : 0;
-        })()}
-      />
-
       <CashBoxCloseModal isOpen={showCashBoxCloseModal} onClose={() => setShowCashBoxCloseModal(false)} />
+
+      <Modal isOpen={showShortcutsModal} onClose={() => setShowShortcutsModal(false)} title={t.pos.keyboardShortcuts || 'Atajos de teclado'}>
+        <div className="flex flex-col gap-3 p-2">
+          {[
+            { key: 'F', action: t.pos.shortcutSearch || 'Buscar productos' },
+            { key: 'Ctrl + Z', action: t.pos.shortcutUndo || 'Deshacer última acción' },
+            { key: 'F1', action: t.pos.shortcutCash || 'Pago en efectivo' },
+            { key: 'F2', action: t.pos.shortcutCard || 'Pago con tarjeta' },
+            { key: 'F3', action: t.pos.shortcutBizum || 'Pago con Bizum' },
+            { key: 'F4', action: t.pos.shortcutCheckout || 'Abrir checkout' },
+            { key: 'Esc', action: t.pos.shortcutClose || 'Cerrar modal / carrito' },
+          ].map(item => (
+            <div key={item.key} className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg">
+              <span className="text-sm text-text-primary">{item.action}</span>
+              <kbd className="px-2 py-1 bg-white border border-border rounded text-xs font-mono font-semibold text-text-muted shadow-sm">{item.key}</kbd>
+            </div>
+          ))}
+        </div>
+      </Modal>
     </div>
   );
 };
