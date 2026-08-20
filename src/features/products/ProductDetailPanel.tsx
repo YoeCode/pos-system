@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useLayoutEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/store';
 import { updateProductAsync, deleteProductAsync, selectProduct, type ProductFormState, selectStockMovementsForProduct } from './productsSlice';
 import { usePermission } from '../../hooks/usePermission';
@@ -68,7 +68,7 @@ const ProductDetailPanel: React.FC<ProductDetailPanelProps> = ({ onDuplicate }) 
   const hasSizes = product ? !!(product.sizes && product.sizes.length > 0) : false;
   const totalSizeStock = hasSizes ? product!.sizes!.reduce((s, sz) => s + sz.stock, 0) : form.stock;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (product) {
       const data = {
         id: product.id,
@@ -211,7 +211,7 @@ const ProductDetailPanel: React.FC<ProductDetailPanelProps> = ({ onDuplicate }) 
   const stockLabel = hasSizes ? 'Total Stock (by size)' : 'Stock Level';
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-y-auto bg-white rounded-xl border border-border">
+    <div className="flex-1 flex flex-col h-full overflow-hidden bg-white rounded-xl border border-border">
       <div className="px-6 py-5 border-b border-border flex items-center justify-between">
         <h3 className="text-xl font-bold text-text-primary">Product Details</h3>
         {isEditing ? (
@@ -279,7 +279,7 @@ const ProductDetailPanel: React.FC<ProductDetailPanelProps> = ({ onDuplicate }) 
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
+      <div className="flex-1 px-6 py-5 flex flex-col gap-5">
         <div>
           <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Product Image</p>
           {isEditing ? (
@@ -307,7 +307,7 @@ const ProductDetailPanel: React.FC<ProductDetailPanelProps> = ({ onDuplicate }) 
               >
                 {form.image ? (
                   <div className="relative w-full h-full">
-                    <img src={form.image} alt="Product" className="w-full h-full object-contain rounded-xl" />
+                    <img src={form.image} alt="Product" className="w-full h-full object-contain rounded-xl" loading="lazy" />
                     <button
                       type="button"
                       onClick={e => {
@@ -332,7 +332,7 @@ const ProductDetailPanel: React.FC<ProductDetailPanelProps> = ({ onDuplicate }) 
             </>
           ) : form.image ? (
             <div className="h-32 rounded-xl overflow-hidden bg-gray-100">
-              <img src={form.image} alt="Product" className="w-full h-full object-contain" />
+              <img src={form.image} alt="Product" className="w-full h-full object-contain" loading="lazy" />
             </div>
           ) : (
             <div className="h-32 rounded-xl border border-border bg-gray-50 flex items-center justify-center text-text-muted">

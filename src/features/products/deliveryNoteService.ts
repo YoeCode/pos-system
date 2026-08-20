@@ -163,13 +163,12 @@ export async function suggestCategory(
     });
 
     if (error || data?.error) {
-      console.warn('Category suggestion failed:', error || data?.error);
+      /* console.warn($$$) */;
       return null;
     }
 
     return data?.suggestion || null;
-  } catch (err) {
-    console.warn('Category suggestion error:', err);
+  } catch {
     return null;
   }
 }

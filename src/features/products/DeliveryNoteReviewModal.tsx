@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useLayoutEffect } from 'react';
 import { useAppSelector } from '../../app/store';
 import Modal from '../../components/ui/Modal';
 import Button from '../../components/ui/Button';
@@ -46,12 +46,13 @@ const DeliveryNoteReviewModal: React.FC<DeliveryNoteReviewModalProps> = ({
   const [acceptedCategories, setAcceptedCategories] = useState<Record<number, string>>({});
   const categories = useAppSelector(selectCategories);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!parsedNote) return;
     const initial: Record<number, DeliveryAction> = {};
     parsedNote.items.forEach((item, idx) => {
-      const results = fuse.search(item.nombre);
-      const bestMatch = results[0];
+      const bestMatch = fuse
+        .search(item.nombre)
+        .sort((a, b) => (a.score ?? 1) - (b.score ?? 1))[0];
       const isHighConfidence = bestMatch && (bestMatch.score ?? 1) < 0.2;
 
       initial[idx] = {

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useLayoutEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/store';
 import { createProductAsync, createEmptyForm, type ProductFormState } from './productsSlice';
 import { selectSizeGroups, selectCategories } from '../settings/settingsSlice';
@@ -6,7 +6,7 @@ import type { Product } from '../../types';
 import Modal from '../../components/ui/Modal';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
-import { useI18n } from '../../i18n/I18nProvider';
+import { useI18n } from '../../i18n/useI18n';
 
 interface ProductCreateModalProps {
   isOpen: boolean;
@@ -21,7 +21,7 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
   const [form, setForm] = useState<ProductFormState>(createEmptyForm());
   const t = useI18n();
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (isOpen) {
       setForm(initialForm ? { ...initialForm } : createEmptyForm());
     }

@@ -12,10 +12,10 @@ import type { ParsedDeliveryNote } from '../../features/products/deliveryNoteSer
 import StockAlertBanner from '../../components/StockAlertBanner';
 import Button from '../../components/ui/Button';
 import { usePermission } from '../../hooks/usePermission';
-import { useI18n } from '../../i18n/I18nProvider';
+import { useI18n } from '../../i18n/useI18n';
 import type { ProductFormState } from '../../features/products/productsSlice';
 import type { Product } from '../../types';
-import Tesseract from 'tesseract.js';
+// Tesseract is loaded dynamically to reduce initial bundle size
 
 const ProductsPage: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -122,20 +122,17 @@ const ProductsPage: React.FC = () => {
     let rawResult: ParsedDeliveryNote | null = null;
 
     try {
-      const { data: { text } } = await Tesseract.recognize(file, 'spa', {
-        logger: m => console.log(m),
-      });
-
-      console.log('OCR extracted text length:', text?.length, 'text:', text?.substring(0, 200));
+      const { createWorker } = await import('tesseract.js');
+      const worker = await createWorker('spa');
+      const { data: { text } } = await worker.recognize(file);
+      await worker.terminate();
 
       const hasEnoughText = text && text.trim().length >= 50;
 
       if (hasEnoughText) {
         try {
           rawResult = await processDeliveryNote(text, tenantId);
-          console.log('Text-based LLM result:', rawResult);
-        } catch (textErr) {
-          console.warn('Text-based LLM failed:', textErr);
+        } catch {
           rawResult = null;
         }
       }
@@ -143,12 +140,9 @@ const ProductsPage: React.FC = () => {
       const textFailed = !hasEnoughText || !rawResult || rawResult.error || !rawResult.items || rawResult.items.length === 0;
 
       if (textFailed) {
-        console.log('Tesseract/text pipeline failed or empty. Falling back to vision LLM...');
         try {
           rawResult = await processDeliveryNoteVision(file, tenantId);
-          console.log('Vision LLM result:', rawResult);
-        } catch (visionErr) {
-          console.error('Vision LLM also failed:', visionErr);
+        } catch {
           alert(`No se pudo procesar este documento.\n\nEl OCR local (Tesseract) extrajo texto ilegible (${text?.length || 0} caracteres de basura), y el análisis visual (IA) también falló.\n\nEste tipo de documento digital con tablas complejas puede requerir:\n1. Exportar a PDF y subir el PDF (próximamente)\n2. Usar una foto más nítida del documento impreso\n3. Escanear el documento en lugar de fotografiarlo`);
           setIsProcessingDelivery(false);
           return;
@@ -161,7 +155,6 @@ const ProductsPage: React.FC = () => {
       }
 
       const result = assignCategories(rawResult, categories);
-      console.log('Keyword categorization:', result.items.map(i => ({ name: i.nombre, cat: i.categoria })));
       setParsedNote(result);
       setIsReviewOpen(true);
     } catch (err) {
@@ -169,7 +162,7 @@ const ProductsPage: React.FC = () => {
     } finally {
       setIsProcessingDelivery(false);
     }
-  }, [tenantId]);
+  }, [tenantId, categories]);
 
   const handleDeliveryNoteConfirm = useCallback((actions: DeliveryAction[]) => {
     const restocks = actions
@@ -225,9 +218,9 @@ const ProductsPage: React.FC = () => {
   ].filter(Boolean).length;
 
 return (
-    <div className="flex h-[calc(100vh-57px)] flex-col">
+    <div className="flex h-full flex-col">
       {selectedProduct ? (
-        <div className="flex-1 p-6 flex flex-col gap-6 overflow-auto">
+        <div className="flex-1 p-6 flex flex-col gap-6 overflow-y-auto">
           <div className="flex items-center gap-2 text-sm">
             <button
               onClick={handleCloseProduct}

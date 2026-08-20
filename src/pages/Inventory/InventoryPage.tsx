@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../app/store';
 import { selectProduct } from '../../features/products/productsSlice';
-import { useI18n } from '../../i18n/I18nProvider';
+import { useI18n } from '../../i18n/useI18n';
 import type { Product } from '../../types';
 
 type InventoryTab = 'summary' | 'lowstock' | 'reorder';
@@ -142,7 +142,7 @@ const InventoryPage: React.FC = () => {
   );
 
   return (
-    <div className="flex h-[calc(100vh-57px)]">
+    <div className="flex h-full">
       <div className="flex-1 p-6 flex flex-col gap-6 overflow-auto">
         {!selectedCategory && (
           <>
@@ -230,8 +230,16 @@ const InventoryPage: React.FC = () => {
               <h3 className="text-sm font-semibold text-red-700">{t.inventory.lowStockProducts} ({lowStockProducts.length})</h3>
             </div>
             {lowStockProducts.length === 0 ? (
-              <div className="px-5 py-10 text-center text-text-muted">
-                {t.inventory.noLowStock}
+              <div className="px-5 py-10 text-center">
+                <div className="flex flex-col items-center gap-2">
+                  <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center">
+                    <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <p className="text-sm font-medium text-text-primary">{t.inventory.noLowStock}</p>
+                  <p className="text-xs text-text-muted">Todos los productos tienen stock suficiente</p>
+                </div>
               </div>
             ) : (
               <table className="w-full">
@@ -303,8 +311,16 @@ const InventoryPage: React.FC = () => {
                 <h3 className="text-sm font-semibold text-orange-700">{t.inventory.reorderList} ({reorderProducts.length})</h3>
               </div>
               {reorderProducts.length === 0 ? (
-                <div className="px-5 py-10 text-center text-text-muted">
-                  {t.inventory.noReorder}
+                <div className="px-5 py-10 text-center">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-primary/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                      </svg>
+                    </div>
+                    <p className="text-sm font-medium text-text-primary">{t.inventory.noReorder}</p>
+                    <p className="text-xs text-text-muted">No hay productos pendientes de reabastecimiento</p>
+                  </div>
                 </div>
               ) : (
                 <table className="w-full">
