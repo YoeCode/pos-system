@@ -30,12 +30,12 @@ export interface RealtimeCallbacks {
 
 export function startRealtimeSync(tenantId: string, callbacks: RealtimeCallbacks): () => void {
   if (!isSupabaseConfigured()) {
-    console.warn('[Realtime] Supabase not configured, skipping Realtime');
+    /* console.warn($$$) */;
     return () => {};
   }
 
   setStatus('connecting');
-  console.log('[Realtime] Starting sync...');
+  /* console.log($$$) */;
 
   const channels: ReturnType<typeof supabase.channel>[] = [];
 
@@ -46,12 +46,12 @@ export function startRealtimeSync(tenantId: string, callbacks: RealtimeCallbacks
         'postgres_changes',
         { event: '*', schema: 'public', table: 'products', filter: `tenant_id=eq.${tenantId}` },
         (payload) => {
-          console.log('[Realtime] Product change:', payload);
+          /* console.log($$$) */;
           callbacks.onProductChange!(payload);
         }
       )
       .subscribe((status) => {
-        console.log('[Realtime] Products channel:', status);
+        /* console.log($$$) */;
         if (status === 'SUBSCRIBED') setStatus('connected');
         if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') setStatus('error');
       });
@@ -65,12 +65,12 @@ export function startRealtimeSync(tenantId: string, callbacks: RealtimeCallbacks
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'sales', filter: `tenant_id=eq.${tenantId}` },
         (payload) => {
-          console.log('[Realtime] Sale inserted:', payload);
+          /* console.log($$$) */;
           callbacks.onSaleChange!(payload);
         }
       )
       .subscribe((status) => {
-        console.log('[Realtime] Sales channel:', status);
+        /* console.log($$$) */;
         if (status === 'SUBSCRIBED') setStatus('connected');
         if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') setStatus('error');
       });
@@ -84,12 +84,12 @@ export function startRealtimeSync(tenantId: string, callbacks: RealtimeCallbacks
         'postgres_changes',
         { event: '*', schema: 'public', table: 'employees', filter: `tenant_id=eq.${tenantId}` },
         (payload) => {
-          console.log('[Realtime] Employee change:', payload);
+          /* console.log($$$) */;
           callbacks.onEmployeeChange!(payload);
         }
       )
       .subscribe((status) => {
-        console.log('[Realtime] Employees channel:', status);
+        /* console.log($$$) */;
         if (status === 'SUBSCRIBED') setStatus('connected');
         if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') setStatus('error');
       });
@@ -103,12 +103,12 @@ export function startRealtimeSync(tenantId: string, callbacks: RealtimeCallbacks
         'postgres_changes',
         { event: '*', schema: 'public', table: 'customers', filter: `tenant_id=eq.${tenantId}` },
         (payload) => {
-          console.log('[Realtime] Customer change:', payload);
+          /* console.log($$$) */;
           callbacks.onCustomerChange!(payload);
         }
       )
       .subscribe((status) => {
-        console.log('[Realtime] Customers channel:', status);
+        /* console.log($$$) */;
         if (status === 'SUBSCRIBED') setStatus('connected');
         if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') setStatus('error');
       });
@@ -116,7 +116,7 @@ export function startRealtimeSync(tenantId: string, callbacks: RealtimeCallbacks
   }
 
   const connectionChannel = supabase.channel('realtime-connection').subscribe((status) => {
-    console.log('[Realtime] Connection channel:', status);
+    /* console.log($$$) */;
     if (status === 'SUBSCRIBED') setStatus('connected');
     if (status === 'CLOSED') setStatus('disconnected');
     if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') setStatus('error');
@@ -124,7 +124,7 @@ export function startRealtimeSync(tenantId: string, callbacks: RealtimeCallbacks
   channels.push(connectionChannel);
 
   return () => {
-    console.log('[Realtime] Stopping sync...');
+    /* console.log($$$) */;
     channels.forEach(ch => supabase.removeChannel(ch));
     setStatus('disconnected');
   };

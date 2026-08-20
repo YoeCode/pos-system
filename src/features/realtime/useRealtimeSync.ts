@@ -6,7 +6,7 @@ import { selectMultiTerminalMode } from '../settings/settingsSlice';
 import { fetchProductsAsync } from '../products/productsSlice';
 import { fetchSalesAsync } from '../sales/salesSlice';
 import { fetchEmployeesAsync } from '../employees/employeesSlice';
-import { useToast } from '../../components/ToastProvider';
+import { useToast } from '../../components/useToast';
 
 export function useRealtimeSync() {
   const dispatch = useAppDispatch();
