@@ -14,9 +14,9 @@ const StockAlertBanner: React.FC = () => {
   const warningCount = alerts.filter(a => a.severity === 'warning').length;
 
   return (
-    <div className={`mx-4 lg:mx-6 mt-4 rounded-xl px-4 py-3 flex items-center justify-between gap-3 ${criticalCount > 0 ? 'bg-red-50 border border-red-200' : 'bg-amber-50 border border-amber-200'}`}>
+    <div className={`mx-4 lg:mx-6 mt-4 rounded-xl px-4 py-3 flex items-center justify-between gap-3 ${criticalCount > 0 ? 'bg-error/10 border border-error/20' : 'bg-warning/10 border border-warning/20'}`}>
       <div className="flex items-center gap-3">
-        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${criticalCount > 0 ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'}`}>
+        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${criticalCount > 0 ? 'bg-error/20 text-error' : 'bg-warning/20 text-warning'}`}>
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
             <path d="M12 9v4"/>
@@ -24,12 +24,12 @@ const StockAlertBanner: React.FC = () => {
           </svg>
         </div>
         <div>
-          <p className={`text-sm font-semibold ${criticalCount > 0 ? 'text-red-700' : 'text-amber-700'}`}>
+          <p className={`text-sm font-semibold ${criticalCount > 0 ? 'text-error' : 'text-warning'}`}>
             {criticalCount > 0
               ? `${criticalCount} producto${criticalCount > 1 ? 's' : ''} sin stock`
               : `${warningCount} producto${warningCount > 1 ? 's' : ''} con stock bajo`}
           </p>
-          <p className={`text-xs ${criticalCount > 0 ? 'text-red-600' : 'text-amber-600'}`}>
+          <p className={`text-xs ${criticalCount > 0 ? 'text-error/80' : 'text-warning/80'}`}>
             Revisa el inventario para reabastecer
           </p>
         </div>
@@ -37,7 +37,7 @@ const StockAlertBanner: React.FC = () => {
       <div className="flex items-center gap-2">
         <button
           onClick={() => navigate('/inventory?tab=lowstock')}
-          className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${criticalCount > 0 ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-amber-600 text-white hover:bg-amber-700'}`}
+          className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${criticalCount > 0 ? 'bg-error text-white hover:bg-error/90' : 'bg-warning text-white hover:bg-warning/90'}`}
         >
           Ver inventario
         </button>

@@ -1,14 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useLayoutEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../app/store';
 import { logoutUser } from '../features/auth/authSlice';
 import { ROLE_PERMISSIONS } from '../types';
 import { selectStoreName } from '../features/settings/settingsSlice';
 import { selectLowStockCount } from '../features/products/productsSlice';
-import { useI18n } from '../i18n/I18nProvider';
+import { useI18n } from '../i18n/useI18n';
 import { useRealtimeStatusIndicator } from '../features/realtime/useRealtimeStatusIndicator';
 import { useRealtimeSync } from '../features/realtime/useRealtimeSync';
-import SaleWindowsTabs from '../features/pos/SaleWindowsTabs';
 
 interface NavItemProps {
   to: string;
@@ -27,7 +26,7 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, label, submenus, badge }) =
   const isInventoryRoute = to === '/inventory';
   const shouldShowDropdown = isInventoryRoute ? (isOpen || hasActiveSubmenu) : isOpen;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setIsOpen(false);
   }, [location.pathname]);
 
@@ -44,7 +43,7 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, label, submenus, badge }) =
           <NavLink
             to={to}
             onClick={handleClick}
-            className={`flex items-center justify-between gap-3 w-full px-4 py-3 lg:py-2.5 mx-2 rounded-lg text-sm font-medium transition-all duration-150 ${
+            className={`flex items-center justify-between gap-3 w-full px-4 py-3 mx-2 rounded-lg text-sm font-medium transition-all duration-150 ${
               isActive
                 ? 'text-text-primary bg-gray-50 border-l-[3px] border-primary'
                 : 'text-text-muted hover:text-text-primary border-l-[3px] border-transparent'
@@ -55,7 +54,7 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, label, submenus, badge }) =
               <span className="hidden sm:inline">{label}</span>
             </div>
             {badge > 0 && (
-              <span className="ml-auto bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+              <span className="ml-auto bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
                 {badge}
               </span>
             )}
@@ -86,7 +85,7 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, label, submenus, badge }) =
           to={to}
           onClick={() => document.body.classList.remove('overflow-hidden')}
           className={({ isActive }) =>
-            `flex items-center gap-3 px-4 py-3 lg:py-2.5 mx-2 rounded-lg text-sm font-medium transition-all duration-150 ${
+            `flex items-center gap-3 px-4 py-3 mx-2 rounded-lg text-sm font-medium transition-all duration-150 ${
               isActive
                 ? 'text-text-primary bg-gray-50 border-l-[3px] border-primary'
                 : 'text-text-muted hover:text-text-primary border-l-[3px] border-transparent'
@@ -96,7 +95,7 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, label, submenus, badge }) =
           <span className="w-5 h-5 lg:w-4 lg:h-4 flex-shrink-0">{icon}</span>
           <span className="hidden sm:inline">{label}</span>
           {badge > 0 && (
-            <span className="ml-auto bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+            <span className="ml-auto bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
               {badge}
             </span>
           )}
@@ -185,7 +184,6 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
     { to: '/employees', icon: <TeamIcon />, label: t.nav.employees, permission: 'employee:view' as const },
     { to: '/reports', icon: <ReportsIcon />, label: t.nav.reports, permission: 'report:view' as const },
     { to: '/settings', icon: <SettingsIcon />, label: t.nav.settings, permission: 'setting:view' as const },
-    { to: '/tenant-settings', icon: <SettingsIcon />, label: 'Negocio', permission: 'setting:view' as const },
   ].filter(item => userPermissions.includes(item.permission));
 
   const openSidebar = () => {
@@ -204,7 +202,7 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
   };
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex h-[100dvh] bg-background overflow-hidden">
       {sidebarOpen && (
         <div className="fixed inset-0 bg-black/60 z-40 lg:hidden" onClick={closeSidebar} />
       )}
@@ -212,35 +210,35 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
       <aside className={`
         fixed lg:relative inset-y-0 left-0 z-50
         w-[280px] lg:w-[240px] bg-surface border-r border-border
-        flex flex-col h-screen
+        flex flex-col h-[100dvh] lg:h-screen
         transform transition-transform duration-200 ease-out
-        lg:translate-x-0
+        lg:translate-x-0 pt-[env(safe-area-inset-top)]
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
-        <div className="px-5 py-5 border-b border-border flex items-center justify-between">
-          <div className="flex items-center gap-2 min-w-0">
+        <div className="h-14 px-5 border-b border-border flex items-center justify-between box-border">
+          <div className="flex items-center gap-2 min-w-0 h-8">
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
               <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 3h2v-2h-2v2zm0 3h2v-2h-2v2zm-2-3h2v-2h-2v2zm3-5h2v-2h-2v2zm2 2h2v-2h-2v2zm-2 2h2v-2h-2v2zm-3 0h2v-2h-2v2z" />
               </svg>
             </div>
-            <div className="min-w-0">
-              <span className="font-bold text-base text-text-primary truncate block">{storeName}</span>
+            <div className="min-w-0 h-8 flex flex-col justify-center">
+              <span className="font-bold text-sm text-text-primary truncate block leading-none">{storeName}</span>
               {tenantId && (
-                <span className="text-[10px] text-text-muted uppercase tracking-wider truncate block">
+                <span className="text-[11px] text-text-muted uppercase tracking-wider truncate block leading-none">
                   {tenantRole || 'miembro'}
                 </span>
               )}
             </div>
           </div>
-          <button onClick={closeSidebar} className="lg:hidden p-1 text-text-muted hover:text-text-primary">
+          <button onClick={closeSidebar} className="lg:hidden p-2.5 text-text-muted hover:text-text-primary" aria-label="Cerrar menú">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
-        <nav className="flex-1 py-4 flex flex-col gap-1 overflow-y-auto">
+        <nav className="flex-1 py-4 flex flex-col gap-1 overflow-y-auto min-h-0 scrollbar-none">
           {navItems.map(item => (
             <NavItem 
               key={item.to} 
@@ -256,7 +254,7 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
         <div className="p-4 border-t border-border">
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 px-4 py-2.5 w-full rounded-lg text-sm font-medium text-text-muted hover:text-error hover:bg-error/5"
+            className="flex items-center gap-3 px-4 py-3 w-full rounded-lg text-sm font-medium text-text-muted hover:text-error hover:bg-error/5"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -266,12 +264,12 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
         </div>
       </aside>
 
-      <div className="flex-1 flex flex-col min-w-0">
-        <header className="bg-surface sticky top-0 z-20 flex flex-col">
-          <div className="px-3 lg:px-6 py-2 lg:py-3 flex items-center gap-2 lg:gap-4">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <header className="h-14 box-border bg-background sticky top-0 z-20 border-b border-border">
+          <div className="h-full px-3 lg:px-6 flex items-center gap-2 lg:gap-4">
             <button
               onClick={openSidebar}
-              className="p-2 rounded-lg hover:bg-background text-text-muted hover:text-text-primary transition-colors flex-shrink-0"
+              className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-background text-text-muted hover:text-text-primary transition-colors flex-shrink-0"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -285,14 +283,14 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
               <input
                 type="text"
                 placeholder="Search..."
-                className="w-full max-w-xs pl-10 pr-4 py-2 bg-background border border-border rounded-lg text-sm text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                className="w-full max-w-xs h-8 pl-10 pr-4 bg-background border border-border rounded-lg text-sm text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
               />
             </div>
 
             <div className="flex-1" />
 
             <div className="flex items-center gap-3">
-              <button className="p-2 rounded-lg hover:bg-background text-text-muted hover:text-text-primary transition-colors">
+              <button className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-background text-text-muted hover:text-text-primary transition-colors">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v1m6 0H9" />
                 </svg>
@@ -314,12 +312,16 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
             </div>
           </div>
 
-          {location.pathname === '/pos' && (
-            <SaleWindowsTabs />
-          )}
         </header>
 
-        <main className="flex-1 overflow-auto">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-white focus:rounded-lg focus:font-medium"
+        >
+          Skip to content
+        </a>
+
+        <main id="main-content" className="flex-1 overflow-y-auto" tabIndex={-1}>
           {children}
         </main>
       </div>

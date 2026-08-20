@@ -1,24 +1,5 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
-
-interface Toast {
-  id: string;
-  message: string;
-  type: 'success' | 'error' | 'warning' | 'info';
-}
-
-interface ToastContextType {
-  toasts: Toast[];
-  addToast: (message: string, type?: Toast['type']) => void;
-  removeToast: (id: string) => void;
-}
-
-const ToastContext = createContext<ToastContextType | null>(null);
-
-export const useToast = (): ToastContextType => {
-  const ctx = useContext(ToastContext);
-  if (!ctx) throw new Error('useToast must be used within ToastProvider');
-  return ctx;
-};
+import React, { useState, useCallback } from 'react';
+import { ToastContext, type Toast } from './ToastContext';
 
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -38,15 +19,15 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   return (
     <ToastContext.Provider value={{ toasts, addToast, removeToast }}>
       {children}
-      <div className="fixed top-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none">
+      <div className="fixed top-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none" aria-live="polite" aria-atomic="true" role="status">
         {toasts.map(toast => (
           <div
             key={toast.id}
             className={`pointer-events-auto px-4 py-3 rounded-xl shadow-lg border text-sm font-medium flex items-center gap-3 min-w-[280px] max-w-[400px] animate-in fade-in slide-in-from-right duration-200 ${
-              toast.type === 'success' ? 'bg-green-50 border-green-200 text-green-700'
-              : toast.type === 'error' ? 'bg-red-50 border-red-200 text-red-700'
-              : toast.type === 'warning' ? 'bg-amber-50 border-amber-200 text-amber-700'
-              : 'bg-blue-50 border-blue-200 text-blue-700'
+              toast.type === 'success' ? 'bg-success/10 border-success/20 text-success'
+              : toast.type === 'error' ? 'bg-error/10 border-error/20 text-error'
+              : toast.type === 'warning' ? 'bg-warning/10 border-warning/20 text-warning'
+              : 'bg-info/10 border-info/20 text-info'
             }`}
           >
             <span className="flex-1">{toast.message}</span>
