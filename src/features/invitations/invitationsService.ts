@@ -49,7 +49,7 @@ export async function createInvitation(input: InvitationInput): Promise<Invitati
     .single();
 
   if (error || !data) {
-    console.error('createInvitation error:', error);
+    /* console.error($$$) */;
     return null;
   }
 
@@ -81,7 +81,7 @@ export async function acceptInvitation(
   });
 
   if (error) {
-    console.error('acceptInvitation RPC error:', error);
+    /* console.error($$$) */;
     return false;
   }
 

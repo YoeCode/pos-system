@@ -59,6 +59,7 @@ export default function AcceptInvitePage() {
             return;
           }
         } catch {
+          /* auth check failed silently */
         }
       }
 
