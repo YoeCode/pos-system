@@ -1,5 +1,5 @@
 import type { Sale } from '../../types';
-import { useI18n } from '../../i18n/I18nProvider';
+import { useI18n } from '../../i18n/useI18n';
 
 interface RecentSalesProps {
   sales: Sale[];
@@ -22,7 +22,15 @@ const RecentSales: React.FC<RecentSalesProps> = ({ sales }) => {
     <div>
       <h3 className="text-sm font-semibold text-text-primary mb-4">{t.dashboard.recentSales}</h3>
       {sales.length === 0 ? (
-        <p className="text-sm text-text-muted text-center py-8">{t.dashboard.noData}</p>
+        <div className="flex flex-col items-center gap-2 py-6 text-center">
+          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+            <svg className="w-5 h-5 text-primary/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <p className="text-sm font-medium text-text-primary">{t.dashboard.noData}</p>
+          <p className="text-xs text-text-muted">Las ventas recientes aparecerán aquí</p>
+        </div>
       ) : (
         <div className="flex flex-col divide-y divide-border">
           {sales.map(sale => (

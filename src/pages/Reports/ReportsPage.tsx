@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useAppSelector } from '../../app/store';
-import { useI18n } from '../../i18n/I18nProvider';
+import { useI18n } from '../../i18n/useI18n';
 import { selectAllSales } from '../../features/sales/salesSlice';
 import Modal from '../../components/ui/Modal';
 import PrintableReceipt from '../../features/pos/PrintableReceipt';
@@ -61,12 +61,13 @@ const ReportsPage: React.FC = () => {
           yearAgo.setFullYear(yearAgo.getFullYear() - 1);
           return saleDate >= yearAgo;
         }
-        case 'custom':
+        case 'custom': {
           if (!customStartDate || !customEndDate) return true;
           const start = new Date(customStartDate);
           const end = new Date(customEndDate);
           end.setHours(23, 59, 59);
           return saleDate >= start && saleDate <= end;
+        }
         default:
           return true;
       }
@@ -320,7 +321,16 @@ const ReportsPage: React.FC = () => {
                 <div className="bg-white rounded-xl border border-border p-5">
                   <h3 className="text-sm font-semibold text-text-primary mb-4">{t.reports.salesByCategory}</h3>
                   {Object.keys(productStats.categorySales).length === 0 ? (
-                    <p className="text-sm text-text-muted">{t.reports.noData}</p>
+                    <div className="flex flex-col items-center gap-2 py-4 text-center">
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                        <svg className="w-4 h-4 text-primary/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+                        </svg>
+                      </div>
+                      <p className="text-sm font-medium text-text-primary">{t.reports.noData}</p>
+                      <p className="text-xs text-text-muted">Las ventas por categoría aparecerán aquí</p>
+                    </div>
                   ) : (
                     <div className="flex flex-col gap-2">
                       {Object.entries(productStats.categorySales)
@@ -402,7 +412,15 @@ const ReportsPage: React.FC = () => {
               <div className="bg-white rounded-xl border border-border p-5">
                 <h3 className="text-sm font-semibold text-text-primary mb-4">{t.reports.bestSellers}</h3>
                 {filteredTopProducts.length === 0 ? (
-                  <p className="text-sm text-text-muted">{t.reports.noData}</p>
+                  <div className="flex flex-col items-center gap-2 py-4 text-center">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                      <svg className="w-4 h-4 text-primary/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                      </svg>
+                    </div>
+                    <p className="text-sm font-medium text-text-primary">{t.reports.noData}</p>
+                    <p className="text-xs text-text-muted">Los productos más vendidos aparecerán aquí</p>
+                  </div>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full">
@@ -438,7 +456,15 @@ const ReportsPage: React.FC = () => {
               <div className="bg-white rounded-xl border border-border p-5">
                 <h3 className="text-sm font-semibold text-text-primary mb-4">{t.reports.salesByEmployee}</h3>
                 {filteredSales.length === 0 ? (
-                  <p className="text-sm text-text-muted">{t.reports.noData}</p>
+                  <div className="flex flex-col items-center gap-2 py-4 text-center">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                      <svg className="w-4 h-4 text-primary/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                    </div>
+                    <p className="text-sm font-medium text-text-primary">{t.reports.noData}</p>
+                    <p className="text-xs text-text-muted">Las ventas por empleado aparecerán aquí</p>
+                  </div>
                 ) : (
                   <div className="flex flex-col gap-3">
                     {employees.filter(e => e.active).map(emp => {

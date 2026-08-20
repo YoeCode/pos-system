@@ -1,5 +1,5 @@
 import type { Sale } from '../../types';
-import { useI18n } from '../../i18n/I18nProvider';
+import { useI18n } from '../../i18n/useI18n';
 
 interface SalesChartProps {
   sales: Sale[];
@@ -14,7 +14,15 @@ const SalesChart: React.FC<SalesChartProps> = ({ sales }) => {
     return (
       <div>
         <h3 className="text-sm font-semibold text-text-primary mb-4">{t.dashboard.salesChart}</h3>
-        <p className="text-sm text-text-muted text-center py-8">{t.dashboard.noData}</p>
+        <div className="flex flex-col items-center gap-2 py-6 text-center">
+          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+            <svg className="w-5 h-5 text-primary/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          </div>
+          <p className="text-sm font-medium text-text-primary">{t.dashboard.noData}</p>
+          <p className="text-xs text-text-muted">Los datos de ventas aparecerán tras la primera venta</p>
+        </div>
       </div>
     );
   }

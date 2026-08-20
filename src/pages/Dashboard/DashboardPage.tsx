@@ -6,11 +6,10 @@ import PaymentMethodChart from './PaymentMethodChart';
 import RecentSales from './RecentSales';
 import LowStockAlerts from './LowStockAlerts';
 import StockAlertBanner from '../../components/StockAlertBanner';
-import { useI18n } from '../../i18n/I18nProvider';
+import { useI18n } from '../../i18n/useI18n';
 
 const DashboardPage = () => {
   const sales = useAppSelector(selectFilteredSales);
-  const products = useAppSelector(state => state.products.items);
   const t = useI18n();
 
   const totalRevenue = sales.reduce((sum, s) => sum + s.order.total, 0);
@@ -32,8 +31,10 @@ const DashboardPage = () => {
 
   return (
     <div className="flex flex-col gap-4 lg:gap-6">
-      <StockAlertBanner />
-      <div className="p-4 lg:p-6 flex flex-col gap-4 lg:gap-6">
+      <div className="px-4 lg:px-6 pt-4 lg:pt-6">
+        <StockAlertBanner />
+      </div>
+      <div className="px-4 lg:px-6 pb-4 lg:pb-6 flex flex-col gap-4 lg:gap-6">
         {/* Header */}
         <div>
           <h1 className="text-xl lg:text-2xl font-bold text-text-primary">{t.dashboard.title}</h1>

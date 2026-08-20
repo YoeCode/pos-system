@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useAppSelector } from '../../app/store';
 import { selectLowStockAlerts } from '../../features/products/productsSlice';
-import { useI18n } from '../../i18n/I18nProvider';
+import { useI18n } from '../../i18n/useI18n';
 
 const LowStockAlerts: React.FC = () => {
   const t = useI18n();
@@ -22,7 +22,15 @@ const LowStockAlerts: React.FC = () => {
         )}
       </div>
       {alerts.length === 0 ? (
-        <p className="text-sm text-text-muted text-center py-8">{t.dashboard.noData}</p>
+        <div className="flex flex-col items-center gap-2 py-6 text-center">
+          <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center">
+            <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <p className="text-sm font-medium text-text-primary">Todo en orden</p>
+          <p className="text-xs text-text-muted">No hay productos con stock bajo</p>
+        </div>
       ) : (
         <div className="flex flex-col gap-3">
           {alerts.slice(0, 5).map(alert => {
@@ -46,7 +54,7 @@ const LowStockAlerts: React.FC = () => {
                     {alert.sizes.map(s => (
                       <span
                         key={s.size}
-                        className={`text-[10px] px-1.5 py-0.5 rounded ${s.stock === 0 ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}
+                        className={`text-xs px-1.5 py-0.5 rounded ${s.stock === 0 ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}
                       >
                         {s.size}: {s.stock}
                       </span>
