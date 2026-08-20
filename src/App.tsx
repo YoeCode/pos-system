@@ -5,6 +5,7 @@ import { store } from './app/store';
 import { router } from './router';
 import { I18nProvider } from './i18n/I18nProvider';
 import { ToastProvider } from './components/ToastProvider';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { initializeAuth } from './features/auth/authSlice';
 import { fetchProductsAsync } from './features/products/productsSlice';
 import { fetchSalesAsync, loadNextOrderNumberAsync } from './features/sales/salesSlice';
@@ -29,7 +30,7 @@ function AppInner() {
       dispatch(fetchEmployeesAsync());
       dispatch(fetchSettingsFromSupabase(tenantId)).then((result: any) => {
         if (result.meta.requestStatus === 'fulfilled' && !result.payload.hasData) {
-          const { tax, store: storeSettings, pos, language, loyalty } = store.getState().settings;
+          const { pos } = store.getState().settings;
           dispatch(syncCategoriesToSupabase({ tenantId, categories: pos.categories }));
           dispatch(syncBrandsToSupabase({ tenantId, brands: pos.brands }));
           dispatch(syncSizesToSupabase({ tenantId, sizes: pos.sizes }));
@@ -40,11 +41,13 @@ function AppInner() {
   }, [dispatch, isAuthenticated, tenantId]);
 
   return (
-    <I18nProvider>
-      <ToastProvider>
-        <RouterProvider router={router} />
-      </ToastProvider>
-    </I18nProvider>
+    <ErrorBoundary>
+      <I18nProvider>
+        <ToastProvider>
+          <RouterProvider router={router} />
+        </ToastProvider>
+      </I18nProvider>
+    </ErrorBoundary>
   );
 }
 

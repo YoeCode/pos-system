@@ -12,6 +12,9 @@ export default {
         'text-primary': '#0A0B0D',
         'text-muted': '#7A8194',
         border: '#E2E5EE',
+        success: '#00C853',
+        warning: '#FFA726',
+        info: '#0091EA',
         error: '#FF5370',
         'dark-bg': '#1C2128',
         'dark-surface': '#252B33',
@@ -19,6 +22,7 @@ export default {
         'dark-border': '#3D4451',
         'dark-text': '#CDD9E5',
         'dark-muted': '#768390',
+        'dark-navy': '#1B2B4B',
       },
       fontFamily: {
         sans: ['Sora', 'sans-serif'],

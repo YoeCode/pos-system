@@ -1,8 +1,6 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 export default function LandingPage() {
-  const [email, setEmail] = useState('');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
@@ -27,7 +25,7 @@ export default function LandingPage() {
       </nav>
 
       <div className="max-w-5xl mx-auto px-6 py-20 text-center">
-        <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">
+        <h1 className="text-5xl md:text-6xl font-bold mb-6 text-emerald-400">
           Tu negocio, tu control
         </h1>
         <p className="text-xl text-slate-300 mb-10 max-w-2xl mx-auto">
