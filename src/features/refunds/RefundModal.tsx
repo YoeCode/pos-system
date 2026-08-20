@@ -40,10 +40,6 @@ const RefundModal: React.FC<RefundModalProps> = ({ isOpen, onClose }) => {
   const [pinError, setPinError] = useState('');
   const [completed, setCompleted] = useState(false);
 
-  const employeeName = currentEmployeeId
-    ? employees.find(e => e.id === currentEmployeeId)?.name
-    : currentUser?.name;
-
   const maxDays = refundSettings.maxRefundDays;
   const now = new Date();
 
@@ -72,8 +68,9 @@ const RefundModal: React.FC<RefundModalProps> = ({ isOpen, onClose }) => {
     setSelectedItems(prev => {
       const current = prev[productId] || 0;
       if (current >= maxQty) {
-        const { [productId]: _, ...rest } = prev;
-        return rest;
+      const { [productId]: removed, ...rest } = prev;
+      void removed;
+      return rest;
       }
       return { ...prev, [productId]: current + 1 };
     });
@@ -82,8 +79,9 @@ const RefundModal: React.FC<RefundModalProps> = ({ isOpen, onClose }) => {
   const updateQty = (productId: string, qty: number, maxQty: number) => {
     if (qty <= 0) {
       setSelectedItems(prev => {
-        const { [productId]: _, ...rest } = prev;
-        return rest;
+      const { [productId]: removed, ...rest } = prev;
+      void removed;
+      return rest;
       });
     } else {
       setSelectedItems(prev => ({ ...prev, [productId]: Math.min(qty, maxQty) }));
@@ -179,8 +177,16 @@ const RefundModal: React.FC<RefundModalProps> = ({ isOpen, onClose }) => {
   if (!refundSettings.enabled) {
     return (
       <Modal isOpen={isOpen} onClose={handleClose} title="Devoluciones">
-        <div className="p-6 text-center text-text-muted">
-          Las devoluciones están deshabilitadas en la configuración.
+        <div className="p-6 text-center">
+          <div className="flex flex-col items-center gap-2">
+            <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
+              <svg className="w-6 h-6 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+              </svg>
+            </div>
+            <p className="text-sm font-medium text-text-primary">Devoluciones deshabilitadas</p>
+            <p className="text-xs text-text-muted">Las devoluciones están desactivadas en la configuración del negocio.</p>
+          </div>
         </div>
       </Modal>
     );
@@ -234,9 +240,25 @@ const RefundModal: React.FC<RefundModalProps> = ({ isOpen, onClose }) => {
               ))}
             </div>
           ) : searchQuery.trim() ? (
-            <p className="text-center text-text-muted text-sm py-4">No se encontraron ventas</p>
+            <div className="flex flex-col items-center gap-2 py-6 text-center">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <svg className="w-5 h-5 text-primary/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <p className="text-sm font-medium text-text-primary">No se encontraron ventas</p>
+              <p className="text-xs text-text-muted">Prueba con otro término de búsqueda</p>
+            </div>
           ) : (
-            <p className="text-center text-text-muted text-sm py-4">Escribe para buscar una venta</p>
+            <div className="flex flex-col items-center gap-2 py-6 text-center">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <svg className="w-5 h-5 text-primary/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <p className="text-sm font-medium text-text-primary">Buscar venta</p>
+              <p className="text-xs text-text-muted">Escribe el número de orden o nombre del cliente</p>
+            </div>
           )}
         </div>
       ) : step === 'select' && selectedSale ? (

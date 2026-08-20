@@ -12,14 +12,14 @@ const loadRefundsFromStorage = (): Refund[] => {
   try {
     const stored = localStorage.getItem(REFUNDS_STORAGE_KEY);
     if (stored) return JSON.parse(stored) as Refund[];
-  } catch {}
+  } catch { /* storage access denied */ }
   return [];
 };
 
 const saveRefundsToStorage = (refunds: Refund[]): void => {
   try {
     localStorage.setItem(REFUNDS_STORAGE_KEY, JSON.stringify(refunds));
-  } catch {}
+  } catch { /* storage access denied */ }
 };
 
 const initialState: RefundsState = {
