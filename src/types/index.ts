@@ -286,11 +286,13 @@ export interface SaleWindow {
   id: string;
   name: string;
   cart: CartItem[];
+  cartHistory: CartItem[][];
   selectedCustomerId: string | null;
   paymentMethod: PaymentMethod;
   itemDiscounts: Record<string, number>;
   manualDiscount: number;
   pointsToRedeem: number;
+  isGiftReceipt: boolean;
   createdAt: string;
 }
 
