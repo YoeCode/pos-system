@@ -129,7 +129,7 @@ const createDefaultWindow = (num: number): SaleWindow => ({
   cart: [],
   cartHistory: [],
   selectedCustomerId: null,
-  paymentMethod: 'cash',
+  paymentMethod: 'card',
   itemDiscounts: {},
   manualDiscount: 0,
   pointsToRedeem: 0,
@@ -442,7 +442,7 @@ export const selectActiveWindowCart = (state: RootState): CartItem[] => {
 };
 export const selectActiveWindowPaymentMethod = (state: RootState): PaymentMethod => {
   const window = selectActiveWindow(state);
-  return window?.paymentMethod ?? 'cash';
+  return window?.paymentMethod ?? 'card';
 };
 export const selectActiveWindowCustomerId = (state: RootState): string | null => {
   const window = selectActiveWindow(state);

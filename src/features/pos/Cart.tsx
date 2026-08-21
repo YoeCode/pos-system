@@ -23,7 +23,6 @@ import DiscountModal from './DiscountModal';
 import { useI18n } from '../../i18n/useI18n';
 import { calculateCart } from './calculation';
 import { selectAllProducts } from '../products/productsSlice';
-import type { PaymentMethod } from '../../types';
 
 interface CartProps {
   variant?: 'sidebar' | 'bottomSheet';
@@ -88,36 +87,6 @@ const Cart: React.FC<CartProps> = ({ variant = 'sidebar', onClose }) => {
     }
     dispatch(updateQuantity({ lineId: item.lineId, quantity: newQty }));
   };
-
-  const paymentMethods: { id: PaymentMethod; label: string; icon: React.ReactNode }[] = [
-    {
-      id: 'cash',
-      label: t.pos.cash,
-      icon: (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-        </svg>
-      ),
-    },
-    {
-      id: 'card',
-      label: t.pos.card,
-      icon: (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-        </svg>
-      ),
-    },
-    {
-      id: 'bizum',
-      label: t.pos.bizum,
-      icon: (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-        </svg>
-      ),
-    },
-  ];
 
   return (
     <div className={isSheet ? 'flex flex-col h-full' : 'w-full flex-shrink-0 bg-white border-l border-border flex flex-col h-full'}>
@@ -339,27 +308,6 @@ const Cart: React.FC<CartProps> = ({ variant = 'sidebar', onClose }) => {
           </div>
         )}
 
-        {/* Payment method */}
-        <div>
-          <p className="text-xs font-semibold text-text-muted uppercase tracking-widest mb-2">{t.pos.paymentMethod}</p>
-          <div className="grid grid-cols-3 gap-2">
-            {paymentMethods.map(method => (
-              <button
-                key={method.id}
-                onClick={() => dispatch(setPaymentMethod(method.id))}
-                className={`py-2.5 rounded-lg text-xs font-semibold transition-all duration-150 flex flex-col items-center justify-center gap-1 ${
-                  paymentMethod === method.id
-                    ? 'bg-dark-navy text-white'
-                    : 'bg-white border border-border text-text-muted hover:border-text-primary hover:text-text-primary'
-                }`}
-              >
-                {method.icon}
-                {method.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
         <button
           onClick={() => dispatch(setIsGiftReceipt(!isGiftReceipt))}
           className={`w-full py-2.5 rounded-lg text-sm font-semibold transition-all duration-150 flex items-center justify-center gap-2 border ${
@@ -378,7 +326,11 @@ const Cart: React.FC<CartProps> = ({ variant = 'sidebar', onClose }) => {
         {hasPermission('pos:checkout') && (
           <button
             disabled={cart.length === 0}
-            onClick={() => cart.length > 0 && setIsCheckoutOpen(true)}
+            onClick={() => {
+              if (cart.length === 0) return;
+              dispatch(setPaymentMethod('card'));
+              setIsCheckoutOpen(true);
+            }}
             className="w-full py-3.5 bg-primary hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold rounded-xl text-sm transition-all duration-150 active:scale-[0.98]"
           >
             {t.pos.checkout} €{total.toFixed(2)}
