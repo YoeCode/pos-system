@@ -28,6 +28,25 @@ interface FormState {
   image: string;
 }
 
+interface EditedSize {
+  size: string;
+  stock: number;
+  minStock: number;
+  sku?: string;
+}
+
+function sanitizeEditedSizes(sizes: EditedSize[]): EditedSize[] {
+  const seen = new Set<string>();
+  const cleaned: EditedSize[] = [];
+  for (const sz of sizes) {
+    const name = sz.size.trim();
+    if (!name || seen.has(name)) continue;
+    seen.add(name);
+    cleaned.push({ ...sz, size: name });
+  }
+  return cleaned;
+}
+
 const ProductDetailPanel: React.FC<ProductDetailPanelProps> = ({ onDuplicate }) => {
   const dispatch = useAppDispatch();
   const product = useAppSelector(state => state.products.selectedProduct);
@@ -55,18 +74,19 @@ const ProductDetailPanel: React.FC<ProductDetailPanelProps> = ({ onDuplicate }) 
     image: '',
   });
 
-  const [sizeStocks, setSizeStocks] = useState<Record<string, number>>({});
-  const [sizeMinStocks, setSizeMinStocks] = useState<Record<string, number>>({});
+  const [editedSizes, setEditedSizes] = useState<EditedSize[]>([]);
 
   const [snapshot, setSnapshot] = useState<FormState | null>(null);
-  const [sizeSnapshot, setSizeSnapshot] = useState<Record<string, number> | null>(null);
+  const [sizeSnapshot, setSizeSnapshot] = useState<EditedSize[] | null>(null);
   const [unlockedActions, setUnlockedActions] = useState<Set<'stock' | 'publish'>>(new Set());
   const [authorizedBy, setAuthorizedBy] = useState<Employee | null>(null);
   const [showPinModal, setShowPinModal] = useState(false);
   const [pendingAuthAction, setPendingAuthAction] = useState<'stock' | 'publish' | null>(null);
 
   const hasSizes = product ? !!(product.sizes && product.sizes.length > 0) : false;
-  const totalSizeStock = hasSizes ? product!.sizes!.reduce((s, sz) => s + sz.stock, 0) : form.stock;
+  const totalSizeStock = hasSizes
+    ? (isEditing ? editedSizes : product!.sizes!).reduce((s, sz) => s + sz.stock, 0)
+    : form.stock;
 
   useLayoutEffect(() => {
     if (product) {
@@ -88,15 +108,14 @@ const ProductDetailPanel: React.FC<ProductDetailPanelProps> = ({ onDuplicate }) 
       setForm(data);
       setSnapshot(data);
 
-      const stocks: Record<string, number> = {};
-      const minStocks: Record<string, number> = {};
-      product.sizes?.forEach(sz => {
-        stocks[sz.size] = sz.stock;
-        minStocks[sz.size] = sz.minStock ?? 0;
-      });
-      setSizeStocks(stocks);
-      setSizeMinStocks(minStocks);
-      setSizeSnapshot({ ...stocks });
+      const sizes: EditedSize[] = (product.sizes ?? []).map(sz => ({
+        size: sz.size,
+        stock: sz.stock,
+        minStock: sz.minStock ?? 0,
+        sku: sz.sku,
+      }));
+      setEditedSizes(sizes);
+      setSizeSnapshot(sizes.map(s => ({ ...s })));
 
       setIsEditing(false);
       setUnlockedActions(new Set());
@@ -135,13 +154,8 @@ const ProductDetailPanel: React.FC<ProductDetailPanelProps> = ({ onDuplicate }) 
   if (!product) return null;
 
   const handleSave = () => {
-    const updatedSizes = hasSizes
-      ? product.sizes!.map(sz => ({
-          ...sz,
-          stock: sizeStocks[sz.size] ?? sz.stock,
-          minStock: sizeMinStocks[sz.size] ?? sz.minStock ?? 0,
-        }))
-      : undefined;
+    const cleanedSizes = hasSizes ? sanitizeEditedSizes(editedSizes) : [];
+    const updatedSizes = hasSizes ? cleanedSizes : undefined;
 
     const updated: Product = {
       ...product,
@@ -150,7 +164,7 @@ const ProductDetailPanel: React.FC<ProductDetailPanelProps> = ({ onDuplicate }) 
       category: form.category,
       price: form.price,
       costPrice: form.costPrice,
-      stock: hasSizes ? totalSizeStock : form.stock,
+      stock: hasSizes ? cleanedSizes.reduce((s, sz) => s + sz.stock, 0) : form.stock,
       minStock: form.minStock,
       description: form.description,
       publishedOnline: form.publishedOnline,
@@ -168,7 +182,7 @@ const ProductDetailPanel: React.FC<ProductDetailPanelProps> = ({ onDuplicate }) 
 
   const handleCancel = () => {
     if (snapshot) setForm(snapshot);
-    if (sizeSnapshot) setSizeStocks(sizeSnapshot);
+    if (sizeSnapshot) setEditedSizes(sizeSnapshot.map(s => ({ ...s })));
     setIsEditing(false);
     setUnlockedActions(new Set());
     setAuthorizedBy(null);
@@ -177,11 +191,23 @@ const ProductDetailPanel: React.FC<ProductDetailPanelProps> = ({ onDuplicate }) 
 
   const handleEdit = () => {
     setSnapshot({ ...form });
-    setSizeSnapshot({ ...sizeStocks });
+    setSizeSnapshot(editedSizes.map(s => ({ ...s })));
     setIsEditing(true);
     setUnlockedActions(new Set());
     setAuthorizedBy(null);
     setPendingAuthAction(null);
+  };
+
+  const handleAddSize = () => {
+    setEditedSizes(prev => [...prev, { size: '', stock: 0, minStock: 0 }]);
+  };
+
+  const handleRemoveSize = (index: number) => {
+    setEditedSizes(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSizeFieldChange = (index: number, field: keyof EditedSize, value: string | number) => {
+    setEditedSizes(prev => prev.map((sz, i) => (i === index ? { ...sz, [field]: value } : sz)));
   };
 
   const handleDelete = () => {
@@ -474,52 +500,75 @@ const ProductDetailPanel: React.FC<ProductDetailPanelProps> = ({ onDuplicate }) 
                   Authorized by {authorizedBy.name}
                 </p>
               )}
-              <div className="grid grid-cols-4 gap-2">
-                {product.sizes!.map(sizeOption => {
-                  const minStock = sizeMinStocks[sizeOption.size] ?? sizeOption.minStock ?? 0;
-                  const currentStock = sizeStocks[sizeOption.size] ?? sizeOption.stock;
-                  const isLow = currentStock <= minStock;
-                  const isEditable = isEditing && unlockedActions.has('stock');
-
-                  return (
-                    <div
-                      key={sizeOption.size}
-                      className={`p-3 rounded-lg border text-center ${
-                        isLow
-                          ? 'border-amber-200 bg-amber-50'
-                          : 'border-border bg-background'
-                      }`}
-                    >
-                      <p className="text-sm font-semibold text-text-primary">{sizeOption.size}</p>
-                      {isEditable ? (
-                        <input
-                          type="number"
-                          min="0"
-                          value={currentStock}
-                          onChange={e => setSizeStocks(prev => ({ ...prev, [sizeOption.size]: parseInt(e.target.value) || 0 }))}
-                          className="w-full mt-1 px-2 py-1 text-center text-lg font-mono font-bold border border-primary rounded bg-white focus:outline-none focus:ring-2 focus:ring-primary/20"
-                        />
-                      ) : (
-                        <p className={`text-lg font-mono font-bold mt-1 ${isLow ? 'text-amber-600' : 'text-text-primary'}`}>
-                          {currentStock}
-                        </p>
-                      )}
-                      {isEditable ? (
-                        <input
-                          type="number"
-                          min="0"
-                          value={minStock}
-                          onChange={e => setSizeMinStocks(prev => ({ ...prev, [sizeOption.size]: parseInt(e.target.value) || 0 }))}
-                          className="w-full mt-1 px-2 py-0.5 text-center text-xs font-mono border border-border rounded bg-white focus:outline-none focus:ring-1 focus:ring-primary/20"
-                          placeholder="min"
-                        />
-                      ) : (
-                        <p className="text-xs text-text-muted mt-0.5">min: {minStock}</p>
-                      )}
+              {isEditing && unlockedActions.has('stock') ? (
+                <div className="flex flex-col gap-2">
+                  {editedSizes.map((sz, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        placeholder="Talla"
+                        value={sz.size}
+                        onChange={e => handleSizeFieldChange(idx, 'size', e.target.value)}
+                        className="flex-1 px-2 py-2 text-sm border border-border rounded text-text-primary font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+                      />
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="Stock"
+                        value={sz.stock}
+                        onChange={e => handleSizeFieldChange(idx, 'stock', parseInt(e.target.value) || 0)}
+                        className="w-20 px-2 py-2 text-sm border border-border rounded text-text-primary font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+                      />
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="Min"
+                        value={sz.minStock}
+                        onChange={e => handleSizeFieldChange(idx, 'minStock', parseInt(e.target.value) || 0)}
+                        className="w-20 px-2 py-2 text-sm border border-border rounded text-text-primary font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveSize(idx)}
+                        className="w-8 h-8 flex-shrink-0 flex items-center justify-center text-error border border-error rounded-lg hover:bg-error/5 transition-colors"
+                        aria-label="Eliminar talla"
+                      >
+                        ×
+                      </button>
                     </div>
-                  );
-                })}
-              </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={handleAddSize}
+                    className="self-start text-xs text-primary hover:underline"
+                  >
+                    + Añadir talla
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-4 gap-2">
+                  {editedSizes.map((sz, idx) => {
+                    const isLow = sz.stock <= sz.minStock;
+
+                    return (
+                      <div
+                        key={`${sz.size}-${idx}`}
+                        className={`p-3 rounded-lg border text-center ${
+                          isLow
+                            ? 'border-amber-200 bg-amber-50'
+                            : 'border-border bg-background'
+                        }`}
+                      >
+                        <p className="text-sm font-semibold text-text-primary">{sz.size}</p>
+                        <p className={`text-lg font-mono font-bold mt-1 ${isLow ? 'text-amber-600' : 'text-text-primary'}`}>
+                          {sz.stock}
+                        </p>
+                        <p className="text-xs text-text-muted mt-0.5">min: {sz.minStock}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </>
         ) : (
