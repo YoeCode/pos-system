@@ -142,8 +142,8 @@ const InventoryPage: React.FC = () => {
   );
 
   return (
-    <div className="flex h-full">
-      <div className="flex-1 p-6 flex flex-col gap-6 overflow-auto">
+    <div className="flex">
+      <div className="flex-1 p-6 flex flex-col gap-6">
         {!selectedCategory && (
           <>
             <div>

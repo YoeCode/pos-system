@@ -238,7 +238,7 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
           </button>
         </div>
 
-        <nav className="flex-1 py-4 flex flex-col gap-1 overflow-y-auto min-h-0 scrollbar-none">
+        <nav className="flex-1 py-4 flex flex-col gap-1 overflow-y-auto overscroll-y-contain min-h-0 scrollbar-none">
           {navItems.map(item => (
             <NavItem 
               key={item.to} 
@@ -321,7 +321,7 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
           Skip to content
         </a>
 
-        <main id="main-content" className="flex-1 overflow-y-auto" tabIndex={-1}>
+        <main id="main-content" className="flex-1 overflow-y-auto overscroll-y-contain" tabIndex={-1}>
           {children}
         </main>
       </div>

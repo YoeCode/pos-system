@@ -165,9 +165,9 @@ const POSPage: React.FC = () => {
   const { grossSubtotal, totalDiscount, tax, total } = calc;
 
   return (
-    <div className="flex flex-col h-full md:flex-row w-full min-w-0 overflow-hidden">
+    <div className="flex flex-col md:flex-row w-full min-w-0 md:h-full md:overflow-hidden">
       {/* Products area */}
-      <div className="flex-1 flex flex-col overflow-hidden min-w-0 pb-20 lg:pb-0">
+      <div className="flex-1 flex flex-col min-w-0 pb-20 lg:pb-0 md:overflow-hidden">
         <div className="px-3 lg:px-6 pt-3 lg:pt-4 pb-2 flex-shrink-0">
           <div className="flex items-center justify-between">
             {isCashBoxOpen ? (
@@ -265,7 +265,7 @@ const POSPage: React.FC = () => {
         )}
 
         {isCashBoxOpen ? (
-          <div className="flex-1 overflow-y-auto px-3 lg:px-6 pb-4">
+          <div className="flex-1 px-3 lg:px-6 pb-4 md:overflow-y-auto md:overscroll-y-contain">
             {filteredBySearch.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
                 <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center">

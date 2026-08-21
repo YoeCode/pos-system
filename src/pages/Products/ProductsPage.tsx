@@ -218,9 +218,9 @@ const ProductsPage: React.FC = () => {
   ].filter(Boolean).length;
 
 return (
-    <div className="flex h-full flex-col">
+    <div className="flex flex-col">
       {selectedProduct ? (
-        <div className="flex-1 p-6 flex flex-col gap-6 overflow-y-auto">
+        <div className="flex-1 p-6 flex flex-col gap-6 overflow-y-auto overscroll-y-contain">
           <div className="flex items-center gap-2 text-sm">
             <button
               onClick={handleCloseProduct}
@@ -416,10 +416,8 @@ return (
             </div>
           </div>
 
-          <div className="flex flex-1 overflow-hidden">
-            <div className="flex-1 overflow-auto bg-white">
-              <ProductsTable />
-            </div>
+          <div className="flex-1 bg-white">
+            <ProductsTable />
           </div>
         </>
       )}

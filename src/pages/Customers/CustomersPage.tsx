@@ -59,7 +59,7 @@ const CustomersPage: React.FC = () => {
   });
 
   return (
-    <div className="flex h-full">
+    <div className="flex">
       {detailCustomerId && selectedCustomer ? (
         selectedSaleId ? (
           <SaleDetailView
@@ -68,7 +68,7 @@ const CustomersPage: React.FC = () => {
             breadcrumbLabel={selectedSaleLabel}
           />
         ) : (
-          <div className="flex-1 p-6 flex flex-col gap-6 overflow-y-auto">
+          <div className="flex-1 p-6 flex flex-col gap-6">
             <div className="flex items-center gap-2 text-sm">
               <button
                 onClick={handleBackToList}
@@ -90,7 +90,7 @@ const CustomersPage: React.FC = () => {
           </div>
         )
       ) : (
-        <div className="flex-1 p-6 flex flex-col gap-6 overflow-auto">
+        <div className="flex-1 p-6 flex flex-col gap-6">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-xl font-bold text-text-primary">Customers</h1>
