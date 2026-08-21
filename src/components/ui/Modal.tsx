@@ -101,7 +101,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, subtitle, childre
         aria-modal="true"
         aria-labelledby="modal-title"
         tabIndex={-1}
-        className="relative z-10 bg-white rounded-xl shadow-2xl w-full max-w-lg sm:max-w-xl lg:max-w-2xl max-h-[90dvh] overflow-y-auto mx-4 outline-none"
+        className="relative z-10 bg-white rounded-xl shadow-2xl w-full max-w-lg sm:max-w-xl lg:max-w-2xl max-h-[90dvh] overflow-y-auto overscroll-contain mx-4 outline-none"
       >
         <div className="flex items-start justify-between p-6 border-b border-border">
           <div>
