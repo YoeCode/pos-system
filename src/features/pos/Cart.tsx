@@ -5,7 +5,7 @@ import {
   selectActiveWindowCart, selectActiveWindowPaymentMethod, selectActiveWindowCustomerId,
   selectActiveWindowItemDiscounts, selectActiveWindowManualDiscount, selectActiveWindowPointsToRedeem,
   selectCanUndo, selectActiveWindowIsGiftReceipt,
-  setWindowItemDiscounts, setPointsToRedeem, setIsGiftReceipt,
+  setWindowItemDiscounts, setIsGiftReceipt,
 } from './posSlice';
 import {
   selectTaxRate,
@@ -252,12 +252,6 @@ const Cart: React.FC<CartProps> = ({ variant = 'sidebar', onClose }) => {
               <span className="font-mono text-purple-600">-€{(calc.lines.reduce((sum, l) => sum + (l.discountSource === 'loyalty' ? l.appliedDiscount : 0), 0)).toFixed(2)}</span>
             </div>
           )}
-          {pointsToRedeem > 0 && (
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-purple-600">{t.pos.points} ({pointsToRedeem})</span>
-              <span className="font-mono text-purple-600">-€{(pointsToRedeem / 100).toFixed(2)}</span>
-            </div>
-          )}
           {calc.lines.some(l => l.discountSource === 'manual') && (
             <div className="flex items-center justify-between text-sm">
               <span className="text-green-600">{t.pos.manualDiscountShort}</span>
@@ -274,39 +268,6 @@ const Cart: React.FC<CartProps> = ({ variant = 'sidebar', onClose }) => {
             <span className="font-mono text-primary font-bold text-xl">€{total.toFixed(2)}</span>
           </div>
         </div>
-
-        {selectedCustomer && selectedCustomer.loyaltyPoints > 0 && (
-          <div className="p-3 rounded-lg bg-purple-50 border border-purple-200">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-xs font-semibold text-purple-700 uppercase tracking-wide">{t.pos.loyaltyProgram || 'Fidelización'}</span>
-              <span className="text-xs text-purple-600 font-medium">-{pointsToRedeem > 0 ? (pointsToRedeem / 100).toFixed(2) : '0.00'} €</span>
-            </div>
-            <p className="text-xs text-purple-600 mb-2">
-              {selectedCustomer.tier} · {selectedCustomer.loyaltyPoints} {t.pos.availablePoints || 'pts disponibles'} · {t.pos.pointsValue || '100 pts = 1€'}
-            </p>
-            <div className="flex items-center gap-2">
-              <input
-                type="range"
-                min={0}
-                max={selectedCustomer.loyaltyPoints}
-                step={1}
-                value={pointsToRedeem}
-                onChange={e => dispatch(setPointsToRedeem(parseInt(e.target.value, 10)))}
-                className="flex-1 accent-purple-600"
-                aria-label={t.pos.redeemPoints || 'Canjear puntos'}
-              />
-              <span className="text-xs font-mono text-purple-700 w-12 text-right">{pointsToRedeem}</span>
-            </div>
-            {pointsToRedeem > 0 && (
-              <button
-                onClick={() => dispatch(setPointsToRedeem(0))}
-                className="mt-1.5 text-xs text-purple-600 underline"
-              >
-                {t.pos.cancel}
-              </button>
-            )}
-          </div>
-        )}
 
         <button
           onClick={() => dispatch(setIsGiftReceipt(!isGiftReceipt))}

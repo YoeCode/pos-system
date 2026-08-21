@@ -2,9 +2,16 @@ import React, { useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../../../app/store';
 import { completeSaleAsync } from '../../sales/salesSlice';
 import { reduceStockAsync, selectAllProducts } from '../../products/productsSlice';
-import { selectTaxLabel, selectPointsPerEuro, selectLoyaltyTiers, selectMultiTerminalMode, selectTerminalId } from '../../settings/settingsSlice';
-import { addLoyaltyPointsAsync, deductLoyaltyPointsAsync } from '../../customers/customersSlice';
-import { setPaymentMethod, startNewSale } from '../posSlice';
+import { selectTaxLabel, selectTaxRate, selectTaxIncludedInPrice, selectPointsPerEuro, selectLoyaltyTiers, selectMultiTerminalMode, selectTerminalId } from '../../settings/settingsSlice';
+import { addLoyaltyPointsAsync, deductLoyaltyPointsAsync, selectCustomerById } from '../../customers/customersSlice';
+import { calculateCart } from '../calculation';
+import {
+  setPaymentMethod,
+  startNewSale,
+  setPointsToRedeem,
+  selectActiveWindowItemDiscounts,
+  selectActiveWindowManualDiscount,
+} from '../posSlice';
 import { selectActiveEmployees } from '../../employees/employeesSlice';
 import { useToast } from '../../../components/useToast';
 import { useI18n } from '../../../i18n/useI18n';
@@ -37,6 +44,8 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
 }) => {
   const dispatch = useAppDispatch();
   const taxLabel = useAppSelector(selectTaxLabel);
+  const taxRate = useAppSelector(selectTaxRate);
+  const taxIncludedInPrice = useAppSelector(selectTaxIncludedInPrice);
   const currentEmployeeId = useAppSelector(state => state.pos.currentEmployeeId);
   const currentUser = useAppSelector(state => state.auth.user);
   const pointsPerEuro = useAppSelector(selectPointsPerEuro);
@@ -45,9 +54,41 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
   const terminalId = useAppSelector(selectTerminalId);
   const allEmployees = useAppSelector(selectActiveEmployees);
   const products = useAppSelector(selectAllProducts);
+  const itemDiscounts = useAppSelector(selectActiveWindowItemDiscounts);
+  const manualDiscount = useAppSelector(selectActiveWindowManualDiscount);
+  const selectedCustomer = useAppSelector(state =>
+    customerId ? selectCustomerById(state, customerId) : null
+  );
   const { addToast } = useToast();
   const t = useI18n();
   const [amountReceived, setAmountReceived] = useState<string>('');
+
+  const tierConfig = tiers.find(t => t.tier === selectedCustomer?.tier);
+
+  const calc = calculateCart(cart, {
+    taxRate,
+    taxIncludedInPrice,
+    itemDiscounts,
+    loyaltyTierConfig: selectedCustomer && tierConfig ? tierConfig : undefined,
+    manualDiscount,
+    pointsToRedeem,
+  });
+
+  const calcWithoutPoints = calculateCart(cart, {
+    taxRate,
+    taxIncludedInPrice,
+    itemDiscounts,
+    loyaltyTierConfig: selectedCustomer && tierConfig ? tierConfig : undefined,
+    manualDiscount,
+    pointsToRedeem: 0,
+  });
+
+  const tierDiscount = calc.lines.reduce(
+    (sum, l) => sum + (l.discountSource === 'loyalty' ? l.appliedDiscount : 0),
+    0
+  );
+  const pointsDiscount = pointsToRedeem / 100;
+  const totalBeforePoints = calcWithoutPoints.total;
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const paymentMethods: { id: PaymentMethod; label: string; icon: React.ReactNode }[] = [
@@ -223,24 +264,69 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between text-sm">
           <span className="text-text-muted">{t.pos.subtotal}</span>
-          <span className="font-mono text-text-primary">€{(subtotal + discountApplied).toFixed(2)}</span>
+          <span className="font-mono text-text-primary">€{subtotal.toFixed(2)}</span>
         </div>
-        {discountApplied > 0 && (
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-green-600">{t.pos.discountLabel}</span>
-          <span className="font-mono text-green-600">-€{discountApplied.toFixed(2)}</span>
-        </div>
+        {tierDiscount > 0 && (
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-purple-600">{t.pos.loyaltyDiscount} {selectedCustomer?.tier}</span>
+            <span className="font-mono text-purple-600">-€{tierDiscount.toFixed(2)}</span>
+          </div>
+        )}
+        {pointsToRedeem > 0 && (
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-purple-600">{t.pos.points} ({pointsToRedeem})</span>
+            <span className="font-mono text-purple-600">-€{pointsDiscount.toFixed(2)}</span>
+          </div>
         )}
         <div className="flex items-center justify-between text-sm">
           <span className="text-text-muted">{taxLabel}</span>
           <span className="font-mono text-text-muted">€{tax.toFixed(2)}</span>
         </div>
         <div className="h-px bg-border" />
+        {pointsToRedeem > 0 && (
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-text-muted">Total antes de puntos</span>
+            <span className="font-mono text-text-muted">€{totalBeforePoints.toFixed(2)}</span>
+          </div>
+        )}
         <div className="flex items-center justify-between">
           <span className="font-bold text-text-primary text-sm">{t.pos.totalToPay}</span>
           <span className="font-mono text-primary font-bold text-xl">€{total.toFixed(2)}</span>
         </div>
       </div>
+
+      {selectedCustomer && selectedCustomer.loyaltyPoints > 0 && (
+        <div className="p-3 rounded-lg bg-purple-50 border border-purple-200">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs font-semibold text-purple-700 uppercase tracking-wide">{t.pos.loyaltyProgram || 'Fidelización'}</span>
+            <span className="text-xs text-purple-600 font-medium">-{pointsToRedeem > 0 ? (pointsToRedeem / 100).toFixed(2) : '0.00'} €</span>
+          </div>
+          <p className="text-xs text-purple-600 mb-2">
+            {selectedCustomer.tier} · {selectedCustomer.loyaltyPoints} {t.pos.availablePoints || 'pts disponibles'} · {t.pos.pointsValue || '100 pts = 1€'}
+          </p>
+          <div className="flex items-center gap-2">
+            <input
+              type="range"
+              min={0}
+              max={selectedCustomer.loyaltyPoints}
+              step={1}
+              value={pointsToRedeem}
+              onChange={e => dispatch(setPointsToRedeem(parseInt(e.target.value, 10)))}
+              className="flex-1 accent-purple-600"
+              aria-label={t.pos.redeemPoints || 'Canjear puntos'}
+            />
+            <span className="text-xs font-mono text-purple-700 w-12 text-right">{pointsToRedeem}</span>
+          </div>
+          {pointsToRedeem > 0 && (
+            <button
+              onClick={() => dispatch(setPointsToRedeem(0))}
+              className="mt-1.5 text-xs text-purple-600 underline"
+            >
+              {t.pos.cancel}
+            </button>
+          )}
+        </div>
+      )}
 
       <div>
         <p className="text-xs font-semibold text-text-muted uppercase tracking-widest mb-2">{t.pos.paymentMethod}</p>
