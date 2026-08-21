@@ -1,131 +1,164 @@
+import { Suspense, lazy } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 
 import AuthLayout from '../layouts/AuthLayout';
 import DashboardLayout from '../layouts/DashboardLayout';
-
-import LandingPage from '../pages/Landing/LandingPage';
-import LoginPage from '../pages/Login/LoginPage';
-import RegisterPage from '../pages/Register/RegisterPage';
-import TenantSelectPage from '../pages/TenantSelect/TenantSelectPage';
-
-import AcceptInvitePage from '../pages/AcceptInvite/AcceptInvitePage';
-import POSPage from '../pages/POS/POSPage';
-import ProductsPage from '../pages/Products/ProductsPage';
-import EmployeesPage from '../pages/Employees/EmployeesPage';
-import DashboardPage from '../pages/Dashboard/DashboardPage';
-import ReportsPage from '../pages/Reports/ReportsPage';
-import SettingsPage from '../pages/Settings/SettingsPage';
-import CustomersPage from '../pages/Customers/CustomersPage';
-import InventoryPage from '../pages/Inventory/InventoryPage';
 import ProtectedRoute from './ProtectedRoute';
+
+const LandingPage = lazy(() => import('../pages/Landing/LandingPage'));
+const LoginPage = lazy(() => import('../pages/Login/LoginPage'));
+const RegisterPage = lazy(() => import('../pages/Register/RegisterPage'));
+const TenantSelectPage = lazy(() => import('../pages/TenantSelect/TenantSelectPage'));
+
+const AcceptInvitePage = lazy(() => import('../pages/AcceptInvite/AcceptInvitePage'));
+const POSPage = lazy(() => import('../pages/POS/POSPage'));
+const ProductsPage = lazy(() => import('../pages/Products/ProductsPage'));
+const EmployeesPage = lazy(() => import('../pages/Employees/EmployeesPage'));
+const DashboardPage = lazy(() => import('../pages/Dashboard/DashboardPage'));
+const ReportsPage = lazy(() => import('../pages/Reports/ReportsPage'));
+const SettingsPage = lazy(() => import('../pages/Settings/SettingsPage'));
+const CustomersPage = lazy(() => import('../pages/Customers/CustomersPage'));
+const InventoryPage = lazy(() => import('../pages/Inventory/InventoryPage'));
+
+const PageLoader = () => (
+  <div className="flex h-screen items-center justify-center">
+    <div className="text-lg text-gray-600">Cargando...</div>
+  </div>
+);
 
 export const router = createBrowserRouter([
   {
     path: '/',
-    element: <LandingPage />,
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <LandingPage />
+      </Suspense>
+    ),
   },
   {
     path: '/login',
     element: (
-      <AuthLayout>
-        <LoginPage />
-      </AuthLayout>
+      <Suspense fallback={<PageLoader />}>
+        <AuthLayout>
+          <LoginPage />
+        </AuthLayout>
+      </Suspense>
     ),
   },
   {
     path: '/register',
     element: (
-      <AuthLayout>
-        <RegisterPage />
-      </AuthLayout>
+      <Suspense fallback={<PageLoader />}>
+        <AuthLayout>
+          <RegisterPage />
+        </AuthLayout>
+      </Suspense>
     ),
   },
   {
     path: '/select-tenant',
     element: (
-      <AuthLayout>
-        <TenantSelectPage />
-      </AuthLayout>
+      <Suspense fallback={<PageLoader />}>
+        <AuthLayout>
+          <TenantSelectPage />
+        </AuthLayout>
+      </Suspense>
     ),
   },
   {
     path: '/pos',
     element: (
-      <ProtectedRoute>
-        <DashboardLayout>
-          <POSPage />
-        </DashboardLayout>
-      </ProtectedRoute>
+      <Suspense fallback={<PageLoader />}>
+        <ProtectedRoute>
+          <DashboardLayout>
+            <POSPage />
+          </DashboardLayout>
+        </ProtectedRoute>
+      </Suspense>
     ),
   },
   {
     path: '/products',
     element: (
-      <ProtectedRoute>
-        <DashboardLayout>
-          <ProductsPage />
-        </DashboardLayout>
-      </ProtectedRoute>
+      <Suspense fallback={<PageLoader />}>
+        <ProtectedRoute>
+          <DashboardLayout>
+            <ProductsPage />
+          </DashboardLayout>
+        </ProtectedRoute>
+      </Suspense>
     ),
   },
   {
     path: '/employees',
     element: (
-      <ProtectedRoute>
-        <DashboardLayout>
-          <EmployeesPage />
-        </DashboardLayout>
-      </ProtectedRoute>
+      <Suspense fallback={<PageLoader />}>
+        <ProtectedRoute>
+          <DashboardLayout>
+            <EmployeesPage />
+          </DashboardLayout>
+        </ProtectedRoute>
+      </Suspense>
     ),
   },
   {
     path: '/dashboard',
     element: (
-      <ProtectedRoute>
-        <DashboardLayout>
-          <DashboardPage />
-        </DashboardLayout>
-      </ProtectedRoute>
+      <Suspense fallback={<PageLoader />}>
+        <ProtectedRoute>
+          <DashboardLayout>
+            <DashboardPage />
+          </DashboardLayout>
+        </ProtectedRoute>
+      </Suspense>
     ),
   },
   {
     path: '/reports',
     element: (
-      <ProtectedRoute>
-        <DashboardLayout>
-          <ReportsPage />
-        </DashboardLayout>
-      </ProtectedRoute>
+      <Suspense fallback={<PageLoader />}>
+        <ProtectedRoute>
+          <DashboardLayout>
+            <ReportsPage />
+          </DashboardLayout>
+        </ProtectedRoute>
+      </Suspense>
     ),
   },
   {
     path: '/settings',
     element: (
-      <ProtectedRoute>
-        <DashboardLayout>
-          <SettingsPage />
-        </DashboardLayout>
-      </ProtectedRoute>
+      <Suspense fallback={<PageLoader />}>
+        <ProtectedRoute>
+          <DashboardLayout>
+            <SettingsPage />
+          </DashboardLayout>
+        </ProtectedRoute>
+      </Suspense>
     ),
   },
   {
     path: '/customers',
     element: (
-      <ProtectedRoute>
-        <DashboardLayout>
-          <CustomersPage />
-        </DashboardLayout>
-      </ProtectedRoute>
+      <Suspense fallback={<PageLoader />}>
+        <ProtectedRoute>
+          <DashboardLayout>
+            <CustomersPage />
+          </DashboardLayout>
+        </ProtectedRoute>
+      </Suspense>
     ),
   },
   {
     path: '/inventory',
     element: (
-      <ProtectedRoute>
-        <DashboardLayout>
-          <InventoryPage />
-        </DashboardLayout>
-      </ProtectedRoute>
+      <Suspense fallback={<PageLoader />}>
+        <ProtectedRoute>
+          <DashboardLayout>
+            <InventoryPage />
+          </DashboardLayout>
+        </ProtectedRoute>
+      </Suspense>
     ),
   },
   {
@@ -134,6 +167,10 @@ export const router = createBrowserRouter([
   },
   {
     path: '/accept-invite',
-    element: <AcceptInvitePage />,
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <AcceptInvitePage />
+      </Suspense>
+    ),
   },
 ]);
