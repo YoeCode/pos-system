@@ -372,6 +372,34 @@ export interface StockAlertItem {
   sizes?: { size: string; stock: number; minStock: number }[];
 }
 
+// --- Shared stock-level helpers (single source of truth) ---
+// Both the low-stock alert selector and the Inventory tabs MUST use these
+// helpers so both views always agree on which products need attention.
+// Sized products are evaluated by AGGREGATE stock (sum across sizes) on both
+// sides; per-size detail is display-only.
+
+export const getProductStock = (product: Product): number => {
+  if (product.sizes && product.sizes.length > 0) {
+    return product.sizes.reduce((sum, s) => sum + s.stock, 0);
+  }
+  return product.stock;
+};
+
+export const getProductMinStock = (product: Product): number => {
+  if (product.sizes && product.sizes.length > 0) {
+    // Fallback for sizes without their own minStock is the product-level minStock.
+    return product.sizes.reduce((sum, s) => sum + (s.minStock || product.minStock), 0);
+  }
+  return product.minStock;
+};
+
+export const isOutOfStock = (product: Product): boolean => getProductStock(product) === 0;
+
+export const isLowStock = (product: Product): boolean => {
+  const stock = getProductStock(product);
+  return stock > 0 && stock <= getProductMinStock(product);
+};
+
 export const selectAllProducts = (state: { products: ProductsState }): Product[] => state.products.items;
 
 const selectProductsItems = (state: { products: ProductsState }) => state.products.items;
@@ -382,33 +410,21 @@ export const selectLowStockAlerts = createSelector(
   const alerts: StockAlertItem[] = [];
   items.forEach(product => {
     if (product.status !== 'active') return;
-    if (product.sizes && product.sizes.length > 0) {
-      const lowSizes = product.sizes.filter(s => s.stock <= (s.minStock || 0));
-      if (lowSizes.length > 0) {
-        const totalStock = product.sizes.reduce((sum, s) => sum + s.stock, 0);
-        const totalMin = product.sizes.reduce((sum, s) => sum + (s.minStock || 0), 0);
-        alerts.push({
-          productId: product.id,
-          productName: product.name,
-          sku: product.sku,
-          stock: totalStock,
-          minStock: totalMin,
-          severity: totalStock === 0 ? 'critical' : 'warning',
-          sizes: lowSizes.map(s => ({ size: s.size, stock: s.stock, minStock: s.minStock || 0 })),
-        });
-      }
-    } else {
-      if (product.stock <= product.minStock) {
-        alerts.push({
-          productId: product.id,
-          productName: product.name,
-          sku: product.sku,
-          stock: product.stock,
-          minStock: product.minStock,
-          severity: product.stock === 0 ? 'critical' : 'warning',
-        });
-      }
-    }
+    const stock = getProductStock(product);
+    const minStock = getProductMinStock(product);
+    if (!isOutOfStock(product) && !isLowStock(product)) return;
+    const lowSizes = product.sizes?.filter(s => s.stock <= (s.minStock || product.minStock)) ?? [];
+    alerts.push({
+      productId: product.id,
+      productName: product.name,
+      sku: product.sku,
+      stock,
+      minStock,
+      severity: stock === 0 ? 'critical' : 'warning',
+      ...(lowSizes.length > 0
+        ? { sizes: lowSizes.map(s => ({ size: s.size, stock: s.stock, minStock: s.minStock || product.minStock })) }
+        : {}),
+    });
   });
   return alerts.sort((a, b) => {
     if (a.severity === 'critical' && b.severity !== 'critical') return -1;

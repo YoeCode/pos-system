@@ -1,25 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../app/store';
-import { selectProduct } from '../../features/products/productsSlice';
+import { selectProduct, getProductStock, getProductMinStock, isLowStock, isOutOfStock } from '../../features/products/productsSlice';
 import { useI18n } from '../../i18n/useI18n';
 import type { Product } from '../../types';
 
 type InventoryTab = 'summary' | 'lowstock' | 'reorder';
-
-const getProductStock = (product: Product): number => {
-  if (product.sizes && product.sizes.length > 0) {
-    return product.sizes.reduce((sum, s) => sum + s.stock, 0);
-  }
-  return product.stock;
-};
-
-const getProductMinStock = (product: Product): number => {
-  if (product.sizes && product.sizes.length > 0) {
-    return product.sizes.reduce((sum, s) => sum + (s.minStock || product.minStock), 0);
-  }
-  return product.minStock;
-};
 
 const InventoryPage: React.FC = () => {
   const t = useI18n();
@@ -51,19 +37,14 @@ const InventoryPage: React.FC = () => {
     return products.filter(p => (p.category || 'Uncategorized') === selectedCategory);
   }, [products, selectedCategory]);
 
-  const lowStockProducts = products.filter(p => {
-    const stock = getProductStock(p);
-    const minStock = getProductMinStock(p);
-    return stock <= minStock && stock > 0;
-  });
+  // Only active products are listed, matching selectLowStockAlerts.
+  const lowStockProducts = products.filter(p => p.status === 'active' && isLowStock(p));
 
-  const outOfStockProducts = products.filter(p => getProductStock(p) === 0);
-  
-  const reorderProducts = products.filter(p => {
-    const stock = getProductStock(p);
-    const minStock = getProductMinStock(p);
-    return stock <= minStock;
-  });
+  const outOfStockProducts = products.filter(p => p.status === 'active' && isOutOfStock(p));
+
+  // Reorder tab lists only fully out-of-stock products (narrowed from
+  // stock <= minStock so it complements — not duplicates — the lowstock tab).
+  const reorderProducts = outOfStockProducts;
 
   const totalStock = products.reduce((sum, p) => sum + getProductStock(p), 0);
   const totalValue = products.reduce((sum, p) => sum + (getProductStock(p) * p.price), 0);

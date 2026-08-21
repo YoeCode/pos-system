@@ -36,7 +36,7 @@ const StockAlertBanner: React.FC = () => {
       </div>
       <div className="flex items-center gap-2">
         <button
-          onClick={() => navigate('/inventory?tab=lowstock')}
+          onClick={() => navigate(criticalCount > 0 ? '/inventory?tab=reorder' : '/inventory?tab=lowstock')}
           className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${criticalCount > 0 ? 'bg-error text-white hover:bg-error/90' : 'bg-warning text-white hover:bg-warning/90'}`}
         >
           Ver inventario

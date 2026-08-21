@@ -14,7 +14,7 @@ const LowStockAlerts: React.FC = () => {
         <h3 className="text-sm font-semibold text-text-primary">{t.products.lowStock}</h3>
         {alerts.length > 0 && (
           <button
-            onClick={() => navigate('/inventory?tab=lowstock')}
+            onClick={() => navigate(alerts.some(a => a.severity === 'critical') ? '/inventory?tab=reorder' : '/inventory?tab=lowstock')}
             className="text-xs text-primary hover:text-primary-dark font-medium"
           >
             Ver todo
