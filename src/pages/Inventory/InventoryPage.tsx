@@ -13,6 +13,7 @@ const InventoryPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const [searchParams] = useSearchParams();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
   const products = useAppSelector(state => state.products.items);
   
   const activeTab = (searchParams.get('tab') as InventoryTab) || 'summary';
@@ -20,22 +21,39 @@ const InventoryPage: React.FC = () => {
   const stockByCategory = useMemo(() => {
     return products.reduce((acc, product) => {
       const cat = product.category || 'Uncategorized';
+      const sub = product.subcategory && product.subcategory.trim() !== '' ? product.subcategory : null;
       const totalStock = getProductStock(product);
       const totalValue = totalStock * product.price;
       if (!acc[cat]) {
-        acc[cat] = { count: 0, totalStock: 0, totalValue: 0 };
+        acc[cat] = { count: 0, totalStock: 0, totalValue: 0, subcategories: {} };
       }
       acc[cat].count += 1;
       acc[cat].totalStock += totalStock;
       acc[cat].totalValue += totalValue;
+      if (sub) {
+        if (!acc[cat].subcategories[sub]) {
+          acc[cat].subcategories[sub] = { count: 0, totalStock: 0, totalValue: 0 };
+        }
+        acc[cat].subcategories[sub].count += 1;
+        acc[cat].subcategories[sub].totalStock += totalStock;
+        acc[cat].subcategories[sub].totalValue += totalValue;
+      }
       return acc;
-    }, {} as Record<string, { count: number; totalStock: number; totalValue: number }>);
+    }, {} as Record<string, { count: number; totalStock: number; totalValue: number; subcategories: Record<string, { count: number; totalStock: number; totalValue: number }> }>);
   }, [products]);
 
   const categoryProducts = useMemo(() => {
     if (!selectedCategory) return [];
-    return products.filter(p => (p.category || 'Uncategorized') === selectedCategory);
-  }, [products, selectedCategory]);
+    return products.filter(p => {
+      const cat = p.category || 'Uncategorized';
+      if (cat !== selectedCategory) return false;
+      if (selectedSubcategory) {
+        const sub = p.subcategory && p.subcategory.trim() !== '' ? p.subcategory : null;
+        return sub === selectedSubcategory;
+      }
+      return true;
+    });
+  }, [products, selectedCategory, selectedSubcategory]);
 
   // Only active products are listed, matching selectLowStockAlerts.
   const lowStockProducts = products.filter(p => p.status === 'active' && isLowStock(p));
@@ -51,10 +69,19 @@ const InventoryPage: React.FC = () => {
 
   const handleCategoryClick = (category: string) => {
     setSelectedCategory(category);
+    setSelectedSubcategory(null);
+  };
+
+  const handleSubcategoryClick = (subcategory: string) => {
+    setSelectedSubcategory(subcategory);
   };
 
   const handleBack = () => {
-    setSelectedCategory(null);
+    if (selectedSubcategory) {
+      setSelectedSubcategory(null);
+    } else {
+      setSelectedCategory(null);
+    }
   };
 
   const handleProductClick = (product: Product) => {
@@ -197,10 +224,67 @@ const InventoryPage: React.FC = () => {
                 </svg>
               </button>
               <span className="text-text-muted">/</span>
-              <span className="font-medium text-text-primary">{t.inventory.title}</span>
+              <button
+                onClick={() => { setSelectedCategory(null); setSelectedSubcategory(null); }}
+                className="font-medium text-text-primary hover:text-primary transition-colors"
+              >
+                {t.inventory.title}
+              </button>
               <span className="text-text-muted">/</span>
-              <span className="text-primary">{selectedCategory}</span>
+              {selectedSubcategory ? (
+                <>
+                  <button
+                    onClick={() => setSelectedSubcategory(null)}
+                    className="font-medium text-text-primary hover:text-primary transition-colors"
+                  >
+                    {selectedCategory}
+                  </button>
+                  <span className="text-text-muted">/</span>
+                  <span className="text-primary">{selectedSubcategory}</span>
+                </>
+              ) : (
+                <span className="text-primary">{selectedCategory}</span>
+              )}
             </div>
+
+            {!selectedSubcategory && (() => {
+              const catData = stockByCategory[selectedCategory];
+              const subs = catData?.subcategories || {};
+              const subEntries = Object.entries(subs).sort((a, b) => b[1].totalValue - a[1].totalValue);
+              if (subEntries.length === 0) return null;
+              return (
+                <div className="bg-white rounded-xl border border-border overflow-hidden">
+                  <div className="px-5 py-3 border-b border-border bg-gray-50">
+                    <h3 className="text-sm font-semibold text-text-primary">Subcategorías</h3>
+                  </div>
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-border">
+                        <th className="text-left px-5 py-3 text-xs font-semibold text-text-muted uppercase">Subcategoría</th>
+                        <th className="text-right px-5 py-3 text-xs font-semibold text-text-muted uppercase">{t.inventory.products}</th>
+                        <th className="text-right px-5 py-3 text-xs font-semibold text-text-muted uppercase">{t.inventory.stock}</th>
+                        <th className="text-right px-5 py-3 text-xs font-semibold text-text-muted uppercase">{t.inventory.value}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {subEntries.map(([sub, data]) => (
+                        <tr
+                          key={sub}
+                          className="border-b border-border last:border-0 hover:bg-gray-50 cursor-pointer transition-colors"
+                          onClick={() => handleSubcategoryClick(sub)}
+                        >
+                          <td className="px-5 py-3 text-sm font-medium text-text-primary">{sub}</td>
+                          <td className="px-5 py-3 text-sm text-right font-mono text-text-primary">{data.count}</td>
+                          <td className="px-5 py-3 text-sm text-right font-mono text-text-primary">{data.totalStock}</td>
+                          <td className="px-5 py-3 text-sm text-right font-mono text-text-primary">${data.totalValue.toFixed(2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })()}
+
             {renderCategoryProducts()}
           </>
         )}
