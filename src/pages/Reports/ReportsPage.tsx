@@ -20,6 +20,7 @@ const ReportsPage: React.FC = () => {
   const [customEndDate, setCustomEndDate] = useState('');
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
   const [selectedProductCategory, setSelectedProductCategory] = useState<string>('all');
+  const [expandedSalesCategory, setExpandedSalesCategory] = useState<string | null>(null);
   const [selectedTicketSaleId, setSelectedTicketSaleId] = useState<string | null>(null);
 
   const tabs: { id: ReportTab; label: string }[] = [
@@ -89,31 +90,43 @@ const ReportsPage: React.FC = () => {
   }, [filteredSales]);
 
   const productStats = useMemo(() => {
-    const productSales: Record<string, { name: string; category: string; qty: number; revenue: number }> = {};
+    const productSales: Record<string, { name: string; category: string; subcategory?: string; qty: number; revenue: number }> = {};
     const categorySales: Record<string, number> = {};
-    
+    const subcategorySales: Record<string, Record<string, { qty: number; revenue: number }>> = {};
+
     filteredSales.forEach(sale => {
       sale.order.items.forEach(item => {
+        const sub = item.product.subcategory;
         if (!productSales[item.product.id]) {
-          productSales[item.product.id] = { 
-            name: item.product.name, 
+          productSales[item.product.id] = {
+            name: item.product.name,
             category: item.product.category,
-            qty: 0, 
-            revenue: 0 
+            subcategory: sub,
+            qty: 0,
+            revenue: 0
           };
         }
         productSales[item.product.id].qty += item.quantity;
         productSales[item.product.id].revenue += item.lineTotal;
-        
-        categorySales[item.product.category] = (categorySales[item.product.category] || 0) + item.lineTotal;
+
+        const cat = item.product.category;
+        categorySales[cat] = (categorySales[cat] || 0) + item.lineTotal;
+
+        if (!subcategorySales[cat]) subcategorySales[cat] = {};
+        const subKey = sub && sub.trim() !== '' ? sub : '(sin subcategoría)';
+        if (!subcategorySales[cat][subKey]) {
+          subcategorySales[cat][subKey] = { qty: 0, revenue: 0 };
+        }
+        subcategorySales[cat][subKey].qty += item.quantity;
+        subcategorySales[cat][subKey].revenue += item.lineTotal;
       });
     });
-    
+
     const topProducts = Object.values(productSales)
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 10);
-    
-    return { topProducts, categorySales };
+
+    return { topProducts, categorySales, subcategorySales };
   }, [filteredSales]);
 
   const productCategories = useMemo(() => {
@@ -168,6 +181,7 @@ const ReportsPage: React.FC = () => {
     const data = filteredTopProducts.map(p => ({
       name: p.name,
       category: p.category,
+      subcategory: p.subcategory ?? '',
       quantity: p.qty,
       revenue: p.revenue.toFixed(2)
     }));
@@ -335,12 +349,46 @@ const ReportsPage: React.FC = () => {
                     <div className="flex flex-col gap-2">
                       {Object.entries(productStats.categorySales)
                         .sort((a, b) => b[1] - a[1])
-                        .map(([cat, amount]) => (
-                          <div key={cat} className="flex items-center justify-between">
-                            <span className="text-sm text-text-muted">{cat}</span>
-                            <span className="text-sm font-mono font-semibold text-text-primary">{formatCurrency(amount)}</span>
-                          </div>
-                        ))}
+                        .map(([cat, amount]) => {
+                          const isExpanded = expandedSalesCategory === cat;
+                          const subs = productStats.subcategorySales[cat] || {};
+                          const subEntries = Object.entries(subs).sort((a, b) => b[1].revenue - a[1].revenue);
+                          const hasSubcategories = subEntries.length > 1 || (subEntries.length === 1 && subEntries[0][0] !== '(sin subcategoría)');
+                          return (
+                            <div key={cat} className="flex flex-col">
+                              <button
+                                type="button"
+                                onClick={() => setExpandedSalesCategory(isExpanded ? null : cat)}
+                                className="flex items-center justify-between w-full text-left hover:bg-gray-50 rounded-lg px-2 py-1.5 -mx-2 transition-colors"
+                              >
+                                <span className="flex items-center gap-2 text-sm text-text-muted">
+                                  <svg
+                                    className={`w-3.5 h-3.5 text-text-muted transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                  </svg>
+                                  {cat}
+                                </span>
+                                <span className="text-sm font-mono font-semibold text-text-primary">{formatCurrency(amount)}</span>
+                              </button>
+                              {isExpanded && hasSubcategories && (
+                                <div className="ml-6 mt-1 mb-2 flex flex-col gap-1 border-l border-border pl-3">
+                                  {subEntries.map(([sub, data]) => (
+                                    <div key={sub} className="flex items-center justify-between">
+                                      <span className="text-xs text-text-muted">{sub}</span>
+                                      <span className="text-xs font-mono text-text-primary">
+                                        {data.qty} uds · {formatCurrency(data.revenue)}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                     </div>
                   )}
                 </div>
@@ -429,6 +477,7 @@ const ReportsPage: React.FC = () => {
                           <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider py-3">#</th>
                           <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider py-3">{t.products.name}</th>
                           <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider py-3">{t.products.category}</th>
+                          <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider py-3">Subcategoría</th>
                           <th className="text-right text-xs font-semibold text-text-muted uppercase tracking-wider py-3">{t.reports.quantity}</th>
                           <th className="text-right text-xs font-semibold text-text-muted uppercase tracking-wider py-3">{t.reports.revenue}</th>
                         </tr>
@@ -439,6 +488,7 @@ const ReportsPage: React.FC = () => {
                             <td className="py-3 text-sm font-mono text-text-muted">{idx + 1}</td>
                             <td className="py-3 text-sm font-medium text-text-primary">{product.name}</td>
                             <td className="py-3 text-sm text-text-muted">{product.category}</td>
+                            <td className="py-3 text-sm text-text-muted">{product.subcategory ?? '—'}</td>
                             <td className="py-3 text-sm font-mono text-text-primary text-right">{product.qty}</td>
                             <td className="py-3 text-sm font-mono font-semibold text-text-primary text-right">{formatCurrency(product.revenue)}</td>
                           </tr>
