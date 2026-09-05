@@ -347,10 +347,12 @@ export type Database = {
           name: string
           price: number
           published_online: boolean
+          season: string | null
           size_group_id: string | null
           sku: string
           status: string
           stock: number
+          subcategory: string | null
           tenant_id: string
           updated_at: string
           version: string | null
@@ -367,10 +369,12 @@ export type Database = {
           name: string
           price?: number
           published_online?: boolean
+          season?: string | null
           size_group_id?: string | null
           sku: string
           status?: string
           stock?: number
+          subcategory?: string | null
           tenant_id: string
           updated_at?: string
           version?: string | null
@@ -387,10 +391,12 @@ export type Database = {
           name?: string
           price?: number
           published_online?: boolean
+          season?: string | null
           size_group_id?: string | null
           sku?: string
           status?: string
           stock?: number
+          subcategory?: string | null
           tenant_id?: string
           updated_at?: string
           version?: string | null
@@ -468,6 +474,7 @@ export type Database = {
           product_id: string
           product_name: string
           product_sku: string | null
+          product_subcategory: string | null
           quantity: number
           sale_id: string
           selected_size: string | null
@@ -481,6 +488,7 @@ export type Database = {
           product_id: string
           product_name: string
           product_sku?: string | null
+          product_subcategory?: string | null
           quantity?: number
           sale_id: string
           selected_size?: string | null
@@ -494,6 +502,7 @@ export type Database = {
           product_id?: string
           product_name?: string
           product_sku?: string | null
+          product_subcategory?: string | null
           quantity?: number
           sale_id?: string
           selected_size?: string | null
@@ -676,21 +685,31 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          parent_id: string | null
           tenant_id: string
         }
         Insert: {
           created_at?: string
           id?: string
           name: string
+          parent_id?: string | null
           tenant_id: string
         }
         Update: {
           created_at?: string
           id?: string
           name?: string
+          parent_id?: string | null
           tenant_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "categories_tenant_id_fkey"
             columns: ["tenant_id"]
@@ -751,6 +770,64 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "sizes_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seasons: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seasons_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sku_counters: {
+        Row: {
+          id: string
+          next_value: number
+          prefix: string
+          tenant_id: string
+        }
+        Insert: {
+          id?: string
+          next_value?: number
+          prefix: string
+          tenant_id: string
+        }
+        Update: {
+          id?: string
+          next_value?: number
+          prefix?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sku_counters_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"

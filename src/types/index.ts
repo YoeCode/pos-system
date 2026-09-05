@@ -130,11 +130,38 @@ export interface ProductSize {
   sku?: string;
 }
 
+export interface ProductAttribute {
+  id: string;
+  name: string;
+  values: string[];
+}
+
+export interface ProductVariant {
+  id: string;
+  productId: string;
+  sku: string;
+  price: number | null;
+  costPrice: number | null;
+  stock: number;
+  minStock: number;
+  image: string | null;
+  attributes: Record<string, string>;
+  status: 'active' | 'inactive' | 'draft';
+}
+
+export interface CategoryGroup {
+  id?: string;
+  name: string;
+  subcategories: string[];
+}
+
 export interface Product {
   id: string;
   name: string;
   sku: string;
   category: string;
+  subcategory?: string;
+  season?: string;
   brand?: string;
   price: number;
   costPrice: number;
@@ -147,6 +174,9 @@ export interface Product {
   version?: string;
   sizes?: ProductSize[];
   sizeGroupId?: string;
+  hasVariants: boolean;
+  variantAttributes: string[];
+  variants?: ProductVariant[];
 }
 
 export interface CartItem {
@@ -154,6 +184,7 @@ export interface CartItem {
   quantity: number;
   lineId: string;
   selectedSize?: string;
+  selectedVariant?: ProductVariant;
 }
 
 export interface Employee {
@@ -210,6 +241,8 @@ export interface OrderItem {
   product: Product;
   quantity: number;
   lineTotal: number;
+  selectedSize?: string;
+  selectedVariant?: ProductVariant;
 }
 
 export interface Order {
@@ -264,8 +297,9 @@ export interface SizeGroup {
 export interface PosSettings {
   defaultPaymentMethod: PaymentMethod;
   defaultCategory: string;
-  categories: string[];
+  categories: CategoryGroup[];
   brands: string[];
+  seasons: string[];
   sizes: string[];
   sizeGroups: SizeGroup[];
   walkInCustomerLabel: string;
