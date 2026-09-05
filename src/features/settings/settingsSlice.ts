@@ -1,6 +1,6 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import type { PaymentMethod, TaxSettings, StoreSettings, PosSettings, LanguageSettings, SettingsState, Language, LoyaltySettings, TicketConfig, SizeGroup } from '../../types';
+import type { PaymentMethod, TaxSettings, StoreSettings, PosSettings, LanguageSettings, SettingsState, Language, LoyaltySettings, TicketConfig, SizeGroup, CategoryGroup } from '../../types';
 import type { RootState } from '../../app/store';
 import {
   fetchTenantSettings,
@@ -12,16 +12,21 @@ import {
   upsertTenantSettings,
   fetchCategories,
   fetchBrands,
+  fetchSeasons,
   fetchSizes,
   fetchSizeGroups,
   syncCategories,
   syncBrands,
+  syncSeasons,
   syncSizes,
   syncSizeGroups,
   addCategory,
   removeCategory,
+  renameCategory,
   addBrand,
   removeBrand,
+  addSeason,
+  removeSeason,
   addSize,
   removeSize,
   addSizeGroup,
@@ -35,7 +40,34 @@ export const DEFAULT_STORE_NAME = 'Casa Lis';
 export const DEFAULT_ORDER_PREFIX = 'ORD-';
 export const DEFAULT_ORDER_SEED = 1042;
 export const DEFAULT_BRANDS = ['Nestlé', 'Coca-Cola', 'Pepsi', 'Mondelez', 'Kellogg\'s'];
+export const DEFAULT_SEASONS = ['Permanente'];
 export const DEFAULT_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+
+export const DEFAULT_CATEGORIES: CategoryGroup[] = [
+  { name: 'Electronics', subcategories: [] },
+  { name: 'Food', subcategories: [] },
+  { name: 'Drinks', subcategories: [] },
+  { name: 'Apparel', subcategories: [] },
+  { name: 'Bakery', subcategories: [] },
+  { name: 'Merchandise', subcategories: [] },
+];
+
+export const normalizeCategories = (input: unknown): CategoryGroup[] => {
+  if (!Array.isArray(input)) return [];
+  return input
+    .map(item => {
+      if (typeof item === 'string') return { name: item, subcategories: [] as string[] };
+      const group = item as Partial<CategoryGroup>;
+      return {
+        id: typeof group.id === 'string' ? group.id : undefined,
+        name: String(group.name ?? ''),
+        subcategories: Array.isArray(group.subcategories)
+          ? group.subcategories.filter((s): s is string => typeof s === 'string')
+          : [],
+      };
+    })
+    .filter(g => g.name.length > 0);
+};
 
 export const DEFAULT_SIZE_GROUPS: SizeGroup[] = [
   { id: 'standard', name: 'Estándar', sizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL'] },
@@ -62,8 +94,9 @@ const defaultStoreSettings: StoreSettings = {
 const defaultPosSettings: PosSettings = {
   defaultPaymentMethod: 'cash',
   defaultCategory: 'All Items',
-  categories: ['Electronics', 'Food', 'Drinks', 'Apparel', 'Bakery', 'Merchandise'],
+  categories: DEFAULT_CATEGORIES,
   brands: DEFAULT_BRANDS,
+  seasons: DEFAULT_SEASONS,
   sizes: DEFAULT_SIZES,
   sizeGroups: DEFAULT_SIZE_GROUPS,
   walkInCustomerLabel: 'Walk-In Customer',
@@ -113,10 +146,18 @@ const loadStoredSettings = (): Partial<SettingsState> => {
     const stored = localStorage.getItem(SETTINGS_STORAGE_KEY);
     if (stored) {
       const parsed = JSON.parse(stored);
+      const parsedPos = parsed.pos
+        ? {
+            ...defaultPosSettings,
+            ...parsed.pos,
+            categories: normalizeCategories(parsed.pos.categories ?? defaultPosSettings.categories),
+            seasons: Array.isArray(parsed.pos.seasons) ? parsed.pos.seasons : defaultPosSettings.seasons,
+          }
+        : undefined;
       return {
         tax: parsed.tax ? { ...defaultTaxSettings, ...parsed.tax } : undefined,
         store: parsed.store ? { ...defaultStoreSettings, ...parsed.store } : undefined,
-        pos: parsed.pos ? { ...defaultPosSettings, ...parsed.pos } : undefined,
+        pos: parsedPos,
         language: parsed.language ? { ...defaultLanguageSettings, ...parsed.language } : undefined,
         loyalty: parsed.loyalty ? { ...DEFAULT_LOYALTY_SETTINGS, ...parsed.loyalty } : undefined,
       };
@@ -146,20 +187,22 @@ export const fetchSettingsFromSupabase = createAsyncThunk(
   'settings/fetchFromSupabase',
   async (tenantId: string, { rejectWithValue }) => {
     try {
-      const [tenantSettings, categories, brands, sizes, sizeGroups] = await Promise.all([
+      const [tenantSettings, categories, brands, seasons, sizes, sizeGroups] = await Promise.all([
         fetchTenantSettings(tenantId),
         fetchCategories(tenantId),
         fetchBrands(tenantId),
+        fetchSeasons(tenantId),
         fetchSizes(tenantId),
         fetchSizeGroups(tenantId),
       ]);
 
-      const hasData = !!tenantSettings && (categories.length > 0 || brands.length > 0 || sizes.length > 0);
+      const hasData = !!tenantSettings && (categories.length > 0 || brands.length > 0 || seasons.length > 0 || sizes.length > 0);
 
       return {
         tenantSettings,
         categories: categories.length > 0 ? categories : undefined,
         brands: brands.length > 0 ? brands : undefined,
+        seasons: seasons.length > 0 ? seasons : undefined,
         sizes: sizes.length > 0 ? sizes : undefined,
         sizeGroups: sizeGroups.length > 0 ? sizeGroups : undefined,
         hasData,
@@ -173,7 +216,7 @@ export const fetchSettingsFromSupabase = createAsyncThunk(
 
 export const syncCategoriesToSupabase = createAsyncThunk(
   'settings/syncCategories',
-  async ({ tenantId, categories }: { tenantId: string; categories: string[] }, { rejectWithValue }) => {
+  async ({ tenantId, categories }: { tenantId: string; categories: CategoryGroup[] }, { rejectWithValue }) => {
     try {
       const success = await syncCategories(tenantId, categories);
       if (!success) return rejectWithValue('Failed to sync categories');
@@ -193,6 +236,19 @@ export const syncBrandsToSupabase = createAsyncThunk(
       return brands;
     } catch (err: any) {
       return rejectWithValue(err.message || 'Failed to sync brands');
+    }
+  }
+);
+
+export const syncSeasonsToSupabase = createAsyncThunk(
+  'settings/syncSeasons',
+  async ({ tenantId, seasons }: { tenantId: string; seasons: string[] }, { rejectWithValue }) => {
+    try {
+      const success = await syncSeasons(tenantId, seasons);
+      if (!success) return rejectWithValue('Failed to sync seasons');
+      return seasons;
+    } catch (err: any) {
+      return rejectWithValue(err.message || 'Failed to sync seasons');
     }
   }
 );
@@ -225,13 +281,27 @@ export const syncSizeGroupsToSupabase = createAsyncThunk(
 
 export const addCategoryAsync = createAsyncThunk(
   'settings/addCategory',
-  async ({ tenantId, name }: { tenantId: string; name: string }, { rejectWithValue }) => {
+  async ({ tenantId, name, subcategories = [] }: { tenantId: string; name: string; subcategories?: string[] }, { rejectWithValue }) => {
     try {
-      const success = await addCategory(tenantId, name);
+      const success = await addCategory(tenantId, name, subcategories);
       if (!success) return rejectWithValue('Failed to add category');
-      return name;
+      const categoryGroup: CategoryGroup = { name, subcategories };
+      return categoryGroup;
     } catch (err: any) {
       return rejectWithValue(err.message || 'Failed to add category');
+    }
+  }
+);
+
+export const updateCategoryAsync = createAsyncThunk(
+  'settings/updateCategory',
+  async ({ tenantId, oldName, newName }: { tenantId: string; oldName: string; newName: string }, { rejectWithValue }) => {
+    try {
+      const success = await renameCategory(tenantId, oldName, newName);
+      if (!success) return rejectWithValue('Failed to rename category');
+      return { oldName, newName };
+    } catch (err: any) {
+      return rejectWithValue(err.message || 'Failed to rename category');
     }
   }
 );
@@ -271,6 +341,32 @@ export const removeBrandAsync = createAsyncThunk(
       return name;
     } catch (err: any) {
       return rejectWithValue(err.message || 'Failed to remove brand');
+    }
+  }
+);
+
+export const addSeasonAsync = createAsyncThunk(
+  'settings/addSeason',
+  async ({ tenantId, name }: { tenantId: string; name: string }, { rejectWithValue }) => {
+    try {
+      const success = await addSeason(tenantId, name);
+      if (!success) return rejectWithValue('Failed to add season');
+      return name;
+    } catch (err: any) {
+      return rejectWithValue(err.message || 'Failed to add season');
+    }
+  }
+);
+
+export const removeSeasonAsync = createAsyncThunk(
+  'settings/removeSeason',
+  async ({ tenantId, name }: { tenantId: string; name: string }, { rejectWithValue }) => {
+    try {
+      const success = await removeSeason(tenantId, name);
+      if (!success) return rejectWithValue('Failed to remove season');
+      return name;
+    } catch (err: any) {
+      return rejectWithValue(err.message || 'Failed to remove season');
     }
   }
 );
@@ -475,10 +571,13 @@ const settingsSlice = createSlice({
           state.pos = { ...state.pos, ...action.payload.tenantSettings.pos };
         }
         if (action.payload.categories) {
-          state.pos.categories = action.payload.categories;
+          state.pos.categories = normalizeCategories(action.payload.categories);
         }
         if (action.payload.brands) {
           state.pos.brands = action.payload.brands;
+        }
+        if (action.payload.seasons) {
+          state.pos.seasons = action.payload.seasons;
         }
         if (action.payload.sizes) {
           state.pos.sizes = action.payload.sizes;
@@ -506,6 +605,13 @@ const settingsSlice = createSlice({
         state.error = action.payload as string || 'Failed to sync brands';
       })
 
+      .addCase(syncSeasonsToSupabase.fulfilled, (state, action) => {
+        state.pos.seasons = action.payload;
+      })
+      .addCase(syncSeasonsToSupabase.rejected, (state, action) => {
+        state.error = action.payload as string || 'Failed to sync seasons';
+      })
+
       .addCase(syncSizesToSupabase.fulfilled, (state, action) => {
         state.pos.sizes = action.payload;
       })
@@ -521,7 +627,7 @@ const settingsSlice = createSlice({
       })
 
       .addCase(addCategoryAsync.fulfilled, (state, action) => {
-        if (!state.pos.categories.includes(action.payload)) {
+        if (!state.pos.categories.some(c => c.name === action.payload.name)) {
           state.pos.categories = [...state.pos.categories, action.payload];
         }
       })
@@ -529,8 +635,17 @@ const settingsSlice = createSlice({
         state.error = action.payload as string || 'Failed to add category';
       })
 
+      .addCase(updateCategoryAsync.fulfilled, (state, action) => {
+        state.pos.categories = state.pos.categories.map(c =>
+          c.name === action.payload.oldName ? { ...c, name: action.payload.newName } : c
+        );
+      })
+      .addCase(updateCategoryAsync.rejected, (state, action) => {
+        state.error = action.payload as string || 'Failed to rename category';
+      })
+
       .addCase(removeCategoryAsync.fulfilled, (state, action) => {
-        state.pos.categories = state.pos.categories.filter(c => c !== action.payload);
+        state.pos.categories = state.pos.categories.filter(c => c.name !== action.payload);
       })
       .addCase(removeCategoryAsync.rejected, (state, action) => {
         state.error = action.payload as string || 'Failed to remove category';
@@ -550,6 +665,22 @@ const settingsSlice = createSlice({
       })
       .addCase(removeBrandAsync.rejected, (state, action) => {
         state.error = action.payload as string || 'Failed to remove brand';
+      })
+
+      .addCase(addSeasonAsync.fulfilled, (state, action) => {
+        if (!state.pos.seasons.includes(action.payload)) {
+          state.pos.seasons = [...state.pos.seasons, action.payload];
+        }
+      })
+      .addCase(addSeasonAsync.rejected, (state, action) => {
+        state.error = action.payload as string || 'Failed to add season';
+      })
+
+      .addCase(removeSeasonAsync.fulfilled, (state, action) => {
+        state.pos.seasons = state.pos.seasons.filter(s => s !== action.payload);
+      })
+      .addCase(removeSeasonAsync.rejected, (state, action) => {
+        state.error = action.payload as string || 'Failed to remove season';
       })
 
       .addCase(addSizeAsync.fulfilled, (state, action) => {
@@ -671,8 +802,13 @@ export const selectReceiptFooterMessage = (state: RootState): string => state.se
 
 export const selectDefaultPaymentMethod = (state: RootState): PaymentMethod => state.settings.pos.defaultPaymentMethod;
 export const selectDefaultCategory = (state: RootState): string => state.settings.pos.defaultCategory;
-export const selectCategories = (state: RootState): string[] => state.settings.pos.categories;
+export const selectCategoryGroups = (state: RootState): CategoryGroup[] => state.settings.pos.categories;
+export const selectCategories = createSelector(
+  [selectCategoryGroups],
+  (groups): string[] => groups.map(c => c.name)
+);
 export const selectBrands = (state: RootState): string[] => state.settings.pos.brands;
+export const selectSeasons = (state: RootState): string[] => state.settings.pos.seasons;
 export const selectSizes = (state: RootState): string[] => state.settings.pos.sizes;
 export const selectSizeGroups = (state: RootState) => state.settings.pos.sizeGroups;
 export const selectWalkInCustomerLabel = (state: RootState): string => state.settings.pos.walkInCustomerLabel;

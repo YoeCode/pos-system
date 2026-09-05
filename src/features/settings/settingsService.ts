@@ -1,14 +1,22 @@
 import { supabase } from '../../supabase/client';
-import type { SizeGroup, TaxSettings, StoreSettings, PosSettings, LanguageSettings, LoyaltySettings } from '../../types';
+import type { CategoryGroup, SizeGroup, TaxSettings, StoreSettings, PosSettings, LanguageSettings, LoyaltySettings } from '../../types';
 
 export interface DbCategory {
+  id: string;
+  tenant_id: string;
+  name: string;
+  parent_id: string | null;
+  created_at: string;
+}
+
+export interface DbBrand {
   id: string;
   tenant_id: string;
   name: string;
   created_at: string;
 }
 
-export interface DbBrand {
+export interface DbSeason {
   id: string;
   tenant_id: string;
   name: string;
@@ -82,6 +90,7 @@ function mapDbSettings(row: DbSettings): TenantSettings {
       defaultCategory: pos.default_category ?? 'All Items',
       categories: [],
       brands: [],
+      seasons: [],
       sizes: [],
       sizeGroups: (pos.size_groups ?? []).map((g: any) => ({
         id: g.id,
@@ -287,9 +296,29 @@ export async function upsertTenantSettings(tenantId: string, settings: TenantSet
   return true;
 }
 
-export async function fetchCategories(tenantId: string): Promise<string[]> {
+export async function fetchCategories(tenantId: string): Promise<CategoryGroup[]> {
   const { data, error } = await supabase
     .from('categories')
+    .select('id, name, parent_id')
+    .eq('tenant_id', tenantId)
+    .order('name');
+
+  if (error || !data) {
+    /* console.error($$$) */;
+    return [];
+  }
+  const rows = data as DbCategory[];
+  const parents = rows.filter(r => r.parent_id === null);
+  return parents.map(p => ({
+    id: p.id,
+    name: p.name,
+    subcategories: rows.filter(r => r.parent_id === p.id).map(r => r.name),
+  }));
+}
+
+export async function fetchSeasons(tenantId: string): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('seasons')
     .select('name')
     .eq('tenant_id', tenantId)
     .order('name');
@@ -298,7 +327,7 @@ export async function fetchCategories(tenantId: string): Promise<string[]> {
     /* console.error($$$) */;
     return [];
   }
-  return (data as DbCategory[]).map(c => c.name);
+  return (data as DbSeason[]).map(s => s.name);
 }
 
 export async function fetchBrands(tenantId: string): Promise<string[]> {
@@ -349,37 +378,122 @@ export async function fetchSizeGroups(tenantId: string): Promise<SizeGroup[]> {
 
 export async function syncCategories(
   tenantId: string,
-  categories: string[]
+  groups: CategoryGroup[]
 ): Promise<boolean> {
-  const { data: existing } = await supabase
+  const { data: existing, error: fetchError } = await supabase
     .from('categories')
-    .select('name')
+    .select('id, name, parent_id')
     .eq('tenant_id', tenantId);
 
-  const existingNames = new Set((existing || []).map((c: any) => c.name));
-  const newNames = new Set(categories);
+  if (fetchError) {
+    /* console.error($$$) */;
+    return false;
+  }
 
-  const toAdd = categories.filter(c => !existingNames.has(c));
-  const toRemove = (existing || []).filter((c: any) => !newNames.has(c.name)).map((c: any) => c.name);
+  let rows = (existing || []) as DbCategory[];
 
-  if (toAdd.length > 0) {
-    const inserts = toAdd.map(name => ({ tenant_id: tenantId, name }));
-    const { error } = await supabase.from('categories').insert(inserts);
-    if (error) {
+  for (const group of groups) {
+    if (!group.id) continue;
+    const row = rows.find(r => r.id === group.id && r.parent_id === null);
+    if (row && row.name !== group.name) {
+      const renamed = await renameCategory(tenantId, row.name, group.name);
+      if (!renamed) return false;
+      row.name = group.name;
+    }
+  }
+
+  const parentByName = new Map(rows.filter(r => r.parent_id === null).map(r => [r.name, r]));
+  const incomingNames = new Set(groups.map(g => g.name));
+
+  const toRemoveParents = rows.filter(r => r.parent_id === null && !incomingNames.has(r.name));
+  for (const parent of toRemoveParents) {
+    const { count, error: countError } = await supabase
+      .from('products')
+      .select('id', { count: 'exact', head: true })
+      .eq('tenant_id', tenantId)
+      .eq('category', parent.name);
+    if (countError) {
       /* console.error($$$) */;
+      return false;
+    }
+    if ((count ?? 0) > 0) {
       return false;
     }
   }
 
-  if (toRemove.length > 0) {
-    const { error } = await supabase
+  if (toRemoveParents.length > 0) {
+    const removedIds = new Set(toRemoveParents.map(p => p.id));
+    const { error: deleteError } = await supabase
       .from('categories')
       .delete()
-      .eq('tenant_id', tenantId)
-      .in('name', toRemove);
-    if (error) {
+      .in('id', [...removedIds]);
+    if (deleteError) {
       /* console.error($$$) */;
       return false;
+    }
+    rows = rows.filter(r => !removedIds.has(r.id) && !(r.parent_id !== null && removedIds.has(r.parent_id)));
+  }
+
+  for (const group of groups) {
+    let parent = parentByName.get(group.name);
+    if (!parent) {
+      const { data: inserted, error: insertError } = await supabase
+        .from('categories')
+        .insert({ tenant_id: tenantId, name: group.name })
+        .select('id')
+        .single();
+      if (insertError || !inserted) {
+        /* console.error($$$) */;
+        return false;
+      }
+      parent = { id: inserted.id, tenant_id: tenantId, name: group.name, parent_id: null, created_at: '' };
+      rows.push(parent);
+      parentByName.set(group.name, parent);
+    }
+
+    const children = rows.filter(r => r.parent_id === parent.id);
+    const childNames = new Set(children.map(c => c.name));
+    const wantedNames = new Set(group.subcategories);
+
+    const subsToAdd = group.subcategories.filter(s => !childNames.has(s));
+    const subsToRemove = children.filter(c => !wantedNames.has(c.name));
+
+    for (const sub of subsToRemove) {
+      const { count, error: countError } = await supabase
+        .from('products')
+        .select('id', { count: 'exact', head: true })
+        .eq('tenant_id', tenantId)
+        .eq('category', group.name)
+        .eq('subcategory', sub.name);
+      if (countError) {
+        /* console.error($$$) */;
+        return false;
+      }
+      if ((count ?? 0) > 0) {
+        return false;
+      }
+    }
+
+    if (subsToRemove.length > 0) {
+      const removedSubIds = new Set(subsToRemove.map(c => c.id));
+      const { error: subDeleteError } = await supabase
+        .from('categories')
+        .delete()
+        .in('id', [...removedSubIds]);
+      if (subDeleteError) {
+        /* console.error($$$) */;
+        return false;
+      }
+      rows = rows.filter(r => !removedSubIds.has(r.id));
+    }
+
+    if (subsToAdd.length > 0) {
+      const inserts = subsToAdd.map(name => ({ tenant_id: tenantId, name, parent_id: parent.id }));
+      const { error: subInsertError } = await supabase.from('categories').insert(inserts);
+      if (subInsertError) {
+        /* console.error($$$) */;
+        return false;
+      }
     }
   }
 
@@ -413,6 +527,45 @@ export async function syncBrands(
   if (toRemove.length > 0) {
     const { error } = await supabase
       .from('brands')
+      .delete()
+      .eq('tenant_id', tenantId)
+      .in('name', toRemove);
+    if (error) {
+      /* console.error($$$) */;
+      return false;
+    }
+  }
+
+  return true;
+}
+
+export async function syncSeasons(
+  tenantId: string,
+  seasons: string[]
+): Promise<boolean> {
+  const { data: existing } = await supabase
+    .from('seasons')
+    .select('name')
+    .eq('tenant_id', tenantId);
+
+  const existingNames = new Set((existing || []).map((s: any) => s.name));
+  const newNames = new Set(seasons);
+
+  const toAdd = seasons.filter(s => !existingNames.has(s));
+  const toRemove = (existing || []).filter((s: any) => !newNames.has(s.name)).map((s: any) => s.name);
+
+  if (toAdd.length > 0) {
+    const inserts = toAdd.map(name => ({ tenant_id: tenantId, name }));
+    const { error } = await supabase.from('seasons').insert(inserts);
+    if (error) {
+      /* console.error($$$) */;
+      return false;
+    }
+  }
+
+  if (toRemove.length > 0) {
+    const { error } = await supabase
+      .from('seasons')
       .delete()
       .eq('tenant_id', tenantId)
       .in('name', toRemove);
@@ -524,13 +677,23 @@ export async function syncSizeGroups(
   return true;
 }
 
-export async function addCategory(tenantId: string, name: string): Promise<boolean> {
-  const { error } = await supabase
+export async function addCategory(tenantId: string, name: string, subcategories: string[] = []): Promise<boolean> {
+  const { data: parent, error } = await supabase
     .from('categories')
-    .insert({ tenant_id: tenantId, name });
-  if (error) {
+    .insert({ tenant_id: tenantId, name })
+    .select('id')
+    .single();
+  if (error || !parent) {
     /* console.error($$$) */;
     return false;
+  }
+  if (subcategories.length > 0) {
+    const inserts = subcategories.map(sub => ({ tenant_id: tenantId, name: sub, parent_id: parent.id }));
+    const { error: subError } = await supabase.from('categories').insert(inserts);
+    if (subError) {
+      /* console.error($$$) */;
+      return false;
+    }
   }
   return true;
 }
@@ -540,8 +703,32 @@ export async function removeCategory(tenantId: string, name: string): Promise<bo
     .from('categories')
     .delete()
     .eq('tenant_id', tenantId)
-    .eq('name', name);
+    .eq('name', name)
+    .is('parent_id', null);
   if (error) {
+    /* console.error($$$) */;
+    return false;
+  }
+  return true;
+}
+
+export async function renameCategory(tenantId: string, oldName: string, newName: string): Promise<boolean> {
+  const { error: categoryError } = await supabase
+    .from('categories')
+    .update({ name: newName })
+    .eq('tenant_id', tenantId)
+    .eq('name', oldName)
+    .is('parent_id', null);
+  if (categoryError) {
+    /* console.error($$$) */;
+    return false;
+  }
+  const { error: productError } = await supabase
+    .from('products')
+    .update({ category: newName })
+    .eq('tenant_id', tenantId)
+    .eq('category', oldName);
+  if (productError) {
     /* console.error($$$) */;
     return false;
   }
@@ -562,6 +749,30 @@ export async function addBrand(tenantId: string, name: string): Promise<boolean>
 export async function removeBrand(tenantId: string, name: string): Promise<boolean> {
   const { error } = await supabase
     .from('brands')
+    .delete()
+    .eq('tenant_id', tenantId)
+    .eq('name', name);
+  if (error) {
+    /* console.error($$$) */;
+    return false;
+  }
+  return true;
+}
+
+export async function addSeason(tenantId: string, name: string): Promise<boolean> {
+  const { error } = await supabase
+    .from('seasons')
+    .insert({ tenant_id: tenantId, name });
+  if (error) {
+    /* console.error($$$) */;
+    return false;
+  }
+  return true;
+}
+
+export async function removeSeason(tenantId: string, name: string): Promise<boolean> {
+  const { error } = await supabase
+    .from('seasons')
     .delete()
     .eq('tenant_id', tenantId)
     .eq('name', name);
