@@ -12,6 +12,7 @@ function mapDbSale(row: any): Sale {
       name: si.product_name,
       sku: si.product_sku || '',
       category: si.product_category || '',
+      subcategory: si.product_subcategory || undefined,
       price: si.unit_price,
       costPrice: 0,
       stock: 0,
@@ -101,10 +102,12 @@ export async function createSale(sale: Sale, tenantId: string): Promise<Sale | n
       product_name: item.product.name,
       product_sku: item.product.sku,
       product_category: item.product.category,
+      product_subcategory: item.product.subcategory ?? null,
       quantity: item.quantity,
       unit_price: item.product.price,
       line_total: item.lineTotal,
-      selected_size: null,
+      selected_size: item.selectedSize || null,
+      selected_variant_id: item.selectedVariant?.id || null,
     }));
 
   if (saleItems.length > 0) {
