@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import type { Product, ProductSize } from '../../types';
+import type { Product, ProductSize, ProductVariant, ProductAttribute, StockMovement } from '../../types';
 import type { RootState } from '../../app/store';
 import {
   fetchProducts,
@@ -9,6 +9,14 @@ import {
   deleteProduct,
   reduceStock,
   restoreStock,
+  fetchProductAttributes,
+  createProductAttribute,
+  updateProductAttribute,
+  deleteProductAttribute,
+  fetchProductVariants,
+  createProductVariant,
+  updateProductVariant,
+  deleteProductVariant,
 } from './productsService';
 import { addCategory } from '../settings/settingsService';
 
@@ -18,6 +26,8 @@ export interface ProductFormState {
   name: string;
   sku: string;
   category: string;
+  subcategory: string;
+  season: string;
   brand: string;
   price: number;
   costPrice: number;
@@ -29,12 +39,16 @@ export interface ProductFormState {
   sizes: ProductSize[];
   hasSizes: boolean;
   sizeGroupId: string;
+  hasVariants: boolean;
+  variantAttributes: string[];
 }
 
 export const createEmptyForm = (): ProductFormState => ({
   name: '',
   sku: '',
   category: 'Uncategorized',
+  subcategory: '',
+  season: 'Permanente',
   brand: '',
   price: 0,
   costPrice: 0,
@@ -46,6 +60,8 @@ export const createEmptyForm = (): ProductFormState => ({
   sizes: [],
   hasSizes: false,
   sizeGroupId: '',
+  hasVariants: false,
+  variantAttributes: [],
 });
 
 interface ProductsState {
@@ -58,6 +74,7 @@ interface ProductsState {
   publishedFilter: string;
   brandFilter: string;
   stockMovements: import('../../types').StockMovement[];
+  attributes: ProductAttribute[];
   isLoading: boolean;
   error: string | null;
 }
@@ -72,6 +89,7 @@ const initialState: ProductsState = {
   publishedFilter: 'all',
   brandFilter: 'all',
   stockMovements: [],
+  attributes: [],
   isLoading: false,
   error: null,
 };
@@ -117,25 +135,111 @@ export const deleteProductAsync = createAsyncThunk(
 
 export const reduceStockAsync = createAsyncThunk(
   'products/reduceStockAsync',
-  async ({ productId, quantity, size }: { productId: string; quantity: number; size?: string }, { getState }) => {
+  async ({ productId, quantity, size, variantId }: { productId: string; quantity: number; size?: string; variantId?: string }, { getState }) => {
     const state = getState() as RootState;
     const tenantId = state.auth.user?.tenantId || '';
     const employeeId = state.auth.user?.id;
     const employeeName = state.auth.user?.name;
-    await reduceStock(productId, quantity, size, tenantId);
-    return { productId, quantity, size, employeeId, employeeName };
+    await reduceStock(productId, quantity, size, tenantId, variantId);
+    return { productId, quantity, size, variantId, employeeId, employeeName };
   }
 );
 
 export const restoreStockAsync = createAsyncThunk(
   'products/restoreStockAsync',
-  async ({ productId, quantity, size }: { productId: string; quantity: number; size?: string }, { getState }) => {
+  async ({ productId, quantity, size, variantId }: { productId: string; quantity: number; size?: string; variantId?: string }, { getState }) => {
     const state = getState() as RootState;
     const tenantId = state.auth.user?.tenantId || '';
     const employeeId = state.auth.user?.id;
     const employeeName = state.auth.user?.name;
-    await restoreStock(productId, quantity, size, tenantId);
-    return { productId, quantity, size, employeeId, employeeName };
+    await restoreStock(productId, quantity, size, tenantId, undefined, variantId);
+    return { productId, quantity, size, variantId, employeeId, employeeName };
+  }
+);
+
+// --------------------------------------------
+// Product Attributes Thunks
+// --------------------------------------------
+
+export const fetchProductAttributesAsync = createAsyncThunk(
+  'products/fetchProductAttributesAsync',
+  async (_, { getState }) => {
+    const tenantId = (getState() as RootState).auth.user?.tenantId;
+    if (!tenantId) return [];
+    return fetchProductAttributes(tenantId);
+  }
+);
+
+export const addProductAttributeAsync = createAsyncThunk(
+  'products/addProductAttributeAsync',
+  async ({ name, values }: { name: string; values: string[] }, { getState }) => {
+    const tenantId = (getState() as RootState).auth.user?.tenantId || '';
+    const result = await createProductAttribute(tenantId, name, values);
+    if (!result) throw new Error('Failed to create attribute');
+    return result;
+  }
+);
+
+export const updateProductAttributeAsync = createAsyncThunk(
+  'products/updateProductAttributeAsync',
+  async ({ attrId, values }: { attrId: string; values: string[] }, { getState }) => {
+    const tenantId = (getState() as RootState).auth.user?.tenantId || '';
+    const result = await updateProductAttribute(tenantId, attrId, values);
+    if (!result) throw new Error('Failed to update attribute');
+    return { attrId, values };
+  }
+);
+
+export const removeProductAttributeAsync = createAsyncThunk(
+  'products/removeProductAttributeAsync',
+  async (attrId: string, { getState }) => {
+    const tenantId = (getState() as RootState).auth.user?.tenantId || '';
+    const result = await deleteProductAttribute(tenantId, attrId);
+    if (!result) throw new Error('Failed to delete attribute');
+    return attrId;
+  }
+);
+
+// --------------------------------------------
+// Product Variants Thunks
+// --------------------------------------------
+
+export const fetchProductVariantsAsync = createAsyncThunk(
+  'products/fetchProductVariantsAsync',
+  async (productId: string, { getState }) => {
+    const tenantId = (getState() as RootState).auth.user?.tenantId;
+    if (!tenantId) return [];
+    return fetchProductVariants(tenantId, productId);
+  }
+);
+
+export const createProductVariantAsync = createAsyncThunk(
+  'products/createProductVariantAsync',
+  async (variant: Omit<ProductVariant, 'id'>, { getState }) => {
+    const tenantId = (getState() as RootState).auth.user?.tenantId || '';
+    const result = await createProductVariant(tenantId, variant);
+    if (!result) throw new Error('Failed to create variant');
+    return result;
+  }
+);
+
+export const updateProductVariantAsync = createAsyncThunk(
+  'products/updateProductVariantAsync',
+  async (variant: ProductVariant, { getState }) => {
+    const tenantId = (getState() as RootState).auth.user?.tenantId || '';
+    const result = await updateProductVariant(tenantId, variant);
+    if (!result) throw new Error('Failed to update variant');
+    return result;
+  }
+);
+
+export const deleteProductVariantAsync = createAsyncThunk(
+  'products/deleteProductVariantAsync',
+  async (variantId: string, { getState }) => {
+    const tenantId = (getState() as RootState).auth.user?.tenantId || '';
+    const result = await deleteProductVariant(tenantId, variantId);
+    if (!result) throw new Error('Failed to delete variant');
+    return variantId;
   }
 );
 
@@ -169,7 +273,7 @@ export const processDeliveryNoteAsync = createAsyncThunk(
 
     const existingCategories = state.settings.pos.categories;
     for (const cat of newCategories) {
-      if (!existingCategories.includes(cat)) {
+      if (!existingCategories.some(c => c.name === cat)) {
         await addCategory(tenantId, cat);
       }
     }
@@ -206,6 +310,9 @@ const productsSlice = createSlice({
     addStockMovement: (state, action: PayloadAction<import('../../types').StockMovement>) => {
       state.stockMovements.unshift(action.payload);
     },
+    addProduct: (state, action: PayloadAction<Product>) => {
+      state.items.push(action.payload);
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -229,6 +336,13 @@ const productsSlice = createSlice({
         if (idx === -1) return;
         const previousStock = state.items[idx].stock;
         state.items[idx] = action.payload;
+        if (state.selectedProduct?.id === action.payload.id) {
+          const currentVariants = state.selectedProduct.variants;
+          state.selectedProduct = { ...state.selectedProduct, ...action.payload };
+          if (currentVariants) {
+            state.selectedProduct.variants = currentVariants;
+          }
+        }
         const newStock = action.payload.stock;
         if (previousStock !== newStock) {
           state.stockMovements.unshift({
@@ -247,12 +361,18 @@ const productsSlice = createSlice({
         state.items = state.items.filter(p => p.id !== action.payload);
       })
       .addCase(reduceStockAsync.fulfilled, (state, action) => {
-        const { productId, quantity, size, employeeId, employeeName } = action.payload;
+        const { productId, quantity, size, variantId, employeeId, employeeName } = action.payload;
         const product = state.items.find(p => p.id === productId);
         if (!product) return;
         const previousStock = product.stock;
 
-        if (size && product.sizes) {
+        if (variantId && product.variants) {
+          const variant = product.variants.find(v => v.id === variantId);
+          if (variant) {
+            variant.stock = Math.max(0, variant.stock - quantity);
+          }
+          product.stock = product.variants.reduce((sum, v) => sum + v.stock, 0);
+        } else if (size && product.sizes) {
           const sizeEntry = product.sizes.find(s => s.size === size);
           if (sizeEntry) {
             sizeEntry.stock = Math.max(0, sizeEntry.stock - quantity);
@@ -277,12 +397,18 @@ const productsSlice = createSlice({
         });
       })
       .addCase(restoreStockAsync.fulfilled, (state, action) => {
-        const { productId, quantity, size, employeeId, employeeName } = action.payload;
+        const { productId, quantity, size, variantId, employeeId, employeeName } = action.payload;
         const product = state.items.find(p => p.id === productId);
         if (!product) return;
         const previousStock = product.stock;
 
-        if (size && product.sizes) {
+        if (variantId && product.variants) {
+          const variant = product.variants.find(v => v.id === variantId);
+          if (variant) {
+            variant.stock += quantity;
+          }
+          product.stock = product.variants.reduce((sum, v) => sum + v.stock, 0);
+        } else if (size && product.sizes) {
           const sizeEntry = product.sizes.find(s => s.size === size);
           if (sizeEntry) {
             sizeEntry.stock += quantity;
@@ -346,6 +472,94 @@ const productsSlice = createSlice({
             createdAt: new Date().toISOString(),
           });
         });
+      })
+      // --------------------------------------------
+      // Attribute handlers
+      // --------------------------------------------
+      .addCase(fetchProductAttributesAsync.fulfilled, (state, action) => {
+        state.attributes = action.payload;
+      })
+      .addCase(addProductAttributeAsync.fulfilled, (state, action) => {
+        state.attributes.push(action.payload);
+      })
+      .addCase(updateProductAttributeAsync.fulfilled, (state, action) => {
+        const attr = state.attributes.find(a => a.id === action.payload.attrId);
+        if (attr) {
+          attr.values = action.payload.values;
+        }
+      })
+      .addCase(removeProductAttributeAsync.fulfilled, (state, action) => {
+        state.attributes = state.attributes.filter(a => a.id !== action.payload);
+      })
+      // --------------------------------------------
+      // Variant handlers
+      // --------------------------------------------
+      .addCase(fetchProductVariantsAsync.fulfilled, (state, action) => {
+        const variants = action.payload;
+        if (variants.length > 0) {
+          const productId = variants[0].productId;
+          const product = state.items.find(p => p.id === productId);
+          if (product) {
+            product.variants = variants;
+            product.stock = variants.reduce((sum, v) => sum + v.stock, 0);
+          }
+          if (state.selectedProduct?.id === productId) {
+            state.selectedProduct.variants = variants;
+            state.selectedProduct.stock = variants.reduce((sum, v) => sum + v.stock, 0);
+          }
+        }
+      })
+      .addCase(createProductVariantAsync.fulfilled, (state, action) => {
+        const variant = action.payload;
+        const product = state.items.find(p => p.id === variant.productId);
+        if (product) {
+          if (!product.variants) product.variants = [];
+          product.variants.push(variant);
+          product.stock = product.variants.reduce((sum, v) => sum + v.stock, 0);
+        }
+        if (state.selectedProduct?.id === variant.productId) {
+          if (!state.selectedProduct.variants) state.selectedProduct.variants = [];
+          state.selectedProduct.variants.push(variant);
+          state.selectedProduct.stock = state.selectedProduct.variants.reduce((sum, v) => sum + v.stock, 0);
+        }
+      })
+      .addCase(updateProductVariantAsync.fulfilled, (state, action) => {
+        const updatedVariant = action.payload;
+        const product = state.items.find(p => p.id === updatedVariant.productId);
+        if (product && product.variants) {
+          const idx = product.variants.findIndex(v => v.id === updatedVariant.id);
+          if (idx !== -1) {
+            product.variants[idx] = updatedVariant;
+            product.stock = product.variants.reduce((sum, v) => sum + v.stock, 0);
+          }
+        }
+        if (state.selectedProduct?.id === updatedVariant.productId && state.selectedProduct.variants) {
+          const idx = state.selectedProduct.variants.findIndex(v => v.id === updatedVariant.id);
+          if (idx !== -1) {
+            state.selectedProduct.variants[idx] = updatedVariant;
+            state.selectedProduct.stock = state.selectedProduct.variants.reduce((sum, v) => sum + v.stock, 0);
+          }
+        }
+      })
+      .addCase(deleteProductVariantAsync.fulfilled, (state, action) => {
+        const variantId = action.payload;
+        for (const product of state.items) {
+          if (product.variants) {
+            const idx = product.variants.findIndex(v => v.id === variantId);
+            if (idx !== -1) {
+              product.variants.splice(idx, 1);
+              product.stock = product.variants.reduce((sum, v) => sum + v.stock, 0);
+              break;
+            }
+          }
+        }
+        if (state.selectedProduct?.variants) {
+          const idx = state.selectedProduct.variants.findIndex(v => v.id === variantId);
+          if (idx !== -1) {
+            state.selectedProduct.variants.splice(idx, 1);
+            state.selectedProduct.stock = state.selectedProduct.variants.reduce((sum, v) => sum + v.stock, 0);
+          }
+        }
       });
   },
 });
@@ -359,6 +573,7 @@ export const {
   setPublishedFilter,
   setBrandFilter,
   addStockMovement,
+  addProduct,
 } = productsSlice.actions;
 export default productsSlice.reducer;
 
@@ -370,15 +585,19 @@ export interface StockAlertItem {
   minStock: number;
   severity: 'critical' | 'warning';
   sizes?: { size: string; stock: number; minStock: number }[];
+  variants?: { id: string; attributes: Record<string, string>; stock: number; minStock: number }[];
 }
 
 // --- Shared stock-level helpers (single source of truth) ---
 // Both the low-stock alert selector and the Inventory tabs MUST use these
 // helpers so both views always agree on which products need attention.
-// Sized products are evaluated by AGGREGATE stock (sum across sizes) on both
-// sides; per-size detail is display-only.
+// Variant products are evaluated by AGGREGATE stock (sum across variants).
+// Sized products are evaluated by AGGREGATE stock (sum across sizes).
 
 export const getProductStock = (product: Product): number => {
+  if (product.variants && product.variants.length > 0) {
+    return product.variants.reduce((sum, v) => sum + v.stock, 0);
+  }
   if (product.sizes && product.sizes.length > 0) {
     return product.sizes.reduce((sum, s) => sum + s.stock, 0);
   }
@@ -386,8 +605,10 @@ export const getProductStock = (product: Product): number => {
 };
 
 export const getProductMinStock = (product: Product): number => {
+  if (product.variants && product.variants.length > 0) {
+    return product.variants.reduce((sum, v) => sum + (v.minStock || product.minStock), 0);
+  }
   if (product.sizes && product.sizes.length > 0) {
-    // Fallback for sizes without their own minStock is the product-level minStock.
     return product.sizes.reduce((sum, s) => sum + (s.minStock || product.minStock), 0);
   }
   return product.minStock;
@@ -413,7 +634,10 @@ export const selectLowStockAlerts = createSelector(
     const stock = getProductStock(product);
     const minStock = getProductMinStock(product);
     if (!isOutOfStock(product) && !isLowStock(product)) return;
+
+    const lowVariants = product.variants?.filter(v => v.stock <= (v.minStock || product.minStock)) ?? [];
     const lowSizes = product.sizes?.filter(s => s.stock <= (s.minStock || product.minStock)) ?? [];
+
     alerts.push({
       productId: product.id,
       productName: product.name,
@@ -421,6 +645,9 @@ export const selectLowStockAlerts = createSelector(
       stock,
       minStock,
       severity: stock === 0 ? 'critical' : 'warning',
+      ...(lowVariants.length > 0
+        ? { variants: lowVariants.map(v => ({ id: v.id, attributes: v.attributes, stock: v.stock, minStock: v.minStock || product.minStock })) }
+        : {}),
       ...(lowSizes.length > 0
         ? { sizes: lowSizes.map(s => ({ size: s.size, stock: s.stock, minStock: s.minStock || product.minStock })) }
         : {}),
@@ -443,5 +670,7 @@ export const selectCriticalStockCount = createSelector(
   (alerts) => alerts.filter(a => a.severity === 'critical').length
 );
 
+const EMPTY_MOVEMENTS: StockMovement[] = [];
+
 export const selectStockMovementsForProduct = (state: RootState, productId: string) =>
-  state.products.stockMovements.filter(m => m.productId === productId).slice(0, 50);
+  state.products.stockMovements.filter(m => m.productId === productId).slice(0, 50) || EMPTY_MOVEMENTS;

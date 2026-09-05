@@ -1,12 +1,22 @@
-import React, { useState, useRef, useCallback, useLayoutEffect } from 'react';
+import React, { useState, useEffect, useCallback, useLayoutEffect, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/store';
-import { updateProductAsync, deleteProductAsync, selectProduct, type ProductFormState, selectStockMovementsForProduct } from './productsSlice';
+import { updateProductAsync, deleteProductAsync, selectProduct, type ProductFormState, selectStockMovementsForProduct, createProductVariantAsync, updateProductVariantAsync, deleteProductVariantAsync, fetchProductVariantsAsync, fetchProductAttributesAsync } from './productsSlice';
+import type { ProductVariant, Product, Employee } from '../../types';
 import { usePermission } from '../../hooks/usePermission';
-import { selectCategories } from '../../features/settings/settingsSlice';
-import type { Product, Employee } from '../../types';
-import Toggle from '../../components/ui/Toggle';
+import { selectCategories, selectCategoryGroups, selectBrands, selectSeasons } from '../../features/settings/settingsSlice';
 import Button from '../../components/ui/Button';
 import PinAuthModal from '../pos/PinAuthModal';
+import { useToast } from '../../components/useToast';
+import { useI18n } from '../../i18n/useI18n';
+import StockHistory from './StockHistory';
+import DeleteConfirmModal from './DeleteConfirmModal';
+import StatusField from './StatusField';
+import PricingFields from './PricingFields';
+import ImageSection from './ImageSection';
+import PublishToggle from './PublishToggle';
+import StockSection from './StockSection';
+import ProductBasicFields from './ProductBasicFields';
+import VariantsSection from './VariantsSection';
 
 interface ProductDetailPanelProps {
   onDuplicate?: (form: ProductFormState) => void;
@@ -17,34 +27,19 @@ interface FormState {
   name: string;
   sku: string;
   category: string;
+  subcategory: string;
+  season: string;
+  brand: string;
   price: number;
   costPrice: number;
   stock: number;
-  minStock: number;
   description: string;
   publishedOnline: boolean;
   status: Product['status'];
   version: string;
   image: string;
-}
-
-interface EditedSize {
-  size: string;
-  stock: number;
-  minStock: number;
-  sku?: string;
-}
-
-function sanitizeEditedSizes(sizes: EditedSize[]): EditedSize[] {
-  const seen = new Set<string>();
-  const cleaned: EditedSize[] = [];
-  for (const sz of sizes) {
-    const name = sz.size.trim();
-    if (!name || seen.has(name)) continue;
-    seen.add(name);
-    cleaned.push({ ...sz, size: name });
-  }
-  return cleaned;
+  hasVariants: boolean;
+  variantAttributes: string[];
 }
 
 const ProductDetailPanel: React.FC<ProductDetailPanelProps> = ({ onDuplicate }) => {
@@ -53,198 +48,262 @@ const ProductDetailPanel: React.FC<ProductDetailPanelProps> = ({ onDuplicate }) 
   const movements = useAppSelector(state => product ? selectStockMovementsForProduct(state, product.id) : []);
   const { hasPermission } = usePermission();
   const categories = useAppSelector(selectCategories);
+  const categoryGroups = useAppSelector(selectCategoryGroups);
+  const brands = useAppSelector(selectBrands);
+  const seasons = useAppSelector(selectSeasons);
+  const { addToast } = useToast();
+  const t = useI18n();
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const attributes = useAppSelector(state => state.products.attributes);
 
   const [form, setForm] = useState<FormState>({
     id: '',
     name: '',
     sku: '',
     category: '',
+    subcategory: '',
+    season: '',
+    brand: '',
     price: 0,
     costPrice: 0,
     stock: 0,
-    minStock: 0,
     description: '',
     publishedOnline: false,
     status: 'active',
     version: '',
     image: '',
+    hasVariants: false,
+    variantAttributes: [],
   });
 
-  const [editedSizes, setEditedSizes] = useState<EditedSize[]>([]);
-
   const [snapshot, setSnapshot] = useState<FormState | null>(null);
-  const [sizeSnapshot, setSizeSnapshot] = useState<EditedSize[] | null>(null);
-  const [unlockedActions, setUnlockedActions] = useState<Set<'stock' | 'publish'>>(new Set());
-  const [authorizedBy, setAuthorizedBy] = useState<Employee | null>(null);
+  const variantsSnapshot = useRef<ProductVariant[]>([]);
+  const [unlockedActions, setUnlockedActions] = useState<Set<'publish'>>(new Set());
   const [showPinModal, setShowPinModal] = useState(false);
-  const [pendingAuthAction, setPendingAuthAction] = useState<'stock' | 'publish' | null>(null);
+  const [pendingAuthAction, setPendingAuthAction] = useState<'publish' | null>(null);
+  const [authorizedBy, setAuthorizedBy] = useState<Employee | null>(null);
 
-  const hasSizes = product ? !!(product.sizes && product.sizes.length > 0) : false;
-  const totalSizeStock = hasSizes
-    ? (isEditing ? editedSizes : product!.sizes!).reduce((s, sz) => s + sz.stock, 0)
-    : form.stock;
+  const subcategories = form.category
+    ? categoryGroups.find(g => g.name === form.category)?.subcategories || []
+    : [];
 
   useLayoutEffect(() => {
     if (product) {
-      const data = {
+      setForm({
         id: product.id,
         name: product.name,
         sku: product.sku,
         category: product.category,
+        subcategory: product.subcategory || '',
+        season: product.season || '',
+        brand: product.brand || '',
         price: product.price,
         costPrice: product.costPrice,
         stock: product.stock,
-        minStock: product.minStock,
-        description: product.description ?? '',
+        description: product.description || '',
         publishedOnline: product.publishedOnline,
         status: product.status,
-        version: product.version ?? '',
-        image: product.image ?? '',
-      };
-      setForm(data);
-      setSnapshot(data);
-
-      const sizes: EditedSize[] = (product.sizes ?? []).map(sz => ({
-        size: sz.size,
-        stock: sz.stock,
-        minStock: sz.minStock ?? 0,
-        sku: sz.sku,
-      }));
-      setEditedSizes(sizes);
-      setSizeSnapshot(sizes.map(s => ({ ...s })));
-
-      setIsEditing(false);
-      setUnlockedActions(new Set());
-      setAuthorizedBy(null);
-      setPendingAuthAction(null);
+        version: product.version || '',
+        image: product.image || '',
+        hasVariants: product.hasVariants || false,
+        variantAttributes: product.variantAttributes || [],
+      });
+      if (product.hasVariants) {
+        dispatch(fetchProductVariantsAsync(product.id));
+      }
+      dispatch(fetchProductAttributesAsync());
     }
-  }, [product]);
+    setIsEditing(false);
+    setUnlockedActions(new Set());
+    setAuthorizedBy(null);
+    setPendingAuthAction(null);
+  }, [product?.id]);
 
-  const processFile = useCallback((file: File) => {
-    if (!file.type.startsWith('image/')) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const result = e.target?.result as string;
-      if (result) setForm(prev => ({ ...prev, image: result }));
-    };
-    reader.readAsDataURL(file);
-  }, []);
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const file = e.dataTransfer.files[0];
-    if (file) processFile(file);
-  }, [processFile]);
-
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  }, []);
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-  }, []);
-
-  if (!product) return null;
-
-  const handleSave = () => {
-    const cleanedSizes = hasSizes ? sanitizeEditedSizes(editedSizes) : [];
-    const updatedSizes = hasSizes ? cleanedSizes : undefined;
+  const handleSave = useCallback(async () => {
+    const oldPrice = snapshot?.price ?? product!.price;
+    const oldCostPrice = snapshot?.costPrice ?? product!.costPrice;
+    const priceChanged = form.price !== oldPrice;
+    const costPriceChanged = form.costPrice !== oldCostPrice;
 
     const updated: Product = {
-      ...product,
+      ...product!,
       name: form.name,
       sku: form.sku,
       category: form.category,
+      subcategory: form.subcategory || undefined,
+      season: form.season || undefined,
+      brand: form.brand || undefined,
       price: form.price,
       costPrice: form.costPrice,
-      stock: hasSizes ? cleanedSizes.reduce((s, sz) => s + sz.stock, 0) : form.stock,
-      minStock: form.minStock,
       description: form.description,
       publishedOnline: form.publishedOnline,
       status: form.status,
       version: form.version,
       image: form.image || undefined,
-      sizes: updatedSizes,
     };
-    dispatch(updateProductAsync(updated));
-    setIsEditing(false);
-    setUnlockedActions(new Set());
-    setAuthorizedBy(null);
-    setPendingAuthAction(null);
-  };
+    setIsSaving(true);
+    try {
+      await dispatch(updateProductAsync(updated)).unwrap();
 
-  const handleCancel = () => {
+      const variants = variantsSnapshot.current;
+      if ((priceChanged || costPriceChanged) && variants.length > 0) {
+        for (const v of variants) {
+          const matchesPrice = priceChanged && v.price === oldPrice;
+          const inheritsPrice = priceChanged && v.price === null;
+          const matchesCost = costPriceChanged && v.costPrice === oldCostPrice;
+          const inheritsCost = costPriceChanged && v.costPrice === null;
+
+          if (matchesPrice || inheritsPrice || matchesCost || inheritsCost) {
+            const patched: ProductVariant = {
+              ...v,
+              price: matchesPrice ? form.price : inheritsPrice ? null : v.price,
+              costPrice: matchesCost ? form.costPrice : inheritsCost ? null : v.costPrice,
+            };
+            await dispatch(updateProductVariantAsync(patched)).unwrap();
+          }
+        }
+      }
+
+      if (product?.hasVariants) {
+        await dispatch(fetchProductVariantsAsync(product.id)).unwrap();
+      }
+
+      addToast('Producto actualizado correctamente', 'success');
+      setIsEditing(false);
+      setUnlockedActions(new Set());
+      setAuthorizedBy(null);
+      setPendingAuthAction(null);
+    } catch {
+      addToast('Error al guardar el producto', 'error');
+    } finally {
+      setIsSaving(false);
+    }
+  }, [product, form, snapshot, dispatch, addToast]);
+
+  const handleCancel = useCallback(() => {
     if (snapshot) setForm(snapshot);
-    if (sizeSnapshot) setEditedSizes(sizeSnapshot.map(s => ({ ...s })));
     setIsEditing(false);
     setUnlockedActions(new Set());
     setAuthorizedBy(null);
     setPendingAuthAction(null);
-  };
+  }, [snapshot]);
 
-  const handleEdit = () => {
+  const handleEdit = useCallback(() => {
     setSnapshot({ ...form });
-    setSizeSnapshot(editedSizes.map(s => ({ ...s })));
+    variantsSnapshot.current = product?.variants ? [...product.variants] : [];
     setIsEditing(true);
-    setUnlockedActions(new Set());
-    setAuthorizedBy(null);
-    setPendingAuthAction(null);
-  };
+  }, [form, product?.variants]);
 
-  const handleAddSize = () => {
-    setEditedSizes(prev => [...prev, { size: '', stock: 0, minStock: 0 }]);
-  };
-
-  const handleRemoveSize = (index: number) => {
-    setEditedSizes(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const handleSizeFieldChange = (index: number, field: keyof EditedSize, value: string | number) => {
-    setEditedSizes(prev => prev.map((sz, i) => (i === index ? { ...sz, [field]: value } : sz)));
-  };
-
-  const handleDelete = () => {
+  const handleAddVariant = async (variant: Omit<ProductVariant, 'id'>) => {
     if (!product) return;
-    const t = window.confirm('¿Estás seguro de que deseas eliminar este producto?');
-    if (!t) return;
-    dispatch(deleteProductAsync(product.id));
-    dispatch(selectProduct(null));
+    try {
+      await dispatch(createProductVariantAsync(variant)).unwrap();
+      addToast('Variante creada correctamente', 'success');
+    } catch {
+      addToast('Error al crear la variante', 'error');
+    }
   };
 
-  const requestAuth = (action: 'stock' | 'publish') => {
+  const handleUpdateVariant = async (variant: ProductVariant) => {
+    try {
+      await dispatch(updateProductVariantAsync(variant)).unwrap();
+      addToast('Variante actualizada correctamente', 'success');
+    } catch {
+      addToast('Error al actualizar la variante', 'error');
+    }
+  };
+
+  const handleDeleteVariant = async (variantId: string) => {
+    try {
+      await dispatch(deleteProductVariantAsync(variantId)).unwrap();
+      addToast('Variante eliminada correctamente', 'success');
+    } catch {
+      addToast('Error al eliminar la variante', 'error');
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!product) return;
+    setShowDeleteConfirm(false);
+    try {
+      await dispatch(deleteProductAsync(product.id)).unwrap();
+      dispatch(selectProduct(null));
+      addToast('Producto eliminado correctamente', 'success');
+    } catch {
+      addToast('Error al eliminar el producto', 'error');
+    }
+  };
+
+  const requestAuth = (action: 'publish') => {
     setPendingAuthAction(action);
     setShowPinModal(true);
   };
 
-  const handleStockAuthSuccess = (employee: Employee) => {
-    setAuthorizedBy(employee);
+  const handleAuthSuccess = (employee: Employee) => {
     if (pendingAuthAction) {
       setUnlockedActions(prev => new Set(prev).add(pendingAuthAction));
     }
+    setAuthorizedBy(employee);
     setShowPinModal(false);
     setPendingAuthAction(null);
   };
 
-  const statusLabel = form.status === 'active' ? 'Active' : form.status === 'inactive' ? 'Inactive' : 'Draft';
+  const handleFieldChange = (field: string, value: string) => {
+    setForm(prev => ({ ...prev, [field]: value }));
+  };
 
-  const stockLabel = hasSizes ? 'Total Stock (by size)' : 'Stock Level';
+  const statusLabel = form.status === 'active' ? t.products.detail.active : form.status === 'inactive' ? t.products.detail.inactive : t.products.detail.draft;
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isMod = e.metaKey || e.ctrlKey;
+
+      if (isMod && e.key === 's') {
+        e.preventDefault();
+        if (isEditing && hasPermission('product:edit') && !isSaving) {
+          handleSave();
+        }
+      }
+
+      if (e.key === 'Escape') {
+        if (showDeleteConfirm) {
+          setShowDeleteConfirm(false);
+        } else if (showPinModal) {
+          setShowPinModal(false);
+          setPendingAuthAction(null);
+        } else if (isEditing) {
+          handleCancel();
+        }
+      }
+
+      if (isMod && e.key === 'e') {
+        e.preventDefault();
+        if (!isEditing && hasPermission('product:edit')) {
+          handleEdit();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isEditing, isSaving, showDeleteConfirm, showPinModal, hasPermission, handleSave, handleCancel, handleEdit]);
+
+  if (!product) return null;
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden bg-white rounded-xl border border-border">
       <div className="px-6 py-5 border-b border-border flex items-center justify-between">
-        <h3 className="text-xl font-bold text-text-primary">Product Details</h3>
+        <h3 className="text-xl font-bold text-text-primary">{t.products.detail.title}</h3>
         {isEditing ? (
           <div className="flex gap-2">
-            <Button variant="secondary" onClick={handleCancel}>Cancel</Button>
+            <Button variant="secondary" onClick={handleCancel} disabled={isSaving}>{t.common.cancel}</Button>
             {hasPermission('product:edit') && (
-              <Button variant="primary" onClick={handleSave}>Save</Button>
+              <Button variant="primary" onClick={handleSave} disabled={isSaving}>
+                {isSaving ? t.products.detail.saving : t.common.save}
+              </Button>
             )}
           </div>
         ) : (
@@ -252,11 +311,12 @@ const ProductDetailPanel: React.FC<ProductDetailPanelProps> = ({ onDuplicate }) 
             {hasPermission('product:create') && onDuplicate && (
               <button
                 onClick={() => {
-                  if (!product) return;
                   const dupForm: ProductFormState = {
-                    name: `${product.name} (Copy)`,
-                    sku: `${product.sku}-COPY`,
+                    name: `${product.name} ${t.products.detail.copy}`,
+                    sku: `${product.sku}${t.products.detail.copySuffix}`,
                     category: product.category,
+                    subcategory: product.subcategory ?? '',
+                    season: product.season ?? '',
                     brand: product.brand || '',
                     price: product.price,
                     costPrice: product.costPrice,
@@ -268,6 +328,8 @@ const ProductDetailPanel: React.FC<ProductDetailPanelProps> = ({ onDuplicate }) 
                     sizes: product.sizes ? product.sizes.map(s => ({ ...s })) : [],
                     hasSizes: !!(product.sizes && product.sizes.length > 0),
                     sizeGroupId: product.sizeGroupId || '',
+                    hasVariants: false,
+                    variantAttributes: [],
                   };
                   onDuplicate(dupForm);
                 }}
@@ -276,7 +338,7 @@ const ProductDetailPanel: React.FC<ProductDetailPanelProps> = ({ onDuplicate }) 
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-4 10h6a2 2 0 002-2v-8a2 2 0 00-2-2h-6a2 2 0 00-2 2v8a2 2 0 002 2z" />
                 </svg>
-                Duplicate
+                {t.products.detail.duplicate}
               </button>
             )}
             {hasPermission('product:edit') && (
@@ -287,465 +349,97 @@ const ProductDetailPanel: React.FC<ProductDetailPanelProps> = ({ onDuplicate }) 
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
-                Edit
+                {t.common.edit}
               </button>
             )}
             {hasPermission('product:delete') && (
               <button
-                onClick={handleDelete}
+                onClick={() => setShowDeleteConfirm(true)}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-error border border-error rounded-lg hover:bg-error/5 transition-colors"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
-                Delete
+                {t.common.delete}
               </button>
             )}
           </div>
         )}
       </div>
 
-      <div className="flex-1 px-6 py-5 flex flex-col gap-5">
-        <div>
-          <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Product Image</p>
-          {isEditing ? (
-            <>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={e => {
-                  const file = e.target.files?.[0];
-                  if (file) processFile(file);
-                }}
-              />
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                onDrop={handleDrop}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                className={`border-2 border-dashed rounded-xl h-32 flex flex-col items-center justify-center gap-2 transition-colors cursor-pointer ${
-                  isDragging
-                    ? 'border-primary bg-primary/5 text-primary'
-                    : 'border-border text-text-muted hover:border-primary hover:text-primary'
-                }`}
-              >
-                {form.image ? (
-                  <div className="relative w-full h-full">
-                    <img src={form.image} alt="Product" className="w-full h-full object-contain rounded-xl" loading="lazy" />
-                    <button
-                      type="button"
-                      onClick={e => {
-                        e.stopPropagation();
-                        setForm(prev => ({ ...prev, image: '' }));
-                      }}
-                      className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    <p className="text-xs">Click or drag to upload</p>
-                  </>
-                )}
-              </div>
-            </>
-          ) : form.image ? (
-            <div className="h-32 rounded-xl overflow-hidden bg-gray-100">
-              <img src={form.image} alt="Product" className="w-full h-full object-contain" loading="lazy" />
-            </div>
-          ) : (
-            <div className="h-32 rounded-xl border border-border bg-gray-50 flex items-center justify-center text-text-muted">
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            </div>
-          )}
-        </div>
+      <div className="flex-1 px-6 py-5 flex flex-col gap-5 overflow-y-auto">
+        <ImageSection isEditing={isEditing} image={form.image} onImageChange={img => setForm(prev => ({ ...prev, image: img }))} />
 
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Product Name</label>
-          {isEditing ? (
-            <input
-              value={form.name}
-              onChange={e => setForm(prev => ({ ...prev, name: e.target.value }))}
-              className="w-full px-3 py-2.5 text-sm border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
-            />
-          ) : (
-            <p className="text-sm text-text-primary py-2">{form.name}</p>
-          )}
-        </div>
+        <ProductBasicFields
+          isEditing={isEditing}
+          name={form.name}
+          description={form.description}
+          sku={form.sku}
+          category={form.category}
+          subcategory={form.subcategory}
+          season={form.season}
+          brand={form.brand}
+          onFieldChange={handleFieldChange}
+          categories={categories}
+          subcategories={subcategories}
+          seasons={seasons}
+          brands={brands}
+        />
 
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Description</label>
-          {isEditing ? (
-            <textarea
-              value={form.description}
-              onChange={e => setForm(prev => ({ ...prev, description: e.target.value }))}
-              rows={3}
-              className="w-full px-3 py-2.5 text-sm border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors resize-none"
-            />
-          ) : (
-            <p className="text-sm text-text-muted py-2">{form.description || '—'}</p>
-          )}
-        </div>
+        <PricingFields
+          isEditing={isEditing}
+          price={form.price}
+          costPrice={form.costPrice}
+          onPriceChange={v => setForm(prev => ({ ...prev, price: v }))}
+          onCostPriceChange={v => setForm(prev => ({ ...prev, costPrice: v }))}
+        />
 
-        <div className="grid grid-cols-2 gap-3">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">SKU</label>
-            {isEditing ? (
-              <input
-                value={form.sku}
-                onChange={e => setForm(prev => ({ ...prev, sku: e.target.value }))}
-                className="w-full px-3 py-2.5 text-sm border border-border rounded-lg text-text-primary font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
-              />
-            ) : (
-              <p className="text-sm font-mono text-text-primary py-2">{form.sku}</p>
-            )}
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Category</label>
-            {isEditing ? (
-              <select
-                value={form.category}
-                onChange={e => setForm(prev => ({ ...prev, category: e.target.value }))}
-                className="w-full px-3 py-2.5 text-sm border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors bg-white"
-              >
-                {form.category && !categories.includes(form.category) && (
-                  <option value={form.category}>{form.category} (actual)</option>
-                )}
-                {categories.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-                {!form.category && (
-                  <option value="">Sin categoría</option>
-                )}
-              </select>
-            ) : (
-              <p className="text-sm text-text-primary py-2">{form.category}</p>
-            )}
-          </div>
-        </div>
+        <StockSection
+          stock={product.stock}
+          stockLabel={t.products.detail.stockLevel}
+        />
 
-        <div className="grid grid-cols-2 gap-3">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Sale Price</label>
-            {isEditing ? (
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-sm font-mono">$</span>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={form.price}
-                  onChange={e => setForm(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
-                  className="w-full pl-7 pr-3 py-2.5 text-sm border border-border rounded-lg text-text-primary font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
-                />
-              </div>
-            ) : (
-              <p className="text-sm font-mono text-text-primary py-2">${form.price.toFixed(2)}</p>
-            )}
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Cost Price</label>
-            {isEditing ? (
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-sm font-mono">$</span>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={form.costPrice}
-                  onChange={e => setForm(prev => ({ ...prev, costPrice: parseFloat(e.target.value) || 0 }))}
-                  className="w-full pl-7 pr-3 py-2.5 text-sm border border-border rounded-lg text-text-primary font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
-                />
-              </div>
-            ) : (
-              <p className="text-sm font-mono text-text-primary py-2">${form.costPrice.toFixed(2)}</p>
-            )}
-          </div>
-        </div>
+        <VariantsSection
+          product={product}
+          isEditing={isEditing}
+          variantAttributes={form.variantAttributes}
+          attributes={attributes}
+          onAddVariant={handleAddVariant}
+          onUpdateVariant={handleUpdateVariant}
+          onDeleteVariant={handleDeleteVariant}
+        />
 
-        {hasSizes ? (
-          <>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">{stockLabel}</label>
-              <p className="text-lg font-mono font-bold text-text-primary py-2">{totalSizeStock}</p>
-            </div>
+        <StatusField
+          isEditing={isEditing}
+          status={form.status}
+          statusLabel={statusLabel}
+          onStatusChange={s => setForm(prev => ({ ...prev, status: s }))}
+        />
 
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Stock by Size</label>
-                {isEditing && !unlockedActions.has('stock') && (
-                  <button
-                    onClick={() => requestAuth('stock')}
-                    className="flex items-center gap-1 text-xs text-amber-600 hover:text-amber-700 font-medium"
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    </svg>
-                    Unlock
-                  </button>
-                )}
-              </div>
-              {unlockedActions.has('stock') && authorizedBy && (
-                <p className="text-xs text-green-600 flex items-center gap-1">
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Authorized by {authorizedBy.name}
-                </p>
-              )}
-              {isEditing && unlockedActions.has('stock') ? (
-                <div className="flex flex-col gap-2">
-                  {editedSizes.map((sz, idx) => (
-                    <div key={idx} className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        placeholder="Talla"
-                        value={sz.size}
-                        onChange={e => handleSizeFieldChange(idx, 'size', e.target.value)}
-                        className="flex-1 px-2 py-2 text-sm border border-border rounded text-text-primary font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
-                      />
-                      <input
-                        type="number"
-                        min="0"
-                        placeholder="Stock"
-                        value={sz.stock}
-                        onChange={e => handleSizeFieldChange(idx, 'stock', parseInt(e.target.value) || 0)}
-                        className="w-20 px-2 py-2 text-sm border border-border rounded text-text-primary font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
-                      />
-                      <input
-                        type="number"
-                        min="0"
-                        placeholder="Min"
-                        value={sz.minStock}
-                        onChange={e => handleSizeFieldChange(idx, 'minStock', parseInt(e.target.value) || 0)}
-                        className="w-20 px-2 py-2 text-sm border border-border rounded text-text-primary font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveSize(idx)}
-                        className="w-8 h-8 flex-shrink-0 flex items-center justify-center text-error border border-error rounded-lg hover:bg-error/5 transition-colors"
-                        aria-label="Eliminar talla"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={handleAddSize}
-                    className="self-start text-xs text-primary hover:underline"
-                  >
-                    + Añadir talla
-                  </button>
-                </div>
-              ) : (
-                <div className="grid grid-cols-4 gap-2">
-                  {editedSizes.map((sz, idx) => {
-                    const isLow = sz.stock <= sz.minStock;
-
-                    return (
-                      <div
-                        key={`${sz.size}-${idx}`}
-                        className={`p-3 rounded-lg border text-center ${
-                          isLow
-                            ? 'border-amber-200 bg-amber-50'
-                            : 'border-border bg-background'
-                        }`}
-                      >
-                        <p className="text-sm font-semibold text-text-primary">{sz.size}</p>
-                        <p className={`text-lg font-mono font-bold mt-1 ${isLow ? 'text-amber-600' : 'text-text-primary'}`}>
-                          {sz.stock}
-                        </p>
-                        <p className="text-xs text-text-muted mt-0.5">min: {sz.minStock}</p>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </>
-        ) : (
-          <div className="grid grid-cols-2 gap-3">
-             <div className="flex flex-col gap-1.5">
-               <div className="flex items-center justify-between">
-                 <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">{stockLabel}</label>
-                 {isEditing && !unlockedActions.has('stock') && (
-                   <button
-                     onClick={() => requestAuth('stock')}
-                     className="flex items-center gap-1 text-xs text-amber-600 hover:text-amber-700 font-medium"
-                   >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    </svg>
-                    Unlock
-                  </button>
-                )}
-              </div>
-              {isEditing ? (
-                unlockedActions.has('stock') ? (
-                  <div className="flex flex-col gap-1">
-                    <input
-                      type="number"
-                      value={form.stock}
-                      onChange={e => setForm(prev => ({ ...prev, stock: parseInt(e.target.value) || 0 }))}
-                      className="w-full px-3 py-2.5 text-sm border border-primary rounded-lg text-text-primary font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
-                    />
-                    {unlockedActions.has('stock') && authorizedBy && (
-                      <p className="text-xs text-green-600 flex items-center gap-1">
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        Authorized by {authorizedBy.name}
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  <div className="px-3 py-2.5 text-sm border border-border rounded-lg bg-gray-50 text-text-muted font-mono flex items-center gap-2">
-                    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    </svg>
-                    {form.stock}
-                  </div>
-                )
-              ) : (
-                <p className="text-sm font-mono text-text-primary py-2">{form.stock}</p>
-              )}
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Min. Stock</label>
-              {isEditing ? (
-                unlockedActions.has('stock') ? (
-                  <input
-                    type="number"
-                    min="0"
-                    value={form.minStock}
-                    onChange={e => setForm(prev => ({ ...prev, minStock: parseInt(e.target.value) || 0 }))}
-                    className="w-full px-3 py-2.5 text-sm border border-primary rounded-lg text-text-primary font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
-                  />
-                ) : (
-                  <div className="px-3 py-2.5 text-sm border border-border rounded-lg bg-gray-50 text-text-muted font-mono flex items-center gap-2">
-                    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    </svg>
-                    {form.minStock}
-                  </div>
-                )
-              ) : (
-                <p className="text-sm font-mono text-text-primary py-2">{form.minStock}</p>
-              )}
-            </div>
-          </div>
-        )}
-
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Status</label>
-          {isEditing ? (
-            <select
-              value={form.status}
-              onChange={e => setForm(prev => ({ ...prev, status: e.target.value as Product['status'] }))}
-              className="w-full px-3 py-2.5 text-sm border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors bg-white"
-            >
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-              <option value="draft">Draft</option>
-            </select>
-          ) : (
-            <p className="text-sm text-text-primary py-2">{statusLabel}</p>
-          )}
-        </div>
-
-        <div className="p-3 rounded-lg border border-border bg-background">
-          {isEditing ? (
-            <>
-              {unlockedActions.has('publish') && authorizedBy && (
-                <p className="text-xs text-green-600 flex items-center gap-1 mb-2">
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Authorized by {authorizedBy.name}
-                </p>
-              )}
-              {unlockedActions.has('publish') ? (
-              <Toggle
-                checked={form.publishedOnline}
-                onChange={val => setForm(prev => ({ ...prev, publishedOnline: val }))}
-                label="Publish to online store"
-                description="Make this product visible in the online catalog"
-              />
-            ) : (
-              <button
-                onClick={() => requestAuth('publish')}
-                className="w-full flex items-center justify-between py-2"
-              >
-                <div className="flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full ${form.publishedOnline ? 'bg-green-500' : 'bg-gray-400'}`} />
-                  <span className="text-sm text-text-primary">
-                    {form.publishedOnline ? 'Published to online store' : 'Not published'}
-                  </span>
-                </div>
-                <span className="flex items-center gap-1 text-xs text-amber-600 font-medium">
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                  Unlock
-                </span>
-              </button>
-            )}
-            </>
-          ) : (
-            <div className="flex items-center gap-2">
-              <span className={`w-2 h-2 rounded-full ${form.publishedOnline ? 'bg-green-500' : 'bg-gray-400'}`} />
-              <span className="text-sm text-text-primary">
-                {form.publishedOnline ? 'Published to online store' : 'Not published'}
-              </span>
-            </div>
-          )}
-        </div>
+        <PublishToggle
+          isEditing={isEditing}
+          publishedOnline={form.publishedOnline}
+          onToggle={v => setForm(prev => ({ ...prev, publishedOnline: v }))}
+          isPublishUnlocked={unlockedActions.has('publish')}
+          authorizedBy={authorizedBy}
+          onRequestAuth={() => requestAuth('publish')}
+        />
       </div>
 
-        {movements.length > 0 && (
-          <div className="px-6 py-5 border-t border-border">
-            <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-3">Stock Movement History</p>
-            <div className="flex flex-col gap-2 max-h-48 overflow-y-auto">
-              {movements.map(m => (
-                <div key={m.id} className="flex items-center justify-between text-sm py-1.5 px-2 rounded-lg hover:bg-gray-50">
-                  <div className="flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full ${
-                      m.type === 'sale' ? 'bg-red-400' :
-                      m.type === 'restock' ? 'bg-green-400' :
-                      'bg-amber-400'
-                    }`} />
-                    <span className="text-text-primary font-medium capitalize">{m.type}</span>
-                    {m.size && <span className="text-xs text-text-muted">({m.size})</span>}
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <span className="font-mono text-xs text-text-muted">{m.previousStock} → {m.newStock}</span>
-                    <span className={`font-mono text-xs font-semibold ${m.quantity >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {m.quantity >= 0 ? '+' : ''}{m.quantity}
-                    </span>
-                    <span className="text-xs text-text-muted w-28 text-right">
-                      {new Date(m.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+      <StockHistory movements={movements} />
 
       <PinAuthModal
         isOpen={showPinModal}
         onClose={() => { setShowPinModal(false); setPendingAuthAction(null); }}
-        onSuccess={handleStockAuthSuccess}
-        title={pendingAuthAction === 'publish' ? 'Authorize Publish Change' : 'Authorize Stock Edit'}
-        description={pendingAuthAction === 'publish' ? 'Publishing changes require supervisor authorization' : 'Stock changes require supervisor authorization'}
+        onSuccess={handleAuthSuccess}
+        title={t.products.detail.publishToOnline}
+        description={t.products.detail.publishDescription}
+      />
+
+      <DeleteConfirmModal
+        isOpen={showDeleteConfirm}
+        onConfirm={handleDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
       />
     </div>
   );

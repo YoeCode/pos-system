@@ -107,6 +107,8 @@ const ProductsPage: React.FC = () => {
           minStock: parseInt(cols[headerMap['minStock']]) || 0,
           status: (cols[headerMap['status']] as Product['status']) || 'draft',
           publishedOnline: cols[headerMap['publishedOnline']]?.toLowerCase() === 'true',
+          hasVariants: false,
+          variantAttributes: [],
         };
         dispatch(createProductAsync(newProduct));
         imported++;
@@ -190,6 +192,8 @@ const ProductsPage: React.FC = () => {
           description: `Imported from delivery note. Supplier ref: ${item.referenciaProveedor || 'N/A'}`,
           status: 'draft',
           publishedOnline: false,
+          hasVariants: false,
+          variantAttributes: [],
         };
         return newProduct;
       });
