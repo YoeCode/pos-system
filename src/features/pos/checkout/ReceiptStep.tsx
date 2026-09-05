@@ -3,6 +3,7 @@ import { useAppDispatch, useAppSelector } from '../../../app/store';
 import { startNewSale } from '../posSlice';
 import { selectSaleById } from '../../sales/salesSlice';
 import { selectActiveEmployees } from '../../employees/employeesSlice';
+import { selectCustomerById } from '../../customers/customersSlice';
 import {
   selectStoreName,
   selectReceiptFooterMessage,
@@ -36,6 +37,9 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, 
   const taxLabel = useAppSelector(selectTaxLabel);
   const allEmployees = useAppSelector(selectActiveEmployees);
   const ticketConfig = useAppSelector(selectTicketConfig);
+  const customer = useAppSelector(state =>
+    sale?.customerId ? selectCustomerById(state, sale.customerId) : undefined
+  );
   const ticketRef = useRef<HTMLDivElement>(null);
   const [email, setEmail] = useState('');
   const [sendingEmail, setSendingEmail] = useState(false);
@@ -287,7 +291,7 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, 
             type="email"
             value={email}
             onChange={e => setEmail(e.target.value)}
-            placeholder="cliente@email.com"
+            placeholder={customer?.email || ''}
             className="flex-1 px-3 py-2.5 text-sm border border-border rounded-xl text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
           />
           <button

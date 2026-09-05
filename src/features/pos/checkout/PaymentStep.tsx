@@ -142,6 +142,8 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
         product: ci.product,
         quantity: ci.quantity,
         lineTotal: ci.product.price * ci.quantity,
+        selectedSize: ci.selectedSize,
+        selectedVariant: ci.selectedVariant,
       })),
       subtotal,
       tax,
@@ -180,14 +182,20 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
       await dispatch(completeSaleAsync(sale)).unwrap();
 
       await Promise.all(cart.map(item =>
-        dispatch(reduceStockAsync({ productId: item.product.id, quantity: item.quantity, size: item.selectedSize })).unwrap()
+        dispatch(reduceStockAsync({ productId: item.product.id, quantity: item.quantity, size: item.selectedSize, variantId: item.selectedVariant?.id })).unwrap()
       ));
 
       const lowStockItems: string[] = [];
       cart.forEach(item => {
         const product = products.find(p => p.id === item.product.id);
         if (!product || product.status !== 'active') return;
-        if (product.sizes && product.sizes.length > 0 && item.selectedSize) {
+        if (item.selectedVariant) {
+          const variant = product.variants?.find(v => v.id === item.selectedVariant!.id);
+          if (variant && variant.minStock !== undefined && variant.stock - item.quantity <= variant.minStock) {
+            const attrs = Object.entries(variant.attributes).map(([k, v]) => `${k}: ${v}`).join(', ');
+            lowStockItems.push(`${product.name} (${attrs})`);
+          }
+        } else if (product.sizes && product.sizes.length > 0 && item.selectedSize) {
           const sizeEntry = product.sizes.find(s => s.size === item.selectedSize);
           if (sizeEntry && sizeEntry.minStock !== undefined && sizeEntry.stock - item.quantity <= sizeEntry.minStock) {
             lowStockItems.push(`${product.name} (${item.selectedSize})`);
@@ -203,7 +211,10 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
           if (!item) return false;
           const product = products.find(p => p.id === item.product.id);
           if (!product) return false;
-          if (product.sizes && item.selectedSize) {
+          if (item.selectedVariant) {
+            const variant = product.variants?.find(v => v.id === item.selectedVariant!.id);
+            return variant ? variant.stock - item.quantity === 0 : false;
+          } else if (product.sizes && item.selectedSize) {
             const sizeEntry = product.sizes.find(s => s.size === item.selectedSize);
             return sizeEntry ? sizeEntry.stock - item.quantity === 0 : false;
           }

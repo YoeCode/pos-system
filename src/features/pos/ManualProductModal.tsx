@@ -5,24 +5,34 @@ import Button from '../../components/ui/Button';
 import { useI18n } from '../../i18n/useI18n';
 import { useToast } from '../../components/useToast';
 import { useAppSelector } from '../../app/store';
-import { selectCategories, selectBrands } from '../settings/settingsSlice';
+import { selectCategories, selectCategoryGroups, selectBrands } from '../settings/settingsSlice';
 
 interface ManualProductModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (product: { name: string; category: string; brand?: string; price: number }) => void;
+  onAdd: (product: { name: string; category: string; subcategory?: string; brand?: string; price: number }) => void;
 }
 
 const ManualProductModal: React.FC<ManualProductModalProps> = ({ isOpen, onClose, onAdd }) => {
   const t = useI18n();
   const { addToast } = useToast();
   const categories = useAppSelector(selectCategories);
+  const categoryGroups = useAppSelector(selectCategoryGroups);
   const brands = useAppSelector(selectBrands);
   const [name, setName] = useState('');
   const [category, setCategory] = useState(categories[0] || '');
+  const [subcategory, setSubcategory] = useState<string | null>(null);
   const [brand, setBrand] = useState('');
   const [price, setPrice] = useState('');
   const [errors, setErrors] = useState<{ name?: string; price?: string }>({});
+
+  const activeGroup = categoryGroups.find(g => g.name === category);
+  const subcategories = activeGroup?.subcategories ?? [];
+
+  const handleCategorySelect = (cat: string) => {
+    setCategory(cat);
+    setSubcategory(null);
+  };
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -55,6 +65,7 @@ const ManualProductModal: React.FC<ManualProductModalProps> = ({ isOpen, onClose
     onAdd({
       name: trimmedName,
       category,
+      subcategory: subcategory ?? undefined,
       brand: brand || undefined,
       price: parsedPrice,
     });
@@ -63,6 +74,7 @@ const ManualProductModal: React.FC<ManualProductModalProps> = ({ isOpen, onClose
 
     setName('');
     setCategory(categories[0] || '');
+    setSubcategory(null);
     setBrand('');
     setPrice('');
     setErrors({});
@@ -72,6 +84,7 @@ const ManualProductModal: React.FC<ManualProductModalProps> = ({ isOpen, onClose
   const handleClose = () => {
     setName('');
     setCategory(categories[0] || '');
+    setSubcategory(null);
     setBrand('');
     setPrice('');
     onClose();
@@ -108,11 +121,11 @@ const ManualProductModal: React.FC<ManualProductModalProps> = ({ isOpen, onClose
               <button
                 key={cat}
                 type="button"
-                onClick={() => setCategory(cat)}
+                onClick={() => handleCategorySelect(cat)}
                 className={`
                   px-3 py-3 text-sm font-medium rounded-lg border-2 transition-all duration-200
-                  ${category === cat 
-                    ? 'border-primary bg-primary/10 text-primary' 
+                  ${category === cat
+                    ? 'border-primary bg-primary/10 text-primary'
                     : 'border-border bg-white text-text-secondary hover:border-primary/50 hover:bg-primary/5'
                   }
                 `}
@@ -122,6 +135,32 @@ const ManualProductModal: React.FC<ManualProductModalProps> = ({ isOpen, onClose
             ))}
           </div>
         </div>
+
+        {subcategories.length > 0 && (
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">
+              Subcategoría <span className="text-text-muted/50 normal-case">(opcional)</span>
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {subcategories.map(sub => (
+                <button
+                  key={sub}
+                  type="button"
+                  onClick={() => setSubcategory(prev => (prev === sub ? null : sub))}
+                  className={`
+                    px-3 py-3 text-sm font-medium rounded-lg border-2 transition-all duration-200
+                    ${subcategory === sub
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-border bg-white text-text-secondary hover:border-primary/50 hover:bg-primary/5'
+                    }
+                  `}
+                >
+                  {sub}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {brands.length > 0 && (
           <div className="flex flex-col gap-1.5">

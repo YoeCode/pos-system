@@ -16,7 +16,7 @@ import DiscountModal from '../../features/pos/DiscountModal';
 import { useI18n } from '../../i18n/useI18n';
 import {
   addCustomProductToCart, setPaymentMethod, undoCartAction, setSearchQuery,
-  selectIsCashBoxOpen,
+  selectIsCashBoxOpen, selectSelectedCategory, selectSelectedSubcategory,
   selectActiveWindowCart, selectActiveWindowPaymentMethod, selectActiveWindowCustomerId,
   selectActiveWindowItemDiscounts, selectActiveWindowManualDiscount, selectActiveWindowPointsToRedeem,
   selectActiveWindowIsGiftReceipt,
@@ -31,7 +31,9 @@ import { usePermission } from '../../hooks/usePermission';
 
 const POSPage: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { selectedCategory, searchQuery } = useAppSelector(state => state.pos);
+  const searchQuery = useAppSelector(state => state.pos.searchQuery);
+  const selectedCategory = useAppSelector(selectSelectedCategory);
+  const selectedSubcategory = useAppSelector(selectSelectedSubcategory);
   const cart = useAppSelector(selectActiveWindowCart);
   const paymentMethod = useAppSelector(selectActiveWindowPaymentMethod);
   const selectedCustomerId = useAppSelector(selectActiveWindowCustomerId);
@@ -129,13 +131,16 @@ const POSPage: React.FC = () => {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isCashBoxOpen, cart.length, isCheckoutOpen, isCartOpen, isManualModalOpen, showRefundModal, showDiscountModal, showCashBoxCloseModal, showCashBoxModal, showAddEmployeeModal, isActionsMenuOpen, dispatch]);
 
-  const filtered = selectedCategory === 'All Items'
-    ? products
-    : products.filter(p => p.category === selectedCategory);
+  const filtered = products.filter(p => {
+    if (selectedCategory === 'All Items') return true;
+    if (p.category !== selectedCategory) return false;
+    if (selectedSubcategory !== null && p.subcategory !== selectedSubcategory) return false;
+    return true;
+  });
 
   const fuse = React.useMemo(() => {
     return new Fuse(filtered, {
-      keys: ['name', 'brand', 'category'],
+      keys: ['name', 'brand', 'category', 'subcategory'],
       threshold: 0.3,
       includeScore: true,
     });
@@ -145,7 +150,7 @@ const POSPage: React.FC = () => {
     ? fuse.search(searchQuery).map(r => r.item)
     : filtered;
 
-  const handleAddManualProduct = (product: { name: string; category: string; brand?: string; price: number }) => {
+  const handleAddManualProduct = (product: { name: string; category: string; subcategory?: string; brand?: string; price: number }) => {
     dispatch(addCustomProductToCart(product));
   };
 

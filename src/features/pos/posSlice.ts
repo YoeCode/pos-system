@@ -1,6 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import type { CartItem, PaymentMethod, Product, SaleWindow, CashBoxClosure } from '../../types';
+import type { CartItem, PaymentMethod, Product, ProductVariant, SaleWindow, CashBoxClosure } from '../../types';
 import type { RootState } from '../../app/store';
 
 const CASH_BOX_KEY = 'nexopos_cash_box';
@@ -148,6 +148,7 @@ interface PosState {
   activeWindowId: string | null;
   nextWindowNumber: number;
   selectedCategory: string;
+  selectedSubcategory: string | null;
   searchQuery: string;
   currentEmployeeId: string | null;
   isCashBoxOpen: boolean;
@@ -161,6 +162,7 @@ const initialState: PosState = {
   activeWindowId: initialActiveWindowId,
   nextWindowNumber: storedWindows.windows.length > 0 ? storedWindows.nextWindowNumber : 2,
   selectedCategory: 'All Items',
+  selectedSubcategory: null,
   searchQuery: '',
   currentEmployeeId: null,
   isCashBoxOpen: storedCashBox.isOpen,
@@ -213,15 +215,17 @@ const posSlice = createSlice({
         saveWindowsToStorage({ windows: state.windows, activeWindowId: state.activeWindowId, nextWindowNumber: state.nextWindowNumber });
       }
     },
-    addToCart: (state, action: PayloadAction<{ product: Product; size?: string }>) => {
-      const { product, size } = action.payload;
+    addToCart: (state, action: PayloadAction<{ product: Product; size?: string; variant?: ProductVariant }>) => {
+      const { product, size, variant } = action.payload;
       updateActiveWindow(state, (window) => {
         pushCartHistory(window);
-        const existing = window.cart.find(item => item.product.id === product.id && item.selectedSize === size);
+        const existing = window.cart.find(
+          item => item.product.id === product.id && item.selectedSize === size && item.selectedVariant?.id === variant?.id
+        );
         if (existing) {
           existing.quantity += 1;
         } else {
-          window.cart.push({ product, quantity: 1, lineId: crypto.randomUUID(), selectedSize: size });
+          window.cart.push({ product, quantity: 1, lineId: crypto.randomUUID(), selectedSize: size, selectedVariant: variant });
         }
       });
     },
@@ -253,7 +257,7 @@ const posSlice = createSlice({
         if (item && item.quantity > 1) {
           pushCartHistory(window);
           item.quantity -= 1;
-          window.cart.push({ product: item.product, quantity: 1, lineId: crypto.randomUUID(), selectedSize: item.selectedSize });
+          window.cart.push({ product: item.product, quantity: 1, lineId: crypto.randomUUID(), selectedSize: item.selectedSize, selectedVariant: item.selectedVariant });
         }
       });
     },
@@ -316,6 +320,8 @@ const posSlice = createSlice({
         minStock: 0,
         status: 'active',
         publishedOnline: false,
+        hasVariants: false,
+        variantAttributes: [],
       };
       updateActiveWindow(state, (window) => {
         pushCartHistory(window);
@@ -339,6 +345,10 @@ const posSlice = createSlice({
     },
     setCategory: (state, action: PayloadAction<string>) => {
       state.selectedCategory = action.payload;
+      state.selectedSubcategory = null;
+    },
+    setSubcategory: (state, action: PayloadAction<string | null>) => {
+      state.selectedSubcategory = action.payload;
     },
     setSearchQuery: (state, action: PayloadAction<string>) => {
       state.searchQuery = action.payload;
@@ -416,7 +426,7 @@ const posSlice = createSlice({
 
 export const {
   addToCart, removeFromCart, updateQuantity, splitLine, clearCart, undoCartAction,
-  setPaymentMethod, setCategory, addCustomProductToCart, setSelectedCustomer,
+  setPaymentMethod, setCategory, setSubcategory, addCustomProductToCart, setSelectedCustomer,
   startNewSale, setSearchQuery, setCurrentEmployee, openCashBox,
   addCashBoxEmployee, removeCashBoxEmployee, closeCashBox, closeCashBoxWithClosure,
   createWindow, closeWindow, setActiveWindow,
@@ -424,6 +434,9 @@ export const {
   setPointsToRedeem, setIsGiftReceipt,
 } = posSlice.actions;
 export default posSlice.reducer;
+
+export const selectSelectedCategory = (state: RootState): string => state.pos.selectedCategory;
+export const selectSelectedSubcategory = (state: RootState): string | null => state.pos.selectedSubcategory;
 
 export const selectIsCashBoxOpen = (state: RootState): boolean => state.pos.isCashBoxOpen;
 export const selectCashBoxEmployeeIds = (state: RootState): string[] => state.pos.cashBoxEmployeeIds;

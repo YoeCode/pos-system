@@ -13,6 +13,8 @@ const MOCK_PRODUCT: Product = {
   minStock: 5,
   status: 'active',
   publishedOnline: false,
+  hasVariants: false,
+  variantAttributes: [],
 };
 
 const getActiveWindow = (state: ReturnType<typeof posReducer>) => {

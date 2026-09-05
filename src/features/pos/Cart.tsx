@@ -5,7 +5,7 @@ import {
   selectActiveWindowCart, selectActiveWindowPaymentMethod, selectActiveWindowCustomerId,
   selectActiveWindowItemDiscounts, selectActiveWindowManualDiscount, selectActiveWindowPointsToRedeem,
   selectCanUndo, selectActiveWindowIsGiftReceipt,
-  setWindowItemDiscounts, setIsGiftReceipt,
+  setWindowItemDiscounts,
 } from './posSlice';
 import {
   selectTaxRate,
@@ -74,15 +74,25 @@ const Cart: React.FC<CartProps> = ({ variant = 'sidebar', onClose }) => {
     const product = products.find(p => p.id === item.product.id);
     if (!product) return;
     const newQty = item.quantity + 1;
-    const hasSizes = product.sizes && product.sizes.length > 0;
-    if (hasSizes && item.selectedSize) {
-      const sizeEntry = product.sizes?.find(s => s.size === item.selectedSize);
-      if (sizeEntry && newQty > sizeEntry.stock) {
-        addToast(`${t.pos.onlyUnitsLeft || 'Solo quedan'} ${sizeEntry.stock} ${t.pos.units || 'unidades'} (${item.selectedSize})`, 'warning');
+
+    if (item.selectedVariant) {
+      const variant = product.variants?.find(v => v.id === item.selectedVariant!.id);
+      if (variant && newQty > variant.stock) {
+        const attrDesc = Object.values(item.selectedVariant.attributes).join(' ');
+        addToast(`${t.pos.onlyUnitsLeft || 'Solo quedan'} ${variant.stock} ${t.pos.units || 'unidades'} (${attrDesc})`, 'warning');
         return;
       }
+    } else if (item.selectedSize) {
+      const hasSizes = product.sizes && product.sizes.length > 0;
+      if (hasSizes) {
+        const sizeEntry = product.sizes?.find(s => s.size === item.selectedSize);
+        if (sizeEntry && newQty > sizeEntry.stock) {
+          addToast(`${t.pos.onlyUnitsLeft || 'Solo quedan'} ${sizeEntry.stock} ${t.pos.units || 'unidades'} (${item.selectedSize})`, 'warning');
+          return;
+        }
+      }
     } else if (newQty > product.stock) {
-        addToast(`${t.pos.onlyUnitsLeft || 'Solo quedan'} ${product.stock} ${t.pos.units || 'unidades'}`, 'warning');
+      addToast(`${t.pos.onlyUnitsLeft || 'Solo quedan'} ${product.stock} ${t.pos.units || 'unidades'}`, 'warning');
       return;
     }
     dispatch(updateQuantity({ lineId: item.lineId, quantity: newQty }));
@@ -155,8 +165,8 @@ const Cart: React.FC<CartProps> = ({ variant = 'sidebar', onClose }) => {
             <div key={item.lineId} className={isSheet ? 'flex items-center gap-3 p-3 bg-gray-50 rounded-lg' : 'flex flex-col gap-2 py-2'}>
               <div className="flex items-start gap-2.5">
                 <div className="w-9 h-9 rounded-lg bg-gray-100 flex-shrink-0 flex items-center justify-center overflow-hidden">
-                  {item.product.image ? (
-                    <img src={item.product.image} alt={item.product.name} className="w-full h-full object-cover" loading="lazy" />
+                  {item.selectedVariant?.image ?? item.product.image ? (
+                    <img src={item.selectedVariant?.image ?? item.product.image} alt={item.product.name} className="w-full h-full object-cover" loading="lazy" />
                   ) : (
                     <svg className="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
@@ -167,16 +177,27 @@ const Cart: React.FC<CartProps> = ({ variant = 'sidebar', onClose }) => {
                   <p className="text-sm font-medium text-text-primary truncate leading-tight">
                     {item.product.name || item.product.category}
                   </p>
+                  {item.selectedVariant && (
+                    <p className="text-[11px] text-violet-600 truncate leading-tight">
+                      {Object.values(item.selectedVariant.attributes).join(' · ')}
+                    </p>
+                  )}
                   <div className="flex items-center gap-1.5 flex-wrap">
                     {item.selectedSize && (
                       <span className="text-[11px] text-blue-600 font-medium">{item.selectedSize}</span>
                     )}
-                    {item.product.brand && (
+                    {item.selectedVariant ? (
+                      <span className="text-[11px] text-text-muted font-mono">{item.selectedVariant.sku}</span>
+                    ) : item.product.brand ? (
                       <span className="text-[11px] text-text-muted truncate">{item.product.brand}</span>
-                    )}
-                    <span className="text-xs font-mono text-text-muted">€{(item.product.price * item.quantity).toFixed(2)}</span>
+                    ) : null}
+                    <span className="text-xs font-mono text-text-muted">
+                      €{((item.selectedVariant?.price ?? item.product.price) * item.quantity).toFixed(2)}
+                    </span>
                     {itemDiscounts[item.lineId] && (
-                      <span className="text-xs font-mono text-green-600">-€{(item.product.price * item.quantity * (itemDiscounts[item.lineId] || 0) / 100).toFixed(2)}</span>
+                      <span className="text-xs font-mono text-green-600">
+                        -€{((item.selectedVariant?.price ?? item.product.price) * item.quantity * (itemDiscounts[item.lineId] || 0) / 100).toFixed(2)}
+                      </span>
                     )}
                   </div>
                 </div>
@@ -268,20 +289,6 @@ const Cart: React.FC<CartProps> = ({ variant = 'sidebar', onClose }) => {
             <span className="font-mono text-primary font-bold text-xl">€{total.toFixed(2)}</span>
           </div>
         </div>
-
-        <button
-          onClick={() => dispatch(setIsGiftReceipt(!isGiftReceipt))}
-          className={`w-full py-2.5 rounded-lg text-sm font-semibold transition-all duration-150 flex items-center justify-center gap-2 border ${
-            isGiftReceipt
-              ? 'bg-pink-50 border-pink-200 text-pink-700'
-              : 'bg-white border-border text-text-muted hover:text-text-primary'
-          }`}
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 12l-1.5-1.5M12 4v16m0-8h8m-8 0H4m16 0v-4a4 4 0 00-4-4H8a4 4 0 00-4 4v4" />
-          </svg>
-          {isGiftReceipt ? t.pos.giftReceiptActive : t.pos.giftReceipt}
-        </button>
 
         {/* Charge button */}
         {hasPermission('pos:checkout') && (
