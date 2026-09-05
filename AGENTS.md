@@ -620,6 +620,36 @@ test: agregar tests para customersSlice
 style: ajustar spacing en DashboardPage
 ```
 
+### Organización de Commits
+
+Antes de hacer commit, **siempre** revisar `git diff --stat` y clasificar los cambios en commits lógicossiguiendo este orden de prioridad:
+
+1. **Migrations/DB** — cambios de esquema primero (`feat(db): ...`)
+2. **Types** — definiciones de tipos que otros features dependen (`feat(types): ...`)
+3. **Services** — capa de acceso a datos (`feat(domain): ...`)
+4. **Slices** — estado de Redux (`feat(domain): ...`)
+5. **Components** — UI y componentes (`feat(domain): ...`)
+6. **Pages** — orquestadores delgados (`feat(domain): ...`)
+7. **i18n** — traducciones (`feat(i18n): ...`)
+8. **Config/Docs** — configuración y documentación (`chore: ...`)
+
+**Reglas de agrupación:**
+- Un commit = un dominio de negocio (products, pos, settings, sales, etc.)
+- Migrations y types van en commits separados (son dependencias compartidas)
+- i18n va después de los features que traduce
+- Nunca mezclar cambios de features distintos en un mismo commit
+- El body del commit explica QUÉ y POR QUÉ, no CÓMO
+
+**Ejemplo de estructura de commits para un feature grande:**
+```
+feat(db): add variant system migration
+feat(types): add ProductVariant and ProductAttribute types
+feat(products): add variant CRUD and component refactor
+feat(pos): add variant selector to cart flow
+feat(i18n): add variant-related translations
+chore: update AGENTS.md with variant documentation
+```
+
 ### Reglas
 
 - **Sin atribución AI** en commits
