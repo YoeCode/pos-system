@@ -76,7 +76,7 @@ export async function acceptInvitation(
 ): Promise<boolean> {
   if (!isSupabaseConfigured()) return false;
 
-  const { data, error } = await supabase.rpc('accept_invitation_by_token', {
+  const { data, error } = await supabase.rpc('complete_invitation_acceptance', {
     p_token: token,
   });
 

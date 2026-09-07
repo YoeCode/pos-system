@@ -7,11 +7,42 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
+      brands: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brands_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cash_box_closures: {
         Row: {
           bizum_counted: number
@@ -123,6 +154,45 @@ export type Database = {
           },
           {
             foreignKeyName: "cash_box_sessions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      categories: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          parent_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          parent_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          parent_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "categories_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -289,6 +359,38 @@ export type Database = {
           },
         ]
       }
+      product_attributes: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          tenant_id: string
+          values: string[]
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          tenant_id: string
+          values?: string[]
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          tenant_id?: string
+          values?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_attributes_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_sizes: {
         Row: {
           id: string
@@ -334,6 +436,69 @@ export type Database = {
           },
         ]
       }
+      product_variants: {
+        Row: {
+          attributes: Json
+          cost_price: number | null
+          created_at: string
+          id: string
+          image_url: string | null
+          min_stock: number
+          price: number | null
+          product_id: string
+          sku: string
+          status: string
+          stock: number
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          attributes?: Json
+          cost_price?: number | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          min_stock?: number
+          price?: number | null
+          product_id: string
+          sku: string
+          status?: string
+          stock?: number
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          attributes?: Json
+          cost_price?: number | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          min_stock?: number
+          price?: number | null
+          product_id?: string
+          sku?: string
+          status?: string
+          stock?: number
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_variants_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_variants_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           brand: string | null
@@ -341,6 +506,7 @@ export type Database = {
           cost_price: number
           created_at: string
           description: string | null
+          has_variants: boolean
           id: string
           image_url: string | null
           min_stock: number
@@ -355,6 +521,7 @@ export type Database = {
           subcategory: string | null
           tenant_id: string
           updated_at: string
+          variant_attributes: string[] | null
           version: string | null
         }
         Insert: {
@@ -363,6 +530,7 @@ export type Database = {
           cost_price?: number
           created_at?: string
           description?: string | null
+          has_variants?: boolean
           id?: string
           image_url?: string | null
           min_stock?: number
@@ -377,6 +545,7 @@ export type Database = {
           subcategory?: string | null
           tenant_id: string
           updated_at?: string
+          variant_attributes?: string[] | null
           version?: string | null
         }
         Update: {
@@ -385,6 +554,7 @@ export type Database = {
           cost_price?: number
           created_at?: string
           description?: string | null
+          has_variants?: boolean
           id?: string
           image_url?: string | null
           min_stock?: number
@@ -399,6 +569,7 @@ export type Database = {
           subcategory?: string | null
           tenant_id?: string
           updated_at?: string
+          variant_attributes?: string[] | null
           version?: string | null
         }
         Relationships: [
@@ -480,6 +651,9 @@ export type Database = {
           selected_size: string | null
           tenant_id: string
           unit_price: number
+          variant_attributes: Json | null
+          variant_id: string | null
+          variant_sku: string | null
         }
         Insert: {
           id?: string
@@ -494,6 +668,9 @@ export type Database = {
           selected_size?: string | null
           tenant_id: string
           unit_price?: number
+          variant_attributes?: Json | null
+          variant_id?: string | null
+          variant_sku?: string | null
         }
         Update: {
           id?: string
@@ -508,6 +685,9 @@ export type Database = {
           selected_size?: string | null
           tenant_id?: string
           unit_price?: number
+          variant_attributes?: Json | null
+          variant_id?: string | null
+          variant_sku?: string | null
         }
         Relationships: [
           {
@@ -618,55 +798,84 @@ export type Database = {
           },
         ]
       }
+      seasons: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seasons_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       settings: {
         Row: {
           currency: string
           language: string
+          loyalty_config: Json | null
+          pos_config: Json | null
           receipt_footer: string | null
           store_address: string | null
           store_email: string | null
           store_name: string
           store_phone: string | null
           tax_included: boolean
+          tax_name: string | null
           tax_rate: number
-          tax_name: string
-          tax_registration_number: string
-          pos_config: Json
-          loyalty_config: Json
+          tax_registration_number: string | null
           tenant_id: string
           updated_at: string
         }
         Insert: {
           currency?: string
           language?: string
+          loyalty_config?: Json | null
+          pos_config?: Json | null
           receipt_footer?: string | null
           store_address?: string | null
           store_email?: string | null
-          store_name?: string
+          store_name: string
           store_phone?: string | null
           tax_included?: boolean
+          tax_name?: string | null
           tax_rate?: number
-          tax_name?: string
-          tax_registration_number?: string
-          pos_config?: Json
-          loyalty_config?: Json
+          tax_registration_number?: string | null
           tenant_id: string
           updated_at?: string
         }
         Update: {
           currency?: string
           language?: string
+          loyalty_config?: Json | null
+          pos_config?: Json | null
           receipt_footer?: string | null
           store_address?: string | null
           store_email?: string | null
           store_name?: string
           store_phone?: string | null
           tax_included?: boolean
+          tax_name?: string | null
           tax_rate?: number
-          tax_name?: string
-          tax_registration_number?: string
-          pos_config?: Json
-          loyalty_config?: Json
+          tax_registration_number?: string | null
           tenant_id?: string
           updated_at?: string
         }
@@ -680,67 +889,31 @@ export type Database = {
           },
         ]
       }
-      categories: {
+      size_groups: {
         Row: {
           created_at: string
           id: string
           name: string
-          parent_id: string | null
+          sizes: string[]
           tenant_id: string
         }
         Insert: {
           created_at?: string
           id?: string
           name: string
-          parent_id?: string | null
+          sizes?: string[]
           tenant_id: string
         }
         Update: {
           created_at?: string
           id?: string
           name?: string
-          parent_id?: string | null
+          sizes?: string[]
           tenant_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "categories_parent_id_fkey"
-            columns: ["parent_id"]
-            isOneToOne: false
-            referencedRelation: "categories"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "categories_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      brands: {
-        Row: {
-          created_at: string
-          id: string
-          name: string
-          tenant_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          name: string
-          tenant_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          name?: string
-          tenant_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "brands_tenant_id_fkey"
+            foreignKeyName: "size_groups_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -777,35 +950,6 @@ export type Database = {
           },
         ]
       }
-      seasons: {
-        Row: {
-          created_at: string
-          id: string
-          name: string
-          tenant_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          name: string
-          tenant_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          name?: string
-          tenant_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "seasons_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       sku_counters: {
         Row: {
           id: string
@@ -828,38 +972,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "sku_counters_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      size_groups: {
-        Row: {
-          created_at: string
-          id: string
-          name: string
-          sizes: string[]
-          tenant_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          name: string
-          sizes?: string[]
-          tenant_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          name?: string
-          sizes?: string[]
-          tenant_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "size_groups_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -920,19 +1032,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      accept_invitation_by_token: {
-        Args: { p_token: string }
-        Returns: boolean
-      }
       can_add_employee: { Args: { p_tenant_id: string }; Returns: boolean }
       can_create_product: { Args: { p_tenant_id: string }; Returns: boolean }
-      complete_invitation_acceptance: {
-        Args: { p_name: string; p_pin: string; p_token: string; p_user_id: string }
-        Returns: boolean
-      }
+      complete_invitation_acceptance:
+        | {
+            Args: { p_name?: string; p_token: string; p_user_id?: string }
+            Returns: boolean
+          }
+        | {
+            Args: {
+              p_name?: string
+              p_pin?: string
+              p_token: string
+              p_user_id?: string
+            }
+            Returns: boolean
+          }
       current_tenant_id: { Args: never; Returns: string }
       expire_old_invitations: { Args: never; Returns: undefined }
       has_tenant_role: { Args: { required_roles: string[] }; Returns: boolean }
+      next_sku: { Args: { p_prefix: string }; Returns: string }
       register_new_business: {
         Args: {
           p_business_name: string
@@ -956,118 +1075,17 @@ type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
 
 type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
-export type Tables<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
-      Row: infer R
-    }
-    ? R
-    : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R
-      }
-      ? R
-      : never
-    : never
+export type Tables<TableName extends keyof DefaultSchema["Tables"]> =
+  DefaultSchema["Tables"][TableName] extends { Row: infer R } ? R : never
 
-export type TablesInsert<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Insert: infer I
-    }
-    ? I
-    : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I
-      }
-      ? I
-      : never
-    : never
+export type TablesInsert<TableName extends keyof DefaultSchema["Tables"]> =
+  DefaultSchema["Tables"][TableName] extends { Insert: infer I } ? I : never
 
-export type TablesUpdate<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U
-    }
-    ? U
-    : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U
-      }
-      ? U
-      : never
-    : never
+export type TablesUpdate<TableName extends keyof DefaultSchema["Tables"]> =
+  DefaultSchema["Tables"][TableName] extends { Update: infer U } ? U : never
 
-export type Enums<
-  DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
-> = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never
-
-export type CompositeTypes<
-  PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
-> = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never
+export type Enums<EnumName extends keyof DefaultSchema["Enums"]> =
+  DefaultSchema["Enums"][EnumName]
 
 export const Constants = {
   public: {

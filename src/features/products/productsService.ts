@@ -79,7 +79,7 @@ function mapDbProduct(row: any): Product {
 export async function fetchProducts(tenantId: string): Promise<Product[]> {
   const { data, error } = await supabase
     .from('products')
-    .select('*, product_sizes(*), product_variants(*)' as any)
+    .select('*, product_sizes(*), product_variants(*)')
     .eq('tenant_id', tenantId)
     .order('name');
 
