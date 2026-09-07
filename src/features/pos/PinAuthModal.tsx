@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useLayoutEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import Modal from '../../components/ui/Modal';
 import Button from '../../components/ui/Button';
 import { useI18n } from '../../i18n/useI18n';
@@ -50,7 +50,7 @@ const PinAuthModal: React.FC<PinAuthModalProps> = ({ isOpen, onClose, onSuccess,
     }
   };
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (isOpen) {
       setPin('');
       setError('');

@@ -138,6 +138,7 @@ const ProductDetailPanel: React.FC<ProductDetailPanelProps> = ({ onDuplicate }) 
       brand: form.brand || undefined,
       price: form.price,
       costPrice: form.costPrice,
+      stock: form.stock,
       description: form.description,
       publishedOnline: form.publishedOnline,
       status: form.status,

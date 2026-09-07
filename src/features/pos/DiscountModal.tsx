@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useLayoutEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import Modal from '../../components/ui/Modal';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
@@ -76,7 +76,7 @@ const DiscountModal: React.FC<DiscountModalProps> = ({ isOpen, onClose, onSucces
     }
   };
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (isOpen) {
       setPin('');
       setDiscountValue('');
