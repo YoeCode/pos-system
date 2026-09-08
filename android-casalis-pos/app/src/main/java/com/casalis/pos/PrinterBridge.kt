@@ -181,7 +181,7 @@ class PrinterBridge(private val context: Context) {
         // Cut paper
         cmd.append("\u001D\u0056\u0000") // GS V 0 — full cut
 
-        return cmd.toString().toByteArray(Charsets.US_ASCII)
+        return cmd.toString().toByteArray(charset("windows-1252"))
     }
 
     private fun sendToPrinter(bytes: ByteArray) {

@@ -48,8 +48,10 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, 
   const { addToast } = useToast();
   const t = useI18n();
 
+  const hasAutoPrinted = useRef(false);
   useEffect(() => {
-    if (!sale || !isPrinterAvailable()) return;
+    if (!sale || !isPrinterAvailable() || hasAutoPrinted.current) return;
+    hasAutoPrinted.current = true;
     const data = buildReceiptPrintData({
       sale,
       storeName,
