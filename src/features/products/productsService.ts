@@ -180,7 +180,7 @@ export async function updateProduct(product: Product, tenantId: string): Promise
 
   const { data } = await supabase
     .from('products')
-    .select('*, product_sizes(*)')
+    .select('*, product_sizes(*), product_variants(*)')
     .eq('id', product.id)
     .single();
 
