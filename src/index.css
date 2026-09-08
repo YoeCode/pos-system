@@ -101,3 +101,17 @@ body {
     opacity: 0;
   }
 }
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  [data-printable], [data-printable] * {
+    visibility: visible;
+  }
+  [data-printable] {
+    position: absolute;
+    left: 0;
+    top: 0;
+  }
+}

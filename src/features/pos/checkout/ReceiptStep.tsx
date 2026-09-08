@@ -1,6 +1,5 @@
-import React, { useRef, useState } from 'react';
-import { useAppDispatch, useAppSelector } from '../../../app/store';
-import { startNewSale } from '../posSlice';
+import React, { useRef, useState, useEffect } from 'react';
+import { useAppSelector } from '../../../app/store';
 import { selectSaleById } from '../../sales/salesSlice';
 import { selectActiveEmployees } from '../../employees/employeesSlice';
 import { selectCustomerById } from '../../customers/customersSlice';
@@ -9,9 +8,11 @@ import {
   selectReceiptFooterMessage,
   selectTaxLabel,
   selectTicketConfig,
+  selectTicketSize,
 } from '../../settings/settingsSlice';
 import { generateTicketPDF } from '../../../utils/exportUtils';
 import { sendTicketEmail, isEmailConfigured } from '../../../utils/emailService';
+import { printReceipt, buildReceiptPrintData, isPrinterAvailable } from '../../../utils/printerService';
 import { useToast } from '../../../components/useToast';
 import { useI18n } from '../../../i18n/useI18n';
 import type { PaymentMethod } from '../../../types';
@@ -30,62 +31,85 @@ const paymentMethodLabel = (t: ReturnType<typeof useI18n>): Record<PaymentMethod
 });
 
 const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, onDone, isGiftReceipt = false }) => {
-  const dispatch = useAppDispatch();
   const sale = useAppSelector(state => selectSaleById(state, saleId));
   const storeName = useAppSelector(selectStoreName);
   const footerMessage = useAppSelector(selectReceiptFooterMessage);
   const taxLabel = useAppSelector(selectTaxLabel);
   const allEmployees = useAppSelector(selectActiveEmployees);
   const ticketConfig = useAppSelector(selectTicketConfig);
+  const ticketSize = useAppSelector(selectTicketSize);
   const customer = useAppSelector(state =>
     sale?.customerId ? selectCustomerById(state, sale.customerId) : undefined
   );
   const ticketRef = useRef<HTMLDivElement>(null);
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(customer?.email ?? '');
   const [sendingEmail, setSendingEmail] = useState(false);
   const [isGiftMode, setIsGiftMode] = useState(isGiftReceipt);
   const { addToast } = useToast();
   const t = useI18n();
 
+  useEffect(() => {
+    if (!sale || !isPrinterAvailable()) return;
+    const data = buildReceiptPrintData({
+      sale,
+      storeName,
+      taxLabel,
+      footerMessage,
+      employeeName: sale.employeeId
+        ? allEmployees.find(e => e.id === sale.employeeId)?.name ?? undefined
+        : undefined,
+      ticketConfig,
+      ticketSize,
+      isGiftReceipt,
+      loyaltyPointsEarned,
+    });
+    printReceipt(data);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!sale) return null;
+
+  const { order, paymentMethod, amountReceived, change, completedAt, employeeId } = sale;
+
+  const employeeName = employeeId
+    ? allEmployees.find(e => e.id === employeeId)?.name
+    : null;
+
+  const date = new Date(completedAt);
+  const formattedDate = date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+  const formattedTime = date.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
   const handlePrint = (giftMode: boolean) => {
+    if (isPrinterAvailable()) {
+      const data = buildReceiptPrintData({
+        sale,
+        storeName,
+        taxLabel,
+        footerMessage,
+        employeeName: employeeName || undefined,
+        ticketConfig,
+        ticketSize,
+        isGiftReceipt: giftMode,
+        loyaltyPointsEarned,
+      });
+      printReceipt(data);
+      return;
+    }
+
     setIsGiftMode(giftMode);
-    // Wait for React re-render then print
     setTimeout(() => {
-      if (!ticketRef.current) return;
-      const printWindow = window.open('', '_blank');
-      if (!printWindow) return;
-      printWindow.document.write(`
-        <html>
-          <head>
-            <title>Ticket ${order.orderNumber}</title>
-            <style>
-              @media print {
-                body { margin: 0; padding: 0; }
-                .no-print { display: none !important; }
-              }
-              body { font-family: monospace; background: white; padding: 20px; }
-            </style>
-            <script src="https://cdn.tailwindcss.com"></script>
-          </head>
-          <body>
-            ${ticketRef.current.outerHTML}
-            <div class="no-print flex justify-center gap-3 p-6">
-              <button onclick="window.print()" class="px-5 py-2.5 bg-primary text-white rounded-lg font-bold">Imprimir</button>
-              <button onclick="window.close()" class="px-5 py-2.5 border border-border rounded-lg font-medium">Cerrar</button>
-            </div>
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
+      window.print();
       setTimeout(() => setIsGiftMode(false), 100);
     }, 50);
   };
 
   const handlePDF = () => {
-    if (!sale) {
-      addToast(t.pos.pdfError, 'error');
-      return;
-    }
     try {
       generateTicketPDF(sale, storeName, taxLabel, footerMessage, employeeName || undefined);
       addToast(t.pos.pdfDownloaded, 'success');
@@ -125,28 +149,9 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, 
     }
   };
 
-  if (!sale) return null;
-
-  const { order, paymentMethod, amountReceived, change, completedAt, employeeId } = sale;
-  
-  const employeeName = employeeId 
-    ? allEmployees.find(e => e.id === employeeId)?.name 
-    : null;
-
-  const date = new Date(completedAt);
-  const formattedDate = date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-  const formattedTime = date.toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-
   return (
     <div className="flex flex-col gap-5">
-      <div ref={ticketRef} className="mx-auto w-full max-w-xs bg-white border border-dashed border-gray-300 rounded-lg p-5 font-mono text-xs">
+      <div ref={ticketRef} data-printable className="mx-auto w-full max-w-xs bg-white border border-dashed border-gray-300 rounded-lg p-5 font-mono text-xs">
         <div className="text-center mb-4">
           {ticketConfig?.showLogo && ticketConfig?.logoUrl && (
             <img src={ticketConfig.logoUrl} alt="Logo" className="w-16 h-16 object-contain mx-auto mb-2" />
@@ -254,7 +259,7 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, 
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-3 gap-3">
         <button
           onClick={() => handlePrint(false)}
           className="py-3 bg-primary hover:bg-primary-dark text-white font-bold rounded-xl text-sm transition-all duration-150 active:scale-[0.98] flex items-center justify-center gap-2"
@@ -276,13 +281,6 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, 
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
           PDF
         </button>
-        <button
-          onClick={onDone}
-          className="py-3 bg-white border border-border hover:border-text-primary text-text-primary font-bold rounded-xl text-sm transition-all duration-150 active:scale-[0.98] flex items-center justify-center gap-2"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-          {t.pos.close}
-        </button>
       </div>
 
       <div className="flex flex-col gap-2">
@@ -291,7 +289,7 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, 
             type="email"
             value={email}
             onChange={e => setEmail(e.target.value)}
-            placeholder={customer?.email || ''}
+            placeholder={customer?.email || t.pos.emailPlaceholder}
             className="flex-1 px-3 py-2.5 text-sm border border-border rounded-xl text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
           />
           <button
@@ -310,7 +308,7 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, 
       </div>
 
       <button
-        onClick={() => { dispatch(startNewSale()); onDone(); }}
+        onClick={onDone}
         className="w-full py-3.5 bg-gray-100 hover:bg-gray-200 text-text-primary font-bold rounded-xl text-sm transition-all duration-150 active:scale-[0.98]"
       >
         {t.pos.newSaleBtn}

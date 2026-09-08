@@ -314,6 +314,8 @@ export interface PosSettings {
   refundSettings: RefundSettings;
   ticketSize: '58mm' | '80mm';
   shifts: string[];
+  printerIp: string;
+  printerPort: number;
 }
 
 export interface SaleWindow {

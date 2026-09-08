@@ -122,6 +122,8 @@ const defaultPosSettings: PosSettings = {
   },
   ticketSize: '58mm',
   shifts: ['Mañana 06:00-14:00', 'Tarde 14:00-22:00', 'Noche 22:00-06:00', 'Jornada completa 08:00-18:00'],
+  printerIp: '192.168.1.108',
+  printerPort: 9100,
 };
 
 const defaultLanguageSettings: LanguageSettings = {
@@ -832,6 +834,9 @@ export const selectPointsPerEuro = (state: RootState): number => state.settings.
 export const selectLoyaltyTiers = (state: RootState) => state.settings.loyalty.tiers;
 
 export const selectShifts = (state: RootState): string[] => state.settings.pos.shifts;
+
+export const selectPrinterIp = (state: RootState): string => state.settings.pos.printerIp;
+export const selectPrinterPort = (state: RootState): number => state.settings.pos.printerPort;
 
 export const selectSettingsLoading = (state: RootState): boolean => (state.settings as any).isLoading || false;
 export const selectSettingsError = (state: RootState): string | null => (state.settings as any).error || null;

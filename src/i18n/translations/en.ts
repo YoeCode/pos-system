@@ -267,6 +267,7 @@ export const en = {
     emailNotConfigured: 'Email not configured. Check documentation.',
     emailSent: 'Ticket sent by email',
     emailError: 'Error sending email',
+    emailPlaceholder: 'email@example.com',
     pdfDownloaded: 'PDF downloaded',
     pdfError: 'Error generating PDF',
     selectSize: 'Select size',
@@ -530,6 +531,10 @@ export const en = {
     addAttributeValuePlaceholder: 'Values (comma-separated)',
     productHasVariants: 'Has variants',
     selectVariantAttributes: 'Select variant attributes:',
+    printerConfig: 'Thermal Printer',
+    printerConfigDesc: 'Configure the thermal printer connection (only works on the Android app)',
+    printerIp: 'Printer IP',
+    printerPort: 'Port',
   },
   pinAuth: {
     title: 'Authorization Required',

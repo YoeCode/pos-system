@@ -121,6 +121,8 @@ function mapDbSettings(row: DbSettings): TenantSettings {
       },
       ticketSize: pos.ticket_size ?? '58mm',
       shifts: pos.shifts ?? ['Mañana 06:00-14:00', 'Tarde 14:00-22:00', 'Noche 22:00-06:00', 'Jornada completa 08:00-18:00'],
+      printerIp: pos.printer_ip ?? '192.168.1.108',
+      printerPort: pos.printer_port ?? 9100,
     },
     loyalty: {
       enabled: loyalty.enabled ?? true,
@@ -162,6 +164,8 @@ function buildPosConfig(pos: PosSettings): any {
     },
     ticket_size: pos.ticketSize,
     shifts: pos.shifts,
+    printer_ip: pos.printerIp,
+    printer_port: pos.printerPort,
   };
 }
 

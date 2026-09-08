@@ -50,6 +50,8 @@ const PosSettingsSection: React.FC = () => {
   const [customHeader, setCustomHeader] = useState(reduxPos.ticketConfig?.customHeader || '');
   const [customFooter, setCustomFooter] = useState(reduxPos.ticketConfig?.customFooter || '');
   const [ticketSize, setTicketSize] = useState<'58mm' | '80mm'>(reduxPos.ticketSize || '58mm');
+  const [printerIp, setPrinterIp] = useState(reduxPos.printerIp || '192.168.1.108');
+  const [printerPort, setPrinterPort] = useState(String(reduxPos.printerPort || 9100));
   const [shifts, setShifts] = useState(reduxPos.shifts || []);
   const [newShift, setNewShift] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -76,6 +78,8 @@ const PosSettingsSection: React.FC = () => {
     setCustomHeader(reduxPos.ticketConfig?.customHeader || '');
     setCustomFooter(reduxPos.ticketConfig?.customFooter || '');
     setTicketSize(reduxPos.ticketSize || '58mm');
+    setPrinterIp(reduxPos.printerIp || '192.168.1.108');
+    setPrinterPort(String(reduxPos.printerPort || 9100));
     setShifts(reduxPos.shifts || []);
   }, [reduxPos]);
 
@@ -127,6 +131,8 @@ const PosSettingsSection: React.FC = () => {
     customHeader !== (reduxPos.ticketConfig?.customHeader || '') ||
     customFooter !== (reduxPos.ticketConfig?.customFooter || '') ||
     ticketSize !== (reduxPos.ticketSize || '58mm') ||
+    printerIp !== (reduxPos.printerIp || '192.168.1.108') ||
+    printerPort !== String(reduxPos.printerPort || 9100) ||
     JSON.stringify(shifts) !== JSON.stringify(reduxPos.shifts || []);
 
   const handleAddShift = () => {
@@ -196,6 +202,8 @@ const PosSettingsSection: React.FC = () => {
         maxRefundDays: parsedMaxDays,
       },
       ticketSize,
+      printerIp: printerIp.trim() || '192.168.1.108',
+      printerPort: parseInt(printerPort, 10) || 9100,
       shifts,
       ticketConfig: {
         showLogo,
@@ -235,6 +243,8 @@ const PosSettingsSection: React.FC = () => {
         terminalId: undefined,
         refundSettings: { enabled: true, requirePin: true, pinThreshold: 50, maxRefundDays: 30 },
         ticketSize: '58mm',
+        printerIp: '192.168.1.108',
+        printerPort: 9100,
         shifts: ['Mañana 06:00-14:00', 'Tarde 14:00-22:00', 'Noche 22:00-06:00', 'Jornada completa 08:00-18:00'],
         ticketConfig: { showLogo: false, showEmployee: true, showStoreName: true },
       };
@@ -433,6 +443,33 @@ const PosSettingsSection: React.FC = () => {
             >
               {t.common.add}
             </Button>
+          </div>
+        </div>
+
+        <div className="border-t border-border pt-4">
+          <h3 className="text-sm font-semibold text-text-primary mb-1">{t.settings.printerConfig || 'Impresora Térmica'}</h3>
+          <p className="text-xs text-text-muted mb-3">
+            {t.settings.printerConfigDesc || 'Configura la conexión con la impresora térmica (solo funciona en la app Android)'}
+          </p>
+          <div className="space-y-3">
+            <Input
+              label={t.settings.printerIp || 'IP de la Impresora'}
+              type="text"
+              maxLength={15}
+              value={printerIp}
+              onChange={e => setPrinterIp(e.target.value)}
+              placeholder="192.168.1.108"
+            />
+            <Input
+              label={t.settings.printerPort || 'Puerto'}
+              type="number"
+              min={1}
+              max={65535}
+              step={1}
+              value={printerPort}
+              onChange={e => setPrinterPort(e.target.value)}
+              placeholder="9100"
+            />
           </div>
         </div>
 

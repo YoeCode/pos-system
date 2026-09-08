@@ -15,6 +15,7 @@ import {
 import { selectActiveEmployees } from '../../employees/employeesSlice';
 import { useToast } from '../../../components/useToast';
 import { useI18n } from '../../../i18n/useI18n';
+import { openCashDrawer } from '../../../utils/printerService';
 import type { CartItem, Order, PaymentMethod, Sale } from '../../../types';
 
 interface PaymentStepProps {
@@ -236,6 +237,9 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
       }
 
       onComplete(sale.id, loyaltyPointsEarned);
+      if (paymentMethod === 'cash') {
+        openCashDrawer();
+      }
       dispatch(startNewSale());
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);

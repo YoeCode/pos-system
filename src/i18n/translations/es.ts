@@ -267,6 +267,7 @@ export const es = {
     emailNotConfigured: 'Email no configurado. Revisa la documentación.',
     emailSent: 'Ticket enviado por email',
     emailError: 'Error al enviar email',
+    emailPlaceholder: 'ejemplo@correo.com',
     pdfDownloaded: 'PDF descargado',
     pdfError: 'Error al generar PDF',
     selectSize: 'Selecciona talla',
@@ -530,6 +531,10 @@ export const es = {
     addAttributeValuePlaceholder: 'Valores (separados por coma)',
     productHasVariants: 'Tiene variantes',
     selectVariantAttributes: 'Selecciona los atributos de variante:',
+    printerConfig: 'Impresora Térmica',
+    printerConfigDesc: 'Configura la conexión con la impresora térmica (solo funciona en la app Android)',
+    printerIp: 'IP de la Impresora',
+    printerPort: 'Puerto',
   },
   pinAuth: {
     title: 'Autorización requerida',

@@ -30,3 +30,11 @@ dist-ssr
 .playwright-mcp/
 .impeccable/
 .claude/
+.vercel
+.env*
+
+# Android build artifacts
+android-casalis-pos/app/build/
+android-casalis-pos/build/
+android-casalis-pos/.gradle/
+android-casalis-pos/local.properties

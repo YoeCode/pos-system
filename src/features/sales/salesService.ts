@@ -107,7 +107,7 @@ export async function createSale(sale: Sale, tenantId: string): Promise<Sale | n
       unit_price: item.product.price,
       line_total: item.lineTotal,
       selected_size: item.selectedSize || null,
-      selected_variant_id: item.selectedVariant?.id || null,
+      variant_id: item.selectedVariant?.id || null,
     }));
 
   if (saleItems.length > 0) {

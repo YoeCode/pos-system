@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useAppDispatch } from '../../../app/store';
+import { startNewSale } from '../posSlice';
 import Modal from '../../../components/ui/Modal';
 import PaymentStep from './PaymentStep';
 import ReceiptStep from './ReceiptStep';
@@ -34,6 +36,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   pointsToRedeem = 0,
   isGiftReceipt = false,
 }) => {
+  const dispatch = useAppDispatch();
   const [step, setStep] = useState<'payment' | 'success' | 'receipt'>('payment');
   const [completedSaleId, setCompletedSaleId] = useState<string | null>(null);
   const [loyaltyPointsEarned, setLoyaltyPointsEarned] = useState(0);
@@ -59,6 +62,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   };
 
   const handleClose = () => {
+    if (step === 'receipt') {
+      dispatch(startNewSale());
+    }
     setStep('payment');
     setCompletedSaleId(null);
     setLoyaltyPointsEarned(0);
