@@ -56,6 +56,9 @@ class PrinterBridge(private val context: Context) {
         // Initialize printer
         cmd.append("\u001B\u0040") // ESC @
 
+        // Select code page CP1252 (supports €, é, í, á, etc.)
+        cmd.append("\u001B\u0074\u0010") // ESC t 16 = CP1252
+
         // Store name (centered, bold)
         if (data.optBoolean("showStoreName", true)) {
             cmd.append("\u001B\u0061\u0001") // center align
@@ -104,7 +107,7 @@ class PrinterBridge(private val context: Context) {
 
             val displayName = if (isGift) "$name *" else name
             val line = "${displayName} x$qty"
-            val priceStr = "€${"%.2f".format(price)}"
+            val priceStr = "\u20AC${"%.2f".format(price)}"
             val paddedLine = line.padEnd(lineWidth - priceStr.length)
             cmd.append("$paddedLine$priceStr\n")
         }
@@ -117,25 +120,25 @@ class PrinterBridge(private val context: Context) {
         if (!isGiftReceipt) {
             // Subtotal
             val subtotal = data.optDouble("subtotal", 0.0)
-            val subtotalStr = "€${"%.2f".format(subtotal)}"
+            val subtotalStr = "\u20AC${"%.2f".format(subtotal)}"
             cmd.append("Subtotal${subtotalStr.padStart(lineWidth - 8)}\n")
 
             // Discount
             val discount = data.optDouble("discount", 0.0)
             if (discount > 0) {
-                val discountStr = "-€${"%.2f".format(discount)}"
+                val discountStr = "-\u20AC${"%.2f".format(discount)}"
                 cmd.append("Descuento${discountStr.padStart(lineWidth - 10)}\n")
             }
 
             // Tax
             val taxLabel = data.optString("taxLabel", "")
             val tax = data.optDouble("tax", 0.0)
-            val taxStr = "€${"%.2f".format(tax)}"
+            val taxStr = "\u20AC${"%.2f".format(tax)}"
             cmd.append("$taxLabel${taxStr.padStart(lineWidth - taxLabel.length)}\n")
 
             // Total (bold)
             val total = data.optDouble("total", 0.0)
-            val totalStr = "€${"%.2f".format(total)}"
+            val totalStr = "\u20AC${"%.2f".format(total)}"
             cmd.append("\u001B\u0045\u0001") // bold on
             cmd.append("TOTAL${totalStr.padStart(lineWidth - 5)}\n")
             cmd.append("\u001B\u0045\u0000") // bold off
@@ -148,11 +151,11 @@ class PrinterBridge(private val context: Context) {
             if (paymentMethod == "Efectivo") {
                 val amountReceived = data.optDouble("amountReceived", -1.0)
                 if (amountReceived >= 0) {
-                    cmd.append("Recibido: €${"%.2f".format(amountReceived)}\n")
+                    cmd.append("Recibido: \u20AC${"%.2f".format(amountReceived)}\n")
                 }
                 val change = data.optDouble("change", -1.0)
                 if (change >= 0) {
-                    cmd.append("Cambio: €${"%.2f".format(change)}\n")
+                    cmd.append("Cambio: \u20AC${"%.2f".format(change)}\n")
                 }
             }
 
@@ -178,6 +181,9 @@ class PrinterBridge(private val context: Context) {
         val footer = data.optString("footer", "Gracias por su compra")
         cmd.append("$footer\n")
 
+        // Feed paper a few lines before cutting to prevent premature cut
+        cmd.append("\n\n")
+
         // Cut paper
         cmd.append("\u001D\u0056\u0000") // GS V 0 — full cut
 
@@ -197,6 +203,8 @@ class PrinterBridge(private val context: Context) {
             output = socket.getOutputStream()
             output.write(bytes)
             output.flush()
+            // Give the printer time to finish processing before closing
+            Thread.sleep(1000)
         } catch (e: Exception) {
             e.printStackTrace()
         } finally {

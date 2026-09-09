@@ -41,8 +41,12 @@ export interface ReceiptPrintData {
 
 const isAndroid = typeof window !== 'undefined' && 'AndroidPrinter' in window;
 
+let lastPrintedOrderId = '';
+
 export function printReceipt(data: ReceiptPrintData): void {
   if (isAndroid) {
+    if (lastPrintedOrderId === data.orderNumber) return;
+    lastPrintedOrderId = data.orderNumber;
     window.AndroidPrinter!.print(JSON.stringify(data));
   }
 }
