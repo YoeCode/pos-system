@@ -98,7 +98,7 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, 
         isGiftReceipt: giftMode,
         loyaltyPointsEarned,
       });
-      printReceipt(data);
+      printReceipt(data, true);
       return;
     }
 

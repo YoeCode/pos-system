@@ -43,9 +43,9 @@ const isAndroid = typeof window !== 'undefined' && 'AndroidPrinter' in window;
 
 let lastPrintedOrderId = '';
 
-export function printReceipt(data: ReceiptPrintData): void {
+export function printReceipt(data: ReceiptPrintData, force = false): void {
   if (isAndroid) {
-    if (lastPrintedOrderId === data.orderNumber) return;
+    if (!force && lastPrintedOrderId === data.orderNumber) return;
     lastPrintedOrderId = data.orderNumber;
     window.AndroidPrinter!.print(JSON.stringify(data));
   }
