@@ -181,8 +181,8 @@ class PrinterBridge(private val context: Context) {
         val footer = data.optString("footer", "Gracias por su compra")
         cmd.append("$footer\n")
 
-        // Feed paper a few lines before cutting to prevent premature cut
-        cmd.append("\n\n")
+        // Feed paper before cutting
+        cmd.append("\u001B\u0064\u0005") // ESC d 5 — feed 5 lines
 
         // Cut paper
         cmd.append("\u001D\u0056\u0000") // GS V 0 — full cut
@@ -201,10 +201,21 @@ class PrinterBridge(private val context: Context) {
             socket.connect(InetSocketAddress(ip, port), 5000)
             socket.soTimeout = 5000
             output = socket.getOutputStream()
-            output.write(bytes)
-            output.flush()
-            // Give the printer time to finish processing before closing
-            Thread.sleep(1000)
+
+            // Send in small chunks to avoid overflowing printer buffer
+            val chunkSize = 512
+            var offset = 0
+            while (offset < bytes.size) {
+                val end = minOf(offset + chunkSize, bytes.size)
+                output.write(bytes, offset, end - offset)
+                output.flush()
+                offset = end
+                if (offset < bytes.size) {
+                    Thread.sleep(100) // pause between chunks
+                }
+            }
+            // Wait for printer to finish processing
+            Thread.sleep(500)
         } catch (e: Exception) {
             e.printStackTrace()
         } finally {
