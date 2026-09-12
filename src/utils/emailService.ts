@@ -1,13 +1,7 @@
-import emailjs from '@emailjs/browser';
-
-const EMAILJS_CONFIG = {
-  SERVICE_ID: import.meta.env.VITE_EMAILJS_SERVICE_ID || '',
-  TEMPLATE_ID: import.meta.env.VITE_EMAILJS_TEMPLATE_ID || '',
-  PUBLIC_KEY: import.meta.env.VITE_EMAILJS_PUBLIC_KEY || '',
-};
+import { supabase } from '../supabase/client';
 
 export const isEmailConfigured = (): boolean => {
-  return !!(EMAILJS_CONFIG.SERVICE_ID && EMAILJS_CONFIG.TEMPLATE_ID && EMAILJS_CONFIG.PUBLIC_KEY);
+  return !!import.meta.env.VITE_SUPABASE_URL && !!import.meta.env.VITE_SUPABASE_ANON_KEY;
 };
 
 export interface TicketEmailData {
@@ -26,25 +20,29 @@ export interface TicketEmailData {
 
 export const sendTicketEmail = async (data: TicketEmailData): Promise<void> => {
   if (!isEmailConfigured()) {
-    throw new Error('EmailJS no configurado. Añade VITE_EMAILJS_SERVICE_ID, VITE_EMAILJS_TEMPLATE_ID y VITE_EMAILJS_PUBLIC_KEY en .env');
+    throw new Error('Supabase no configurado. Añade VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY en .env');
   }
 
-  await emailjs.send(
-    EMAILJS_CONFIG.SERVICE_ID,
-    EMAILJS_CONFIG.TEMPLATE_ID,
-    {
-      to_email: data.to_email,
-      to_name: data.to_name,
-      store_name: data.store_name,
-      order_number: data.order_number,
-      order_date: data.order_date,
-      order_items: data.order_items,
-      subtotal: data.subtotal,
-      tax: data.tax,
-      total: data.total,
-      payment_method: data.payment_method,
-      receipt_html: data.receipt_html,
+  const { error } = await supabase.functions.invoke('send-email', {
+    body: {
+      to: data.to_email,
+      subject: `${data.store_name} — Ticket ${data.order_number}`,
+      type: 'ticket',
+      template_data: {
+        store_name: data.store_name,
+        order_number: data.order_number,
+        order_date: data.order_date,
+        order_items: data.order_items,
+        subtotal: data.subtotal,
+        tax: data.tax,
+        total: data.total,
+        payment_method: data.payment_method,
+        receipt_html: data.receipt_html,
+      },
     },
-    EMAILJS_CONFIG.PUBLIC_KEY
-  );
+  });
+
+  if (error) {
+    throw new Error(error.message || 'Error al enviar email');
+  }
 };

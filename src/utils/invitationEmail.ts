@@ -1,12 +1,7 @@
-import emailjs from '@emailjs/browser';
-
-const EMAILJS_CONFIG = {
-  SERVICE_ID: import.meta.env.VITE_EMAILJS_SERVICE_ID || '',
-  PUBLIC_KEY: import.meta.env.VITE_EMAILJS_PUBLIC_KEY || '',
-};
+import { supabase } from '../supabase/client';
 
 export const isEmailConfigured = (): boolean => {
-  return !!(EMAILJS_CONFIG.SERVICE_ID && EMAILJS_CONFIG.PUBLIC_KEY);
+  return !!import.meta.env.VITE_SUPABASE_URL && !!import.meta.env.VITE_SUPABASE_ANON_KEY;
 };
 
 export interface InvitationEmailData {
@@ -20,20 +15,24 @@ export interface InvitationEmailData {
 
 export const sendInvitationEmail = async (data: InvitationEmailData): Promise<void> => {
   if (!isEmailConfigured()) {
-    throw new Error('EmailJS no configurado. Añade VITE_EMAILJS_SERVICE_ID y VITE_EMAILJS_PUBLIC_KEY en .env');
+    throw new Error('Supabase no configurado. Añade VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY en .env');
   }
 
-  await emailjs.send(
-    EMAILJS_CONFIG.SERVICE_ID,
-    'template_invitation',
-    {
-      to_email: data.to_email,
-      to_name: data.to_name,
-      tenant_name: data.tenant_name,
-      invited_by: data.invited_by,
-      invite_link: data.invite_link,
-      role_label: data.role_label,
+  const { error } = await supabase.functions.invoke('send-email', {
+    body: {
+      to: data.to_email,
+      subject: `${data.invited_by} te ha invitado a ${data.tenant_name}`,
+      type: 'invitation',
+      template_data: {
+        tenant_name: data.tenant_name,
+        invited_by: data.invited_by,
+        invite_link: data.invite_link,
+        role_label: data.role_label,
+      },
     },
-    EMAILJS_CONFIG.PUBLIC_KEY
-  );
+  });
+
+  if (error) {
+    throw new Error(error.message || 'Error al enviar email de invitación');
+  }
 };
