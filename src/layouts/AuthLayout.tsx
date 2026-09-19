@@ -11,7 +11,7 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
   return (
     <div
       className="min-h-screen flex items-center justify-center relative overflow-hidden"
-      style={{ backgroundColor: '#1C2128' }}
+      style={{ backgroundColor: '#14213D' }}
     >
       {/* Subtle grid pattern overlay */}
       <div
@@ -26,19 +26,19 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
       />
       {/* Radial glow */}
       <div
-        className="absolute inset-0 opacity-20"
+        className="absolute inset-0 opacity-15"
         style={{
-          background: 'radial-gradient(ellipse at 50% 50%, #00C853 0%, transparent 60%)',
+          background: 'radial-gradient(ellipse at 50% 50%, #0F766E 0%, transparent 60%)',
         }}
       />
       <div className="relative z-10 w-full max-w-[450px] px-4">
         {children}
       </div>
       {/* Footer */}
-      <div className="absolute bottom-6 left-0 right-0 flex items-center justify-between px-8 text-xs text-dark-muted">
-        <span>{t.settings.privacyProtocol} · {t.settings.termsOfService} · {t.settings.version}2.4.0-STABLE</span>
+      <div className="absolute bottom-6 left-0 right-0 flex items-center justify-between px-8 text-body-sm text-white/40">
+        <span>{t.settings.privacyProtocol} · {t.settings.termsOfService} · v2.4.0</span>
         <span className="flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-primary inline-block animate-pulse" />
+          <span className="w-1.5 h-1.5 rounded-full bg-success inline-block animate-pulse" />
           {t.settings.systemStatusOptimal}
         </span>
       </div>

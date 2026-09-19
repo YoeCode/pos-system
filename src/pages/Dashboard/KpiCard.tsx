@@ -7,16 +7,32 @@ interface KpiCardProps {
   icon: React.ReactNode;
 }
 
-const KpiCard: React.FC<KpiCardProps> = ({ title, value, subtitle, trend, trendUp, icon }) => (
-  <div className="bg-white rounded-xl border border-border p-5 flex items-start justify-between">
-    <div className="flex flex-col gap-2">
-      <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">{title}</p>
-      <p className="text-2xl font-bold text-text-primary font-mono">{value}</p>
-      {subtitle && <p className="text-xs text-text-muted">{subtitle}</p>}
+const KpiCard: React.FC<KpiCardProps> = ({
+  title,
+  value,
+  subtitle,
+  trend,
+  trendUp,
+  icon,
+}) => (
+  <div className="bg-white p-5 rounded-xl border border-border shadow-card flex flex-col justify-between">
+    <div className="flex items-center justify-between">
+      <span className="text-label-md text-text-muted">{title}</span>
+      <span className="p-2 rounded-[10px] bg-surface-container text-primary">
+        {icon}
+      </span>
+    </div>
+    <div className="mt-3">
+      <div className="text-numeric-pos text-text-primary font-bold font-[tabular-nums]">
+        {value}
+      </div>
+      {subtitle && (
+        <p className="text-body-sm text-text-muted mt-1">{subtitle}</p>
+      )}
       {trend && (
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5 mt-1.5">
           <svg
-            className={`w-3.5 h-3.5 ${trendUp ? 'text-success' : 'text-error'}`}
+            className={`w-4 h-4 ${trendUp ? 'text-success' : 'text-error'}`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -25,17 +41,16 @@ const KpiCard: React.FC<KpiCardProps> = ({ title, value, subtitle, trend, trendU
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeWidth={2}
-              d={trendUp ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'}
+              d={trendUp ? 'M5 10l7-7m0 0l7 7m-7-7v18' : 'M19 14l-7 7m0 0l-7-7m7 7V3'}
             />
           </svg>
-          <span className={`text-xs font-semibold ${trendUp ? 'text-success' : 'text-error'}`}>
-            {trend} vs yesterday
+          <span
+            className={`text-label-sm font-semibold ${trendUp ? 'text-success' : 'text-error'}`}
+          >
+            {trend}
           </span>
         </div>
       )}
-    </div>
-    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
-      {icon}
     </div>
   </div>
 );

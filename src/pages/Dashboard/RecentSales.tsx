@@ -5,56 +5,117 @@ interface RecentSalesProps {
   sales: Sale[];
 }
 
+const formatEUR = (value: number) =>
+  new Intl.NumberFormat('es-ES', {
+    style: 'currency',
+    currency: 'EUR',
+  }).format(value);
+
+const formatTime = (iso: string) => {
+  const d = new Date(iso);
+  return d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+};
+
+const methodLabels: Record<string, string> = {
+  cash: 'Efectivo',
+  card: 'Tarjeta',
+  bizum: 'Bizum',
+  qr: 'QR',
+};
+
+const methodStyles: Record<string, string> = {
+  cash: 'bg-success-light text-success',
+  card: 'bg-surface-container text-text-primary',
+  bizum: 'bg-info-light text-info',
+  qr: 'bg-info-light text-info',
+};
+
 const RecentSales: React.FC<RecentSalesProps> = ({ sales }) => {
   const t = useI18n();
-  const methodColors: Record<string, string> = {
-    cash: 'bg-emerald-100 text-emerald-700',
-    card: 'bg-blue-100 text-blue-700',
-    qr: 'bg-violet-100 text-violet-700',
-  };
-
-  const formatTime = (iso: string) => {
-    const d = new Date(iso);
-    return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-  };
 
   return (
     <div>
-      <h3 className="text-sm font-semibold text-text-primary mb-4">{t.dashboard.recentSales}</h3>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <svg
+            className="w-5 h-5 text-primary"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          <h3 className="text-headline-sm text-text-primary">
+            {t.dashboard.recentSales}
+          </h3>
+        </div>
+      </div>
       {sales.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 py-6 text-center">
-          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-            <svg className="w-5 h-5 text-primary/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <div className="flex flex-col items-center gap-2 py-8 text-center">
+          <div className="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center">
+            <svg
+              className="w-6 h-6 text-text-muted"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+              />
             </svg>
           </div>
-          <p className="text-sm font-medium text-text-primary">{t.dashboard.noData}</p>
-          <p className="text-xs text-text-muted">Las ventas recientes aparecerán aquí</p>
+          <p className="text-body-md font-medium text-text-primary">
+            {t.dashboard.noData}
+          </p>
+          <p className="text-body-sm text-text-muted">
+            Las ventas recientes aparecerán aquí
+          </p>
         </div>
       ) : (
-        <div className="flex flex-col divide-y divide-border">
-          {sales.map(sale => (
-            <div key={sale.id} className="flex items-center justify-between py-3">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
-                  {sale.order.orderNumber.split('-')[1]}
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-text-primary">{sale.order.orderNumber}</p>
-                  <p className="text-xs text-text-muted">{sale.order.items.length} items</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className={`px-2 py-0.5 rounded text-xs font-semibold uppercase ${methodColors[sale.paymentMethod]}`}>
-                  {sale.paymentMethod}
-                </span>
-                <div className="text-right">
-                  <p className="text-sm font-mono font-bold text-text-primary">${sale.order.total.toFixed(2)}</p>
-                  <p className="text-xs text-text-muted">{formatTime(sale.completedAt)}</p>
-                </div>
-              </div>
-            </div>
-          ))}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="border-b border-border text-label-sm text-text-muted">
+                <th className="pb-3 font-semibold">Ticket</th>
+                <th className="pb-3 font-semibold">Hora</th>
+                <th className="pb-3 font-semibold">Método</th>
+                <th className="pb-3 font-semibold text-right">Importe</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/50 text-body-md">
+              {sales.map((sale) => (
+                <tr
+                  key={sale.id}
+                  className="hover:bg-surface-container-low transition-colors"
+                >
+                  <td className="py-3 font-mono font-semibold text-primary">
+                    {sale.order.orderNumber}
+                  </td>
+                  <td className="py-3 text-text-muted">
+                    {formatTime(sale.completedAt)}
+                  </td>
+                  <td className="py-3">
+                    <span
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-label-sm font-semibold ${methodStyles[sale.paymentMethod] || 'bg-surface-container text-text-muted'}`}
+                    >
+                      {methodLabels[sale.paymentMethod] || sale.paymentMethod}
+                    </span>
+                  </td>
+                  <td className="py-3 text-right font-bold text-text-primary font-[tabular-nums]">
+                    {formatEUR(sale.order.total)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
