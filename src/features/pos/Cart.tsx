@@ -103,7 +103,7 @@ const Cart: React.FC<CartProps> = ({ variant = 'sidebar', onClose }) => {
       {/* Header */}
       <div className={isSheet ? 'px-4 py-4 border-b border-border flex items-center justify-between' : 'px-4 sm:px-5 py-3 sm:py-4 border-b border-border'}>
         <div className={isSheet ? 'flex items-center justify-between w-full' : 'flex items-center justify-between mb-3'}>
-          <h2 className="font-bold text-text-primary text-base">
+          <h2 className="font-bold text-text-primary text-body-lg">
             {isSheet ? t.pos.cart : (cart.length === 0 ? t.pos.cart : `${t.pos.orderNumber}${orderNumber}`)}
           </h2>
           {cart.length > 0 && (
@@ -111,7 +111,7 @@ const Cart: React.FC<CartProps> = ({ variant = 'sidebar', onClose }) => {
               {!isSheet && canUndo && (
                 <button
                   onClick={() => dispatch(undoCartAction())}
-                  className="w-11 h-11 flex items-center justify-center rounded-lg text-text-muted hover:text-primary hover:bg-primary/5 transition-colors"
+                  className="w-11 h-11 flex items-center justify-center rounded-[10px] text-text-muted hover:text-primary hover:bg-primary/5 transition-colors"
                   title={t.pos.undoAction}
                   aria-label={t.pos.undoAction}
                 >
@@ -122,7 +122,7 @@ const Cart: React.FC<CartProps> = ({ variant = 'sidebar', onClose }) => {
               )}
               <button
                 onClick={() => setShowClearConfirm(true)}
-                className="w-11 h-11 flex items-center justify-center rounded-lg text-text-muted hover:text-error hover:bg-error/5 transition-colors"
+                className="w-11 h-11 flex items-center justify-center rounded-[10px] text-text-muted hover:text-error hover:bg-error/5 transition-colors"
                 title={t.pos.emptyCartAction}
                 aria-label={t.pos.emptyCartAction}
               >
@@ -133,7 +133,7 @@ const Cart: React.FC<CartProps> = ({ variant = 'sidebar', onClose }) => {
               {isSheet && onClose && (
                 <button
                   onClick={onClose}
-                  className="w-11 h-11 flex items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-gray-100 transition-colors"
+                  className="w-11 h-11 flex items-center justify-center rounded-[10px] text-text-muted hover:text-text-primary hover:bg-surface-container-low transition-colors"
                 title={t.pos.closeCart}
                 aria-label={t.pos.closeCart}
                 >
@@ -157,14 +157,14 @@ const Cart: React.FC<CartProps> = ({ variant = 'sidebar', onClose }) => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
             </div>
-            <p className="text-sm font-medium text-text-primary">{isSheet ? t.pos.emptyCartSheet : t.pos.emptyCart}</p>
-            <p className="text-xs text-text-muted">{isSheet ? t.pos.addFromGrid : t.pos.clickToAdd}</p>
+            <p className="text-body-md font-medium text-text-primary">{isSheet ? t.pos.emptyCartSheet : t.pos.emptyCart}</p>
+            <p className="text-body-sm text-text-muted">{isSheet ? t.pos.addFromGrid : t.pos.clickToAdd}</p>
           </div>
         ) : (
           cart.map(item => (
-            <div key={item.lineId} className={isSheet ? 'flex items-center gap-3 p-3 bg-gray-50 rounded-lg' : 'flex flex-col gap-2 py-2'}>
+            <div key={item.lineId} className={isSheet ? 'flex items-center gap-3 p-3 bg-surface-container-low rounded-[10px]' : 'flex flex-col gap-2 py-2'}>
               <div className="flex items-start gap-2.5">
-                <div className="w-9 h-9 rounded-lg bg-gray-100 flex-shrink-0 flex items-center justify-center overflow-hidden">
+                <div className="w-9 h-9 rounded-[10px] bg-surface-container-low flex-shrink-0 flex items-center justify-center overflow-hidden">
                   {item.selectedVariant?.image ?? item.product.image ? (
                     <img src={item.selectedVariant?.image ?? item.product.image} alt={item.product.name} className="w-full h-full object-cover" loading="lazy" />
                   ) : (
@@ -174,7 +174,7 @@ const Cart: React.FC<CartProps> = ({ variant = 'sidebar', onClose }) => {
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-text-primary truncate leading-tight">
+                  <p className="text-body-md font-medium text-text-primary truncate leading-tight">
                     {item.product.name || item.product.category}
                   </p>
                   {item.selectedVariant && (
@@ -206,14 +206,14 @@ const Cart: React.FC<CartProps> = ({ variant = 'sidebar', onClose }) => {
               <div className="flex items-center gap-1 pl-11">
                 <button
                   onClick={() => dispatch(updateQuantity({ lineId: item.lineId, quantity: item.quantity - 1 }))}
-                  className="w-8 h-8 rounded border border-border text-text-muted hover:border-error hover:text-error flex items-center justify-center text-base"
+                  className="w-8 h-8 rounded-[10px] border border-border text-text-muted hover:border-error hover:text-error flex items-center justify-center text-body-lg"
                 >
                   −
                 </button>
-                <span className="w-7 text-center text-sm font-semibold font-mono">{item.quantity}</span>
+                <span className="w-7 text-center text-body-md font-semibold font-mono">{item.quantity}</span>
                 <button
                   onClick={() => handleIncrement(item)}
-                  className="w-8 h-8 rounded border border-border text-text-muted hover:border-primary hover:text-primary flex items-center justify-center text-base"
+                  className="w-8 h-8 rounded-[10px] border border-border text-text-muted hover:border-primary hover:text-primary flex items-center justify-center text-body-lg"
                 >
                   +
                 </button>
@@ -263,30 +263,30 @@ const Cart: React.FC<CartProps> = ({ variant = 'sidebar', onClose }) => {
       {/* Totals + Payment */}
       <div className={isSheet ? 'px-4 pb-5 border-t border-border pt-4 flex flex-col gap-4' : 'px-5 pb-5 border-t border-border pt-4 flex flex-col gap-4'}>
         <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between text-sm">
+          <div className="flex items-center justify-between text-body-md">
             <span className="text-text-muted">{t.pos.subtotal}</span>
-            <span className="font-mono text-text-primary">€{grossSubtotal.toFixed(2)}</span>
+            <span className="font-mono font-[tabular-nums] text-text-primary">€{grossSubtotal.toFixed(2)}</span>
           </div>
           {calc.lines.some(l => l.discountSource === 'loyalty') && (
-            <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center justify-between text-body-md">
               <span className="text-purple-600">{t.pos.loyaltyDiscount} {selectedCustomer?.tier}</span>
-              <span className="font-mono text-purple-600">-€{(calc.lines.reduce((sum, l) => sum + (l.discountSource === 'loyalty' ? l.appliedDiscount : 0), 0)).toFixed(2)}</span>
+              <span className="font-mono font-[tabular-nums] text-purple-600">-€{(calc.lines.reduce((sum, l) => sum + (l.discountSource === 'loyalty' ? l.appliedDiscount : 0), 0)).toFixed(2)}</span>
             </div>
           )}
           {calc.lines.some(l => l.discountSource === 'manual') && (
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-green-600">{t.pos.manualDiscountShort}</span>
-              <span className="font-mono text-green-600">-€{(calc.lines.reduce((sum, l) => sum + (l.discountSource === 'manual' ? l.appliedDiscount : 0), 0)).toFixed(2)}</span>
+            <div className="flex items-center justify-between text-body-md">
+              <span className="text-success">{t.pos.manualDiscountShort}</span>
+              <span className="font-mono font-[tabular-nums] text-success">-€{(calc.lines.reduce((sum, l) => sum + (l.discountSource === 'manual' ? l.appliedDiscount : 0), 0)).toFixed(2)}</span>
             </div>
           )}
-          <div className="flex items-center justify-between text-sm">
+          <div className="flex items-center justify-between text-body-md">
             <span className="text-text-muted">{taxLabel}</span>
-            <span className="font-mono text-text-muted">€{tax.toFixed(2)}</span>
+            <span className="font-mono font-[tabular-nums] text-text-muted">€{tax.toFixed(2)}</span>
           </div>
           <div className="h-px bg-border" />
           <div className="flex items-center justify-between">
-            <span className="font-bold text-text-primary text-sm">{t.pos.total}</span>
-            <span className="font-mono text-primary font-bold text-xl">€{total.toFixed(2)}</span>
+            <span className="font-bold text-text-primary text-body-md">{t.pos.total}</span>
+            <span className="font-mono font-[tabular-nums] text-primary font-bold text-headline-sm">€{total.toFixed(2)}</span>
           </div>
         </div>
 
@@ -299,7 +299,7 @@ const Cart: React.FC<CartProps> = ({ variant = 'sidebar', onClose }) => {
               dispatch(setPaymentMethod('card'));
               setIsCheckoutOpen(true);
             }}
-            className="w-full py-3.5 bg-primary hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold rounded-xl text-sm transition-all duration-150 active:scale-[0.98]"
+            className="w-full py-3.5 bg-primary hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold rounded-[10px] text-body-md transition-all duration-150 active:scale-[0.98]"
           >
             {t.pos.checkout} €{total.toFixed(2)}
           </button>
@@ -343,28 +343,28 @@ const Cart: React.FC<CartProps> = ({ variant = 'sidebar', onClose }) => {
       {showClearConfirm && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40" onClick={() => setShowClearConfirm(false)} />
-          <div className="relative z-10 bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4 p-6">
+          <div className="relative z-10 bg-white rounded-xl shadow-modal w-full max-w-sm mx-4 p-6">
             <div className="flex flex-col items-center text-center gap-3 mb-5">
               <div className="w-12 h-12 rounded-full bg-error/10 flex items-center justify-center">
                 <svg className="w-6 h-6 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
               </div>
-              <h3 className="text-base font-bold text-text-primary">{t.pos.clearCartTitle || '¿Vaciar el carrito?'}</h3>
-              <p className="text-sm text-text-muted">
+              <h3 className="text-body-lg font-bold text-text-primary">{t.pos.clearCartTitle || '¿Vaciar el carrito?'}</h3>
+              <p className="text-body-md text-text-muted">
                 {t.pos.clearCartDesc || 'Se eliminarán todos los artículos del carrito.'}
               </p>
             </div>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowClearConfirm(false)}
-                className="flex-1 py-2.5 text-sm font-medium text-text-muted border border-border rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex-1 py-2.5 text-body-md font-medium text-text-muted border border-border rounded-[10px] hover:bg-surface-container-low transition-colors"
               >
                 {t.common.cancel}
               </button>
               <button
                 onClick={() => { dispatch(startNewSale()); setShowClearConfirm(false); }}
-                className="flex-1 py-2.5 text-sm font-bold text-white bg-error rounded-lg hover:bg-error/90 transition-colors"
+                className="flex-1 py-2.5 text-body-md font-bold text-white bg-error rounded-[10px] hover:bg-error/90 transition-colors"
               >
                 {t.pos.clearCartConfirm || 'Vaciar'}
               </button>

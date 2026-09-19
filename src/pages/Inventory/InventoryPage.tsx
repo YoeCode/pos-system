@@ -90,15 +90,15 @@ const InventoryPage: React.FC = () => {
   };
 
   const renderCategoryProducts = () => (
-    <div className="bg-white rounded-xl border border-border overflow-hidden">
+    <div className="bg-white rounded-xl border border-border shadow-card overflow-hidden">
       <table className="w-full">
         <thead>
           <tr className="border-b border-border">
-            <th className="text-left px-5 py-3 text-xs font-semibold text-text-muted uppercase">{t.inventory.product}</th>
-            <th className="text-right px-5 py-3 text-xs font-semibold text-text-muted uppercase">SKU</th>
-            <th className="text-right px-5 py-3 text-xs font-semibold text-text-muted uppercase">{t.inventory.stock}</th>
-            <th className="text-right px-5 py-3 text-xs font-semibold text-text-muted uppercase">{t.inventory.minStock}</th>
-            <th className="text-right px-5 py-3 text-xs font-semibold text-text-muted uppercase">{t.inventory.value}</th>
+            <th className="text-left px-5 py-3 text-label-md text-text-muted">{t.inventory.product}</th>
+            <th className="text-right px-5 py-3 text-label-md text-text-muted">SKU</th>
+            <th className="text-right px-5 py-3 text-label-md text-text-muted">{t.inventory.stock}</th>
+            <th className="text-right px-5 py-3 text-label-md text-text-muted">{t.inventory.minStock}</th>
+            <th className="text-right px-5 py-3 text-label-md text-text-muted">{t.inventory.value}</th>
           </tr>
         </thead>
         <tbody>
@@ -109,17 +109,17 @@ const InventoryPage: React.FC = () => {
             return (
               <tr 
                 key={product.id} 
-                className="border-b border-border last:border-0 cursor-pointer hover:bg-gray-50 transition-colors"
+                className="border-b border-border last:border-0 cursor-pointer hover:bg-surface-container-low transition-colors"
                 onClick={() => handleProductClick(product)}
               >
                 <td className="px-5 py-3">
-                  <p className="text-sm font-medium text-text-primary">{product.name}</p>
+                  <p className="text-body-md font-medium text-text-primary">{product.name}</p>
                   {hasSizes && (
                     <div className="flex gap-1 mt-1 flex-wrap">
                       {product.sizes!.map(s => (
                         <span 
                           key={s.size}
-                          className={`text-xs px-1.5 py-0.5 rounded ${
+                          className={`text-body-sm px-1.5 py-0.5 rounded ${
                             s.stock === 0 
                               ? 'bg-red-100 text-red-700' 
                               : s.stock <= (s.minStock || product.minStock) 
@@ -133,14 +133,14 @@ const InventoryPage: React.FC = () => {
                     </div>
                   )}
                 </td>
-                <td className="px-5 py-3 text-sm text-right font-mono text-text-muted">{product.sku}</td>
+                <td className="px-5 py-3 text-body-md text-right font-mono text-text-muted">{product.sku}</td>
                 <td className="px-5 py-3 text-right">
-                  <span className={`text-sm font-mono font-medium ${stock <= minStock ? 'text-orange-600' : 'text-text-primary'}`}>
+                  <span className={`text-body-md font-mono font-medium ${stock <= minStock ? 'text-orange-600' : 'text-text-primary'}`}>
                     {stock}
                   </span>
                 </td>
-                <td className="px-5 py-3 text-sm text-right font-mono text-text-muted">{minStock}</td>
-                <td className="px-5 py-3 text-sm text-right font-mono text-text-primary">${(stock * product.price).toFixed(2)}</td>
+                <td className="px-5 py-3 text-body-md text-right font-mono text-text-muted">{minStock}</td>
+                <td className="px-5 py-3 text-body-md text-right font-mono text-text-primary">${(stock * product.price).toFixed(2)}</td>
               </tr>
             );
           })}
@@ -155,8 +155,8 @@ const InventoryPage: React.FC = () => {
         {!selectedCategory && (
           <>
             <div>
-              <h1 className="text-xl font-bold text-text-primary">{t.inventory.title}</h1>
-              <p className="text-sm text-text-muted mt-0.5">{t.inventory.subtitle}</p>
+              <h1 className="text-2xl font-bold text-text-primary">{t.inventory.title}</h1>
+              <p className="text-body-md text-text-muted mt-1">{t.inventory.subtitle}</p>
             </div>
           </>
         )}
@@ -164,46 +164,46 @@ const InventoryPage: React.FC = () => {
         {activeTab === 'summary' && !selectedCategory && (
           <>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-white rounded-xl border border-border p-5">
-                <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">{t.inventory.totalProducts}</p>
+              <div className="bg-white rounded-xl border border-border shadow-card p-5">
+                <p className="text-label-md text-text-muted mb-1">{t.inventory.totalProducts}</p>
                 <p className="text-3xl font-bold text-text-primary font-mono">{products.length}</p>
               </div>
-              <div className="bg-white rounded-xl border border-border p-5">
-                <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">{t.inventory.totalStock}</p>
+              <div className="bg-white rounded-xl border border-border shadow-card p-5">
+                <p className="text-label-md text-text-muted mb-1">{t.inventory.totalStock}</p>
                 <p className="text-3xl font-bold text-primary font-mono">
                   {totalStock.toLocaleString()}
                 </p>
               </div>
-              <div className="bg-white rounded-xl border border-border p-5">
-                <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">{t.inventory.totalValue}</p>
+              <div className="bg-white rounded-xl border border-border shadow-card p-5">
+                <p className="text-label-md text-text-muted mb-1">{t.inventory.totalValue}</p>
                 <p className="text-3xl font-bold text-secondary font-mono">${totalValue.toFixed(2)}</p>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-border overflow-hidden">
-              <div className="px-5 py-3 border-b border-border bg-gray-50">
-                <h3 className="text-sm font-semibold text-text-primary">{t.inventory.byCategory}</h3>
+            <div className="bg-white rounded-xl border border-border shadow-card overflow-hidden">
+              <div className="px-5 py-3 border-b border-border bg-surface-container-low">
+                <h3 className="text-body-md font-semibold text-text-primary">{t.inventory.byCategory}</h3>
               </div>
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-border">
-                    <th className="text-left px-5 py-3 text-xs font-semibold text-text-muted uppercase">{t.inventory.category}</th>
-                    <th className="text-right px-5 py-3 text-xs font-semibold text-text-muted uppercase">{t.inventory.products}</th>
-                    <th className="text-right px-5 py-3 text-xs font-semibold text-text-muted uppercase">{t.inventory.stock}</th>
-                    <th className="text-right px-5 py-3 text-xs font-semibold text-text-muted uppercase">{t.inventory.value}</th>
+                    <th className="text-left px-5 py-3 text-label-md text-text-muted">{t.inventory.category}</th>
+                    <th className="text-right px-5 py-3 text-label-md text-text-muted">{t.inventory.products}</th>
+                    <th className="text-right px-5 py-3 text-label-md text-text-muted">{t.inventory.stock}</th>
+                    <th className="text-right px-5 py-3 text-label-md text-text-muted">{t.inventory.value}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {Object.entries(stockByCategory).map(([category, data]) => (
                     <tr 
                       key={category} 
-                      className="border-b border-border last:border-0 hover:bg-gray-50 cursor-pointer transition-colors"
+                      className="border-b border-border last:border-0 hover:bg-surface-container-low cursor-pointer transition-colors"
                       onClick={() => handleCategoryClick(category)}
                     >
-                      <td className="px-5 py-3 text-sm font-medium text-text-primary">{category}</td>
-                      <td className="px-5 py-3 text-sm text-right font-mono text-text-primary">{data.count}</td>
-                      <td className="px-5 py-3 text-sm text-right font-mono text-text-primary">{data.totalStock}</td>
-                      <td className="px-5 py-3 text-sm text-right font-mono text-text-primary">${data.totalValue.toFixed(2)}</td>
+                      <td className="px-5 py-3 text-body-md font-medium text-text-primary">{category}</td>
+                      <td className="px-5 py-3 text-body-md text-right font-mono text-text-primary">{data.count}</td>
+                      <td className="px-5 py-3 text-body-md text-right font-mono text-text-primary">{data.totalStock}</td>
+                      <td className="px-5 py-3 text-body-md text-right font-mono text-text-primary">${data.totalValue.toFixed(2)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -214,7 +214,7 @@ const InventoryPage: React.FC = () => {
 
         {activeTab === 'summary' && selectedCategory && (
           <>
-            <div className="flex items-center gap-2 text-sm">
+            <div className="flex items-center gap-2 text-body-md">
               <button
                 onClick={handleBack}
                 className="text-text-muted hover:text-text-primary transition-colors"
@@ -253,30 +253,30 @@ const InventoryPage: React.FC = () => {
               const subEntries = Object.entries(subs).sort((a, b) => b[1].totalValue - a[1].totalValue);
               if (subEntries.length === 0) return null;
               return (
-                <div className="bg-white rounded-xl border border-border overflow-hidden">
-                  <div className="px-5 py-3 border-b border-border bg-gray-50">
-                    <h3 className="text-sm font-semibold text-text-primary">Subcategorías</h3>
+                <div className="bg-white rounded-xl border border-border shadow-card overflow-hidden">
+                  <div className="px-5 py-3 border-b border-border bg-surface-container-low">
+                    <h3 className="text-body-md font-semibold text-text-primary">Subcategorías</h3>
                   </div>
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-border">
-                        <th className="text-left px-5 py-3 text-xs font-semibold text-text-muted uppercase">Subcategoría</th>
-                        <th className="text-right px-5 py-3 text-xs font-semibold text-text-muted uppercase">{t.inventory.products}</th>
-                        <th className="text-right px-5 py-3 text-xs font-semibold text-text-muted uppercase">{t.inventory.stock}</th>
-                        <th className="text-right px-5 py-3 text-xs font-semibold text-text-muted uppercase">{t.inventory.value}</th>
+                        <th className="text-left px-5 py-3 text-label-md text-text-muted">Subcategoría</th>
+                        <th className="text-right px-5 py-3 text-label-md text-text-muted">{t.inventory.products}</th>
+                        <th className="text-right px-5 py-3 text-label-md text-text-muted">{t.inventory.stock}</th>
+                        <th className="text-right px-5 py-3 text-label-md text-text-muted">{t.inventory.value}</th>
                       </tr>
                     </thead>
                     <tbody>
                       {subEntries.map(([sub, data]) => (
                         <tr
                           key={sub}
-                          className="border-b border-border last:border-0 hover:bg-gray-50 cursor-pointer transition-colors"
+                          className="border-b border-border last:border-0 hover:bg-surface-container-low cursor-pointer transition-colors"
                           onClick={() => handleSubcategoryClick(sub)}
                         >
-                          <td className="px-5 py-3 text-sm font-medium text-text-primary">{sub}</td>
-                          <td className="px-5 py-3 text-sm text-right font-mono text-text-primary">{data.count}</td>
-                          <td className="px-5 py-3 text-sm text-right font-mono text-text-primary">{data.totalStock}</td>
-                          <td className="px-5 py-3 text-sm text-right font-mono text-text-primary">${data.totalValue.toFixed(2)}</td>
+                          <td className="px-5 py-3 text-body-md font-medium text-text-primary">{sub}</td>
+                          <td className="px-5 py-3 text-body-md text-right font-mono text-text-primary">{data.count}</td>
+                          <td className="px-5 py-3 text-body-md text-right font-mono text-text-primary">{data.totalStock}</td>
+                          <td className="px-5 py-3 text-body-md text-right font-mono text-text-primary">${data.totalValue.toFixed(2)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -290,9 +290,9 @@ const InventoryPage: React.FC = () => {
         )}
 
         {activeTab === 'lowstock' && (
-          <div className="bg-white rounded-xl border border-border overflow-hidden">
+          <div className="bg-white rounded-xl border border-border shadow-card overflow-hidden">
             <div className="px-5 py-3 border-b border-border bg-red-50">
-              <h3 className="text-sm font-semibold text-red-700">{t.inventory.lowStockProducts} ({lowStockProducts.length})</h3>
+              <h3 className="text-body-md font-semibold text-red-700">{t.inventory.lowStockProducts} ({lowStockProducts.length})</h3>
             </div>
             {lowStockProducts.length === 0 ? (
               <div className="px-5 py-10 text-center">
@@ -302,18 +302,18 @@ const InventoryPage: React.FC = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
-                  <p className="text-sm font-medium text-text-primary">{t.inventory.noLowStock}</p>
-                  <p className="text-xs text-text-muted">Todos los productos tienen stock suficiente</p>
+                  <p className="text-body-md font-medium text-text-primary">{t.inventory.noLowStock}</p>
+                  <p className="text-body-sm text-text-muted">Todos los productos tienen stock suficiente</p>
                 </div>
               </div>
             ) : (
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-border">
-                    <th className="text-left px-5 py-3 text-xs font-semibold text-text-muted uppercase">{t.inventory.product}</th>
-                    <th className="text-right px-5 py-3 text-xs font-semibold text-text-muted uppercase">{t.inventory.currentStock}</th>
-                    <th className="text-right px-5 py-3 text-xs font-semibold text-text-muted uppercase">{t.inventory.minStock}</th>
-                    <th className="text-right px-5 py-3 text-xs font-semibold text-text-muted uppercase">{t.inventory.needed}</th>
+                    <th className="text-left px-5 py-3 text-label-md text-text-muted">{t.inventory.product}</th>
+                    <th className="text-right px-5 py-3 text-label-md text-text-muted">{t.inventory.currentStock}</th>
+                    <th className="text-right px-5 py-3 text-label-md text-text-muted">{t.inventory.minStock}</th>
+                    <th className="text-right px-5 py-3 text-label-md text-text-muted">{t.inventory.needed}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -324,29 +324,29 @@ const InventoryPage: React.FC = () => {
                     return (
                       <tr 
                         key={product.id} 
-                        className="border-b border-border last:border-0 cursor-pointer hover:bg-gray-50 transition-colors"
+                        className="border-b border-border last:border-0 cursor-pointer hover:bg-surface-container-low transition-colors"
                         onClick={() => handleProductClick(product)}
                       >
                         <td className="px-5 py-3">
-                          <p className="text-sm font-medium text-text-primary">{product.name}</p>
+                          <p className="text-body-md font-medium text-text-primary">{product.name}</p>
                           {hasSizes && (
                             <div className="flex gap-1 mt-1 flex-wrap">
                               {product.sizes!.filter(s => s.stock <= (s.minStock || product.minStock) && s.stock > 0).map(s => (
-                                <span key={s.size} className="text-xs px-1.5 py-0.5 rounded bg-orange-100 text-orange-700">
+                                <span key={s.size} className="text-body-sm px-1.5 py-0.5 rounded bg-orange-100 text-orange-700">
                                   {s.size}: {s.stock}
                                 </span>
                               ))}
                             </div>
                           )}
-                          {!hasSizes && <p className="text-xs text-text-muted">{product.sku}</p>}
+                          {!hasSizes && <p className="text-body-sm text-text-muted">{product.sku}</p>}
                         </td>
                         <td className="px-5 py-3 text-right">
-                          <span className={`text-sm font-mono font-bold ${stock <= minStock * 0.5 ? 'text-red-600' : 'text-orange-600'}`}>
+                          <span className={`text-body-md font-mono font-bold ${stock <= minStock * 0.5 ? 'text-red-600' : 'text-orange-600'}`}>
                             {stock}
                           </span>
                         </td>
-                        <td className="px-5 py-3 text-sm text-right font-mono text-text-muted">{minStock}</td>
-                        <td className="px-5 py-3 text-sm text-right font-mono text-red-600 font-medium">
+                        <td className="px-5 py-3 text-body-md text-right font-mono text-text-muted">{minStock}</td>
+                        <td className="px-5 py-3 text-body-md text-right font-mono text-red-600 font-medium">
                           +{Math.max(0, minStock - stock)}
                         </td>
                       </tr>
@@ -361,19 +361,19 @@ const InventoryPage: React.FC = () => {
         {activeTab === 'reorder' && (
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-white rounded-xl border border-border p-5">
-                <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">{t.inventory.lowStock}</p>
+              <div className="bg-white rounded-xl border border-border shadow-card p-5">
+                <p className="text-label-md text-text-muted mb-1">{t.inventory.lowStock}</p>
                 <p className="text-2xl font-bold text-orange-600 font-mono">{lowStockProducts.length}</p>
               </div>
-              <div className="bg-white rounded-xl border border-border p-5">
-                <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">{t.inventory.outOfStock}</p>
+              <div className="bg-white rounded-xl border border-border shadow-card p-5">
+                <p className="text-label-md text-text-muted mb-1">{t.inventory.outOfStock}</p>
                 <p className="text-2xl font-bold text-red-600 font-mono">{outOfStockProducts.length}</p>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-border overflow-hidden">
+            <div className="bg-white rounded-xl border border-border shadow-card overflow-hidden">
               <div className="px-5 py-3 border-b border-border bg-orange-50">
-                <h3 className="text-sm font-semibold text-orange-700">{t.inventory.reorderList} ({reorderProducts.length})</h3>
+                <h3 className="text-body-md font-semibold text-orange-700">{t.inventory.reorderList} ({reorderProducts.length})</h3>
               </div>
               {reorderProducts.length === 0 ? (
                 <div className="px-5 py-10 text-center">
@@ -383,18 +383,18 @@ const InventoryPage: React.FC = () => {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                       </svg>
                     </div>
-                    <p className="text-sm font-medium text-text-primary">{t.inventory.noReorder}</p>
-                    <p className="text-xs text-text-muted">No hay productos pendientes de reabastecimiento</p>
+                    <p className="text-body-md font-medium text-text-primary">{t.inventory.noReorder}</p>
+                    <p className="text-body-sm text-text-muted">No hay productos pendientes de reabastecimiento</p>
                   </div>
                 </div>
               ) : (
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-border">
-                      <th className="text-left px-5 py-3 text-xs font-semibold text-text-muted uppercase">{t.inventory.product}</th>
-                      <th className="text-right px-5 py-3 text-xs font-semibold text-text-muted uppercase">{t.inventory.stock}</th>
-                      <th className="text-right px-5 py-3 text-xs font-semibold text-text-muted uppercase">{t.inventory.reorderQty}</th>
-                      <th className="text-right px-5 py-3 text-xs font-semibold text-text-muted uppercase">{t.inventory.estimated}</th>
+                      <th className="text-left px-5 py-3 text-label-md text-text-muted">{t.inventory.product}</th>
+                      <th className="text-right px-5 py-3 text-label-md text-text-muted">{t.inventory.stock}</th>
+                      <th className="text-right px-5 py-3 text-label-md text-text-muted">{t.inventory.reorderQty}</th>
+                      <th className="text-right px-5 py-3 text-label-md text-text-muted">{t.inventory.estimated}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -406,20 +406,20 @@ const InventoryPage: React.FC = () => {
                       return (
                         <tr 
                           key={product.id} 
-                          className="border-b border-border last:border-0 cursor-pointer hover:bg-gray-50 transition-colors"
+                          className="border-b border-border last:border-0 cursor-pointer hover:bg-surface-container-low transition-colors"
                           onClick={() => handleProductClick(product)}
                         >
                           <td className="px-5 py-3">
-                            <p className="text-sm font-medium text-text-primary">{product.name}</p>
-                            <p className="text-xs text-text-muted">{product.sku}</p>
+                            <p className="text-body-md font-medium text-text-primary">{product.name}</p>
+                            <p className="text-body-sm text-text-muted">{product.sku}</p>
                           </td>
                           <td className="px-5 py-3 text-right">
-                            <span className={`text-sm font-mono font-bold ${stock === 0 ? 'text-red-600' : 'text-orange-600'}`}>
+                            <span className={`text-body-md font-mono font-bold ${stock === 0 ? 'text-red-600' : 'text-orange-600'}`}>
                               {stock}
                             </span>
                           </td>
-                          <td className="px-5 py-3 text-sm text-right font-mono text-text-primary font-medium">{reorderQty}</td>
-                          <td className="px-5 py-3 text-sm text-right font-mono text-secondary font-medium">${estimated.toFixed(2)}</td>
+                          <td className="px-5 py-3 text-body-md text-right font-mono text-text-primary font-medium">{reorderQty}</td>
+                          <td className="px-5 py-3 text-body-md text-right font-mono text-secondary font-medium">${estimated.toFixed(2)}</td>
                         </tr>
                       );
                     })}

@@ -31,8 +31,8 @@ const EmployeesPage: React.FC = () => {
     <div className="p-4 lg:p-6 flex flex-col gap-4 lg:gap-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-text-primary">{t.nav.employees}</h1>
-          <p className="text-sm text-text-muted mt-0.5">{t.nav.employees}</p>
+          <h1 className="text-2xl font-bold text-text-primary">{t.nav.employees}</h1>
+          <p className="text-body-md text-text-muted mt-1">Gestiona los empleados y sus roles</p>
         </div>
         {hasPermission('employee:manage') && (
           <Button variant="primary" size="sm" onClick={() => dispatch(toggleModal())}>
@@ -45,26 +45,26 @@ const EmployeesPage: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 lg:gap-4">
-        <div className="bg-white rounded-xl border border-border p-4 lg:p-5">
-          <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">{t.employees.title}</p>
+        <div className="bg-white rounded-xl border border-border shadow-card p-5">
+          <p className="text-label-md text-text-muted mb-1">{t.employees.title}</p>
           <p className="text-2xl lg:text-3xl font-bold text-text-primary font-mono">
             {hasFilters ? `${filteredCount} / ${totalCount}` : totalCount}
           </p>
-          {hasFilters && <p className="text-xs text-text-muted mt-1">{t.common.filtered}</p>}
+          {hasFilters && <p className="text-body-sm text-text-muted mt-1">{t.common.filtered}</p>}
         </div>
-        <div className="bg-white rounded-xl border border-border p-4 lg:p-5">
-          <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">{t.common.active}</p>
+        <div className="bg-white rounded-xl border border-border shadow-card p-5">
+          <p className="text-label-md text-text-muted mb-1">{t.common.active}</p>
           <p className="text-2xl lg:text-3xl font-bold text-primary font-mono">
             {hasFilters ? `${filteredActiveCount} / ${activeCount}` : activeCount}
           </p>
-          {hasFilters && <p className="text-xs text-text-muted mt-1">{t.common.filtered}</p>}
+          {hasFilters && <p className="text-body-sm text-text-muted mt-1">{t.common.filtered}</p>}
         </div>
-        <div className="bg-white rounded-xl border border-border p-4 lg:p-5">
-          <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">{t.employees.inactive}</p>
+        <div className="bg-white rounded-xl border border-border shadow-card p-5">
+          <p className="text-label-md text-text-muted mb-1">{t.employees.inactive}</p>
           <p className="text-2xl lg:text-3xl font-bold text-error font-mono">
             {hasFilters ? `${filteredCount - filteredActiveCount} / ${totalCount - activeCount}` : totalCount - activeCount}
           </p>
-          {hasFilters && <p className="text-xs text-text-muted mt-1">{t.common.filtered}</p>}
+          {hasFilters && <p className="text-body-sm text-text-muted mt-1">{t.common.filtered}</p>}
         </div>
       </div>
 
@@ -78,13 +78,13 @@ const EmployeesPage: React.FC = () => {
             value={searchQuery}
             onChange={e => dispatch(setSearchQuery(e.target.value))}
             placeholder={`${t.employees.name} / ${t.employees.email}...`}
-            className="w-full pl-10 pr-3 py-2.5 text-sm border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+            className="w-full pl-10 pr-3 h-11 text-body-md border border-border rounded-[10px] text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
           />
         </div>
         <select
           value={roleFilter}
           onChange={e => dispatch(setRoleFilter(e.target.value as Employee['role'] | 'all'))}
-          className="px-3 py-2.5 text-sm border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors bg-white"
+          className="px-3 h-11 text-body-md border border-border rounded-[10px] text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors bg-white"
         >
           <option value="all">{t.common.all} {t.employees.roles}</option>
           <option value="Cashier">Cashier</option>
@@ -94,7 +94,7 @@ const EmployeesPage: React.FC = () => {
         <select
           value={statusFilter}
           onChange={e => dispatch(setStatusFilter(e.target.value as 'all' | 'active' | 'inactive'))}
-          className="px-3 py-2.5 text-sm border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors bg-white"
+          className="px-3 h-11 text-body-md border border-border rounded-[10px] text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors bg-white"
         >
           <option value="all">{t.common.all} {t.common.status}</option>
           <option value="active">{t.common.active}</option>
@@ -120,12 +120,12 @@ const EmployeesPage: React.FC = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
           </div>
-          <p className="text-sm font-medium text-text-primary">{hasFilters ? t.common.noResults : 'No hay empleados registrados'}</p>
+          <p className="text-body-md font-medium text-text-primary">{hasFilters ? t.common.noResults : 'No hay empleados registrados'}</p>
           {!hasFilters && (
-            <p className="text-xs text-text-muted mt-1 mb-3 max-w-xs">Registra empleados para asignar roles y controlar acceso al sistema.</p>
+            <p className="text-body-sm text-text-muted mt-1 mb-3 max-w-xs">Registra empleados para asignar roles y controlar acceso al sistema.</p>
           )}
           {hasFilters && (
-            <button onClick={() => dispatch(clearFilters())} className="mt-2 text-sm text-primary hover:underline">
+            <button onClick={() => dispatch(clearFilters())} className="mt-2 text-body-md text-primary hover:underline">
               {t.common.clearFilters}
             </button>
           )}

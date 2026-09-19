@@ -27,7 +27,7 @@ const SearchInput = forwardRef<HTMLInputElement>((_, ref) => {
         value={searchQuery}
         onChange={handleChange}
         placeholder="Buscar productos..."
-        className="w-full pl-10 pr-8 py-2 text-sm border border-border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-text-muted"
+        className="w-full h-11 pl-10 pr-8 py-2.5 text-body-md border border-border rounded-[10px] bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-text-muted"
       />
       {searchQuery && (
         <button

@@ -209,7 +209,7 @@ const ReportsPage: React.FC = () => {
     <div className="p-6 flex flex-col gap-6">
       <div>
         <h1 className="text-2xl font-bold text-text-primary">{t.reports.title}</h1>
-        <p className="text-text-muted mt-1">{t.reports.title}</p>
+        <p className="text-body-md text-text-muted mt-1">Análisis de ventas y rendimiento</p>
       </div>
 
       <div className="flex gap-6">
@@ -221,8 +221,8 @@ const ReportsPage: React.FC = () => {
               onClick={() => setActiveTab(tab.id)}
               className={
                 activeTab === tab.id
-                  ? 'bg-primary/10 text-primary rounded-lg px-4 py-2.5 text-sm font-medium w-full text-left'
-                  : 'text-text-muted hover:text-text-primary hover:bg-gray-50 rounded-lg px-4 py-2.5 text-sm font-medium w-full text-left transition-colors'
+                  ? 'bg-primary/10 text-primary rounded-[10px] px-4 py-2.5 text-body-md font-medium w-full text-left'
+                  : 'text-text-muted hover:text-text-primary hover:bg-surface-container-low rounded-[10px] px-4 py-2.5 text-body-md font-medium w-full text-left transition-colors'
               }
             >
               {tab.label}
@@ -231,15 +231,15 @@ const ReportsPage: React.FC = () => {
         </nav>
 
         <div className="flex-1 flex flex-col gap-6">
-          <div className="bg-white rounded-xl border border-border p-4">
+          <div className="bg-white rounded-xl border border-border shadow-card p-4">
             <div className="flex items-center gap-4 flex-wrap">
-              <label className="text-sm font-medium text-text-primary">{t.reports.dateRange}:</label>
+              <label className="text-body-md font-medium text-text-primary">{t.reports.dateRange}:</label>
               <div className="flex gap-2">
                 {dateRangeOptions.map(opt => (
                   <button
                     key={opt.value}
                     onClick={() => setDateRange(opt.value)}
-                    className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                    className={`px-3 py-1.5 text-body-md rounded-[10px] transition-colors ${
                       dateRange === opt.value
                         ? 'bg-primary text-white'
                         : 'bg-gray-100 text-text-primary hover:bg-gray-200'
@@ -256,7 +256,7 @@ const ReportsPage: React.FC = () => {
                     else if (activeTab === 'products') handleExportProducts('csv');
                     else handleExportEmployees('csv');
                   }}
-                  className="px-3 py-1.5 text-sm bg-white border border-border text-text-primary rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-1"
+                  className="px-3 py-1.5 text-body-md bg-white border border-border text-text-primary rounded-[10px] hover:bg-surface-container-low transition-colors flex items-center gap-1"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -269,7 +269,7 @@ const ReportsPage: React.FC = () => {
                     else if (activeTab === 'products') handleExportProducts('excel');
                     else handleExportEmployees('excel');
                   }}
-                  className="px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-1"
+                  className="px-3 py-1.5 text-body-md bg-green-600 text-white rounded-[10px] hover:bg-green-700 transition-colors flex items-center gap-1"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -284,14 +284,14 @@ const ReportsPage: React.FC = () => {
                     type="date"
                     value={customStartDate}
                     onChange={e => setCustomStartDate(e.target.value)}
-                    className="px-2 py-1 text-sm border border-border rounded-lg"
+                    className="px-2 py-1 text-body-md border border-border rounded-[10px]"
                   />
                   <span className="text-text-muted">-</span>
                   <input
                     type="date"
                     value={customEndDate}
                     onChange={e => setCustomEndDate(e.target.value)}
-                    className="px-2 py-1 text-sm border border-border rounded-lg"
+                    className="px-2 py-1 text-body-md border border-border rounded-[10px]"
                   />
                 </div>
               )}
@@ -301,39 +301,39 @@ const ReportsPage: React.FC = () => {
           {activeTab === 'sales' && (
             <div className="flex flex-col gap-4 lg:gap-6">
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
-                <div className="bg-white rounded-xl border border-border p-4 lg:p-5">
-                  <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">{t.reports.totalSales}</p>
+                <div className="bg-white rounded-xl border border-border shadow-card p-5">
+                  <p className="text-label-md text-text-muted">{t.reports.totalSales}</p>
                   <p className="text-xl lg:text-2xl font-bold text-text-primary mt-1">{formatCurrency(salesStats.totalRevenue)}</p>
                 </div>
-                <div className="bg-white rounded-xl border border-border p-4 lg:p-5">
-                  <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">{t.reports.totalOrders}</p>
+                <div className="bg-white rounded-xl border border-border shadow-card p-5">
+                  <p className="text-label-md text-text-muted">{t.reports.totalOrders}</p>
                   <p className="text-xl lg:text-2xl font-bold text-text-primary mt-1">{salesStats.totalOrders}</p>
                 </div>
-                <div className="bg-white rounded-xl border border-border p-4 lg:p-5">
-                  <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">{t.dashboard.averageTicket}</p>
+                <div className="bg-white rounded-xl border border-border shadow-card p-5">
+                  <p className="text-label-md text-text-muted">{t.dashboard.averageTicket}</p>
                   <p className="text-xl lg:text-2xl font-bold text-text-primary mt-1">{formatCurrency(salesStats.avgTicket)}</p>
                 </div>
-                <div className="bg-white rounded-xl border border-border p-4 lg:p-5">
-                  <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">{t.reports.totalTax}</p>
+                <div className="bg-white rounded-xl border border-border shadow-card p-5">
+                  <p className="text-label-md text-text-muted">{t.reports.totalTax}</p>
                   <p className="text-xl lg:text-2xl font-bold text-text-primary mt-1">{formatCurrency(salesStats.totalTax)}</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-4">
-                <div className="bg-white rounded-xl border border-border p-5">
-                  <h3 className="text-sm font-semibold text-text-primary mb-4">{t.pos.paymentMethod}</h3>
+                <div className="bg-white rounded-xl border border-border shadow-card p-5">
+                  <h3 className="text-body-md font-semibold text-text-primary mb-4">{t.pos.paymentMethod}</h3>
                   <div className="flex flex-col gap-3">
                     {Object.entries(salesStats.byPayment).map(([method, amount]) => (
                       <div key={method} className="flex items-center justify-between">
-                        <span className="text-sm text-text-muted capitalize">{t.pos[method as 'cash' | 'card' | 'bizum']}</span>
-                        <span className="text-sm font-mono font-semibold text-text-primary">{formatCurrency(amount)}</span>
+                        <span className="text-body-md text-text-muted capitalize">{t.pos[method as 'cash' | 'card' | 'bizum']}</span>
+                        <span className="text-body-md font-mono font-semibold text-text-primary">{formatCurrency(amount)}</span>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <div className="bg-white rounded-xl border border-border p-5">
-                  <h3 className="text-sm font-semibold text-text-primary mb-4">{t.reports.salesByCategory}</h3>
+                <div className="bg-white rounded-xl border border-border shadow-card p-5">
+                  <h3 className="text-body-md font-semibold text-text-primary mb-4">{t.reports.salesByCategory}</h3>
                   {Object.keys(productStats.categorySales).length === 0 ? (
                     <div className="flex flex-col items-center gap-2 py-4 text-center">
                       <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
@@ -342,8 +342,8 @@ const ReportsPage: React.FC = () => {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
                         </svg>
                       </div>
-                      <p className="text-sm font-medium text-text-primary">{t.reports.noData}</p>
-                      <p className="text-xs text-text-muted">Las ventas por categoría aparecerán aquí</p>
+                      <p className="text-body-md font-medium text-text-primary">{t.reports.noData}</p>
+                      <p className="text-body-sm text-text-muted">Las ventas por categoría aparecerán aquí</p>
                     </div>
                   ) : (
                     <div className="flex flex-col gap-2">
@@ -359,9 +359,9 @@ const ReportsPage: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={() => setExpandedSalesCategory(isExpanded ? null : cat)}
-                                className="flex items-center justify-between w-full text-left hover:bg-gray-50 rounded-lg px-2 py-1.5 -mx-2 transition-colors"
+                                className="flex items-center justify-between w-full text-left hover:bg-surface-container-low rounded-[10px] px-2 py-1.5 -mx-2 transition-colors"
                               >
-                                <span className="flex items-center gap-2 text-sm text-text-muted">
+                                <span className="flex items-center gap-2 text-body-md text-text-muted">
                                   <svg
                                     className={`w-3.5 h-3.5 text-text-muted transition-transform ${isExpanded ? 'rotate-90' : ''}`}
                                     fill="none"
@@ -372,14 +372,14 @@ const ReportsPage: React.FC = () => {
                                   </svg>
                                   {cat}
                                 </span>
-                                <span className="text-sm font-mono font-semibold text-text-primary">{formatCurrency(amount)}</span>
+                                <span className="text-body-md font-mono font-semibold text-text-primary">{formatCurrency(amount)}</span>
                               </button>
                               {isExpanded && hasSubcategories && (
                                 <div className="ml-6 mt-1 mb-2 flex flex-col gap-1 border-l border-border pl-3">
                                   {subEntries.map(([sub, data]) => (
                                     <div key={sub} className="flex items-center justify-between">
-                                      <span className="text-xs text-text-muted">{sub}</span>
-                                      <span className="text-xs font-mono text-text-primary">
+                                      <span className="text-body-sm text-text-muted">{sub}</span>
+                                      <span className="text-body-sm font-mono text-text-primary">
                                         {data.qty} uds · {formatCurrency(data.revenue)}
                                       </span>
                                     </div>
@@ -394,32 +394,32 @@ const ReportsPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl border border-border p-5">
-                <h3 className="text-sm font-semibold text-text-primary mb-4">{t.reports.totalOrders}</h3>
+              <div className="bg-white rounded-xl border border-border shadow-card p-5">
+                <h3 className="text-body-md font-semibold text-text-primary mb-4">{t.reports.totalOrders}</h3>
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-border">
-                        <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider py-3">Order</th>
-                        <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider py-3">{t.products.name}</th>
-                        <th className="text-right text-xs font-semibold text-text-muted uppercase tracking-wider py-3">{t.pos.total}</th>
-                        <th className="text-right text-xs font-semibold text-text-muted uppercase tracking-wider py-3">{t.pos.paymentMethod}</th>
-                        <th className="text-right text-xs font-semibold text-text-muted uppercase tracking-wider py-3">{t.products.status}</th>
-                        <th className="text-right text-xs font-semibold text-text-muted uppercase tracking-wider py-3">Ticket</th>
+                        <th className="text-left text-label-md text-text-muted py-3">Pedido</th>
+                        <th className="text-left text-label-md text-text-muted py-3">{t.products.name}</th>
+                        <th className="text-right text-label-md text-text-muted py-3">{t.pos.total}</th>
+                        <th className="text-right text-label-md text-text-muted py-3">{t.pos.paymentMethod}</th>
+                        <th className="text-right text-label-md text-text-muted py-3">{t.products.status}</th>
+                        <th className="text-right text-label-md text-text-muted py-3">Ticket</th>
                       </tr>
                     </thead>
                     <tbody>
                       {filteredSales.slice(0, 20).map(sale => (
                         <tr key={sale.id} className="border-b border-border">
-                          <td className="py-3 text-sm font-mono text-text-primary">{sale.order.orderNumber}</td>
-                          <td className="py-3 text-sm text-text-muted">{sale.order.items.length} items</td>
-                          <td className="py-3 text-sm font-mono text-text-primary text-right">{formatCurrency(sale.order.total)}</td>
-                          <td className="py-3 text-sm text-text-muted text-right capitalize">{t.pos[sale.paymentMethod as 'cash' | 'card' | 'bizum']}</td>
-                          <td className="py-3 text-sm text-text-muted text-right">{formatDate(sale.completedAt)}</td>
+                          <td className="py-3 text-body-md font-mono text-text-primary">{sale.order.orderNumber}</td>
+                          <td className="py-3 text-body-md text-text-muted">{sale.order.items.length} items</td>
+                          <td className="py-3 text-body-md font-mono text-text-primary text-right">{formatCurrency(sale.order.total)}</td>
+                          <td className="py-3 text-body-md text-text-muted text-right capitalize">{t.pos[sale.paymentMethod as 'cash' | 'card' | 'bizum']}</td>
+                          <td className="py-3 text-body-md text-text-muted text-right">{formatDate(sale.completedAt)}</td>
                           <td className="py-3 text-right">
                             <button
                               onClick={() => setSelectedTicketSaleId(sale.id)}
-                              className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-primary/10 text-primary rounded hover:bg-primary/20 transition-colors"
+                              className="inline-flex items-center gap-1 px-2 py-1 text-body-sm bg-primary/10 text-primary rounded-[10px] hover:bg-primary/20 transition-colors"
                             >
                               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
                               Ver
@@ -436,15 +436,15 @@ const ReportsPage: React.FC = () => {
 
           {activeTab === 'products' && (
             <div className="flex flex-col gap-6">
-              <div className="bg-white rounded-xl border border-border p-4">
+              <div className="bg-white rounded-xl border border-border shadow-card p-4">
                 <div className="flex items-center gap-3 flex-wrap">
-                  <span className="text-sm font-medium text-text-primary">{t.products.category}:</span>
+                  <span className="text-body-md font-medium text-text-primary">{t.products.category}:</span>
                   <div className="flex gap-2 flex-wrap">
                     {productCategories.map(cat => (
                       <button
                         key={cat}
                         onClick={() => setSelectedProductCategory(cat)}
-                        className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                        className={`px-3 py-1.5 text-body-md rounded-[10px] transition-colors ${
                           selectedProductCategory === cat
                             ? 'bg-primary text-white'
                             : 'bg-gray-100 text-text-primary hover:bg-gray-200'
@@ -457,8 +457,8 @@ const ReportsPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl border border-border p-5">
-                <h3 className="text-sm font-semibold text-text-primary mb-4">{t.reports.bestSellers}</h3>
+              <div className="bg-white rounded-xl border border-border shadow-card p-5">
+                <h3 className="text-body-md font-semibold text-text-primary mb-4">{t.reports.bestSellers}</h3>
                 {filteredTopProducts.length === 0 ? (
                   <div className="flex flex-col items-center gap-2 py-4 text-center">
                     <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
@@ -466,31 +466,31 @@ const ReportsPage: React.FC = () => {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
                       </svg>
                     </div>
-                    <p className="text-sm font-medium text-text-primary">{t.reports.noData}</p>
-                    <p className="text-xs text-text-muted">Los productos más vendidos aparecerán aquí</p>
+                    <p className="text-body-md font-medium text-text-primary">{t.reports.noData}</p>
+                    <p className="text-body-sm text-text-muted">Los productos más vendidos aparecerán aquí</p>
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead>
                         <tr className="border-b border-border">
-                          <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider py-3">#</th>
-                          <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider py-3">{t.products.name}</th>
-                          <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider py-3">{t.products.category}</th>
-                          <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider py-3">Subcategoría</th>
-                          <th className="text-right text-xs font-semibold text-text-muted uppercase tracking-wider py-3">{t.reports.quantity}</th>
-                          <th className="text-right text-xs font-semibold text-text-muted uppercase tracking-wider py-3">{t.reports.revenue}</th>
+                          <th className="text-left text-label-md text-text-muted py-3">#</th>
+                          <th className="text-left text-label-md text-text-muted py-3">{t.products.name}</th>
+                          <th className="text-left text-label-md text-text-muted py-3">{t.products.category}</th>
+                          <th className="text-left text-label-md text-text-muted py-3">Subcategoría</th>
+                          <th className="text-right text-label-md text-text-muted py-3">{t.reports.quantity}</th>
+                          <th className="text-right text-label-md text-text-muted py-3">{t.reports.revenue}</th>
                         </tr>
                       </thead>
                       <tbody>
                         {filteredTopProducts.map((product, idx) => (
                           <tr key={idx} className="border-b border-border">
-                            <td className="py-3 text-sm font-mono text-text-muted">{idx + 1}</td>
-                            <td className="py-3 text-sm font-medium text-text-primary">{product.name}</td>
-                            <td className="py-3 text-sm text-text-muted">{product.category}</td>
-                            <td className="py-3 text-sm text-text-muted">{product.subcategory ?? '—'}</td>
-                            <td className="py-3 text-sm font-mono text-text-primary text-right">{product.qty}</td>
-                            <td className="py-3 text-sm font-mono font-semibold text-text-primary text-right">{formatCurrency(product.revenue)}</td>
+                            <td className="py-3 text-body-md font-mono text-text-muted">{idx + 1}</td>
+                            <td className="py-3 text-body-md font-medium text-text-primary">{product.name}</td>
+                            <td className="py-3 text-body-md text-text-muted">{product.category}</td>
+                            <td className="py-3 text-body-md text-text-muted">{product.subcategory ?? '—'}</td>
+                            <td className="py-3 text-body-md font-mono text-text-primary text-right">{product.qty}</td>
+                            <td className="py-3 text-body-md font-mono font-semibold text-text-primary text-right">{formatCurrency(product.revenue)}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -503,8 +503,8 @@ const ReportsPage: React.FC = () => {
 
           {activeTab === 'employees' && (
             <div className="flex flex-col gap-6">
-              <div className="bg-white rounded-xl border border-border p-5">
-                <h3 className="text-sm font-semibold text-text-primary mb-4">{t.reports.salesByEmployee}</h3>
+              <div className="bg-white rounded-xl border border-border shadow-card p-5">
+                <h3 className="text-body-md font-semibold text-text-primary mb-4">{t.reports.salesByEmployee}</h3>
                 {filteredSales.length === 0 ? (
                   <div className="flex flex-col items-center gap-2 py-4 text-center">
                     <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
@@ -512,8 +512,8 @@ const ReportsPage: React.FC = () => {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                       </svg>
                     </div>
-                    <p className="text-sm font-medium text-text-primary">{t.reports.noData}</p>
-                    <p className="text-xs text-text-muted">Las ventas por empleado aparecerán aquí</p>
+                    <p className="text-body-md font-medium text-text-primary">{t.reports.noData}</p>
+                    <p className="text-body-sm text-text-muted">Las ventas por empleado aparecerán aquí</p>
                   </div>
                 ) : (
                   <div className="flex flex-col gap-3">
@@ -524,20 +524,20 @@ const ReportsPage: React.FC = () => {
                         <div 
                           key={emp.id} 
                           onClick={() => setSelectedEmployeeId(emp.id)}
-                          className="flex items-center justify-between p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-primary/5 hover:ring-1 hover:ring-primary/20 transition-all"
+                          className="flex items-center justify-between p-3 bg-surface-container-low rounded-[10px] cursor-pointer hover:bg-primary/5 hover:ring-1 hover:ring-primary/20 transition-all"
                         >
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm">
+                            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-body-md">
                               {emp.name.charAt(0)}
                             </div>
                             <div>
-                              <p className="text-sm font-medium text-text-primary">{emp.name}</p>
-                              <p className="text-xs text-text-muted">{emp.role}</p>
+                              <p className="text-body-md font-medium text-text-primary">{emp.name}</p>
+                              <p className="text-body-sm text-text-muted">{emp.role}</p>
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className="text-sm font-mono font-semibold text-text-primary">{formatCurrency(totalRevenue)}</p>
-                            <p className="text-xs text-text-muted">{empSales.length} {t.reports.totalOrders.toLowerCase()}</p>
+                            <p className="text-body-md font-mono font-semibold text-text-primary">{formatCurrency(totalRevenue)}</p>
+                            <p className="text-body-sm text-text-muted">{empSales.length} {t.reports.totalOrders.toLowerCase()}</p>
                           </div>
                         </div>
                       );
@@ -570,21 +570,21 @@ const ReportsPage: React.FC = () => {
         {selectedEmployeeId && (() => {
           const empSales = filteredSales.filter(s => s.employeeId === selectedEmployeeId);
           if (empSales.length === 0) {
-            return <p className="text-sm text-text-muted">{t.reports.noData}</p>;
+            return               <p className="text-body-md text-text-muted">{t.reports.noData}</p>;
           }
           return (
             <div className="flex flex-col gap-3">
               {empSales.map(sale => (
-                <div key={sale.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-border">
+                <div key={sale.id} className="flex items-center justify-between p-3 bg-surface-container-low rounded-[10px] border border-border">
                   <div className="flex flex-col">
-                    <span className="text-sm font-medium text-text-primary">{sale.order.orderNumber}</span>
-                    <span className="text-xs text-text-muted">
+                    <span className="text-body-md font-medium text-text-primary">{sale.order.orderNumber}</span>
+                    <span className="text-body-sm text-text-muted">
                       {sale.order.items.length} {t.reports.quantity.toLowerCase()} · {formatDate(sale.completedAt)}
                     </span>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-mono font-semibold text-text-primary">{formatCurrency(sale.order.total)}</p>
-                    <p className="text-xs text-text-muted capitalize">{t.pos[sale.paymentMethod as 'cash' | 'card' | 'bizum']}</p>
+                    <p className="text-body-md font-mono font-semibold text-text-primary">{formatCurrency(sale.order.total)}</p>
+                    <p className="text-body-sm text-text-muted capitalize">{t.pos[sale.paymentMethod as 'cash' | 'card' | 'bizum']}</p>
                   </div>
                 </div>
               ))}
