@@ -45,8 +45,8 @@ const SettingsPage: React.FC = () => {
               onClick={() => setActiveTab(tab.id)}
               className={
                 activeTab === tab.id
-                  ? 'bg-primary/10 text-primary rounded-lg px-4 py-2.5 text-sm font-medium w-full text-left'
-                  : 'text-text-muted hover:text-text-primary hover:bg-gray-50 rounded-lg px-4 py-2.5 text-sm font-medium w-full text-left transition-colors'
+                  ? 'bg-primary/10 text-primary rounded-[10px] px-4 py-2.5 text-body-md font-medium w-full text-left'
+                  : 'text-text-muted hover:text-text-primary hover:bg-surface-container-low rounded-[10px] px-4 py-2.5 text-body-md font-medium w-full text-left transition-colors'
               }
             >
               {tab.label}
