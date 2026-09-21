@@ -51,8 +51,8 @@ const SaleWindowsTabs: React.FC = () => {
                 relative flex items-center gap-2 px-4 py-2.5 text-sm font-medium cursor-pointer select-none
                 transition-all duration-200 min-w-[120px] max-w-[180px]
                 ${isActive
-                  ? 'bg-background text-green-600 rounded-t-xl z-10 shadow-[0_-2px_8px_rgba(0,0,0,0.04)]'
-                  : 'bg-gray-100 text-text-muted hover:bg-gray-200 hover:text-text-primary rounded-t-lg'
+                  ? 'bg-background text-primary rounded-t-xl z-10 shadow-[0_-2px_8px_rgba(0,0,0,0.04)]'
+                  : 'bg-surface-container-low text-text-muted hover:bg-surface-container hover:text-text-primary rounded-t-lg'
                 }
               `}
               style={{
@@ -67,7 +67,7 @@ const SaleWindowsTabs: React.FC = () => {
               {itemCount > 0 && (
                 <span className={`
                   flex-shrink-0 text-xs px-2 py-0.5 rounded-full font-bold
-                  ${isActive ? 'bg-primary text-white' : 'bg-gray-300 text-gray-600'}
+                  ${isActive ? 'bg-primary text-white' : 'bg-outline-variant text-on-surface-variant'}
                 `}>
                   {itemCount}
                 </span>
@@ -83,8 +83,8 @@ const SaleWindowsTabs: React.FC = () => {
                     flex-shrink-0 w-11 h-11 flex items-center justify-center rounded-full text-sm
                     transition-colors ml-1 opacity-60 hover:opacity-100
                     ${isActive
-                      ? 'hover:bg-gray-100 text-gray-400 hover:text-gray-600'
-                      : 'hover:bg-gray-400/30 text-gray-400 hover:text-gray-600'
+                      ? 'hover:bg-surface-container-low text-outline hover:text-on-surface-variant'
+                      : 'hover:bg-outline/30 text-outline hover:text-on-surface-variant'
                     }
                   `}
                   title={t.pos.closeWindow || 'Cerrar ventana de venta'}
@@ -100,7 +100,7 @@ const SaleWindowsTabs: React.FC = () => {
           <button
             type="button"
             onClick={() => dispatch(createWindow())}
-            className="flex-shrink-0 flex items-center justify-center w-11 h-11 mb-2 ml-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-200 transition-colors"
+            className="flex-shrink-0 flex items-center justify-center w-11 h-11 mb-2 ml-2 rounded-[10px] text-outline hover:text-on-surface hover:bg-surface-container transition-colors"
             title={t.pos.newSale || 'Nueva venta'}
             aria-label={t.pos.newSale || 'Nueva venta'}
           >
@@ -118,21 +118,21 @@ const SaleWindowsTabs: React.FC = () => {
           title={t.pos.closeSale || 'Cerrar venta'}
         >
           <div className="p-6">
-            <p className="text-text-primary mb-4">
+            <p className="text-text-primary mb-4 text-body-md">
               {t.pos.closeSaleConfirm || `Esta venta tiene {{count}} productos sin completar. ¿Descartar?`.replace('{{count}}', String(activeWindow?.cart.reduce((sum, item) => sum + item.quantity, 0) || 0))}
             </p>
             <div className="flex gap-3 justify-end">
               <button
                 type="button"
                 onClick={() => setConfirmCloseId(null)}
-                className="px-4 py-2 text-sm font-medium text-text-muted border border-border rounded-lg hover:bg-gray-50"
+                className="px-4 py-2 text-body-md font-medium text-text-muted border border-border rounded-[10px] hover:bg-surface-container-low"
               >
                 {t.pos.cancel}
               </button>
               <button
                 type="button"
                 onClick={confirmClose}
-                className="px-4 py-2 text-sm font-bold text-white bg-red-600 rounded-lg hover:bg-red-700"
+                className="px-4 py-2 text-body-md font-bold text-white bg-error rounded-[10px] hover:bg-error/90"
               >
                 {t.pos.discardAndClose || 'Descartar y cerrar'}
               </button>

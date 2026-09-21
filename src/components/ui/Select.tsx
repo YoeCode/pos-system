@@ -5,38 +5,71 @@ export interface SelectOption {
   label: string;
 }
 
-interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'children'> {
+interface SelectProps
+  extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'children'> {
   label?: string;
   options: SelectOption[];
   error?: string;
+  helperText?: string;
 }
 
-const Select: React.FC<SelectProps> = ({ label, options, error, className = '', id, ...props }) => {
+const Select: React.FC<SelectProps> = ({
+  label,
+  options,
+  error,
+  helperText,
+  className = '',
+  id,
+  ...props
+}) => {
   const selectId = id || label?.toLowerCase().replace(/\s+/g, '-');
 
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1.5">
       {label && (
-        <label htmlFor={selectId} className="text-xs font-semibold text-text-muted uppercase tracking-wider">
+        <label
+          htmlFor={selectId}
+          className="text-label-md font-medium text-text-muted"
+        >
           {label}
         </label>
       )}
       <select
         id={selectId}
-        className={`w-full px-3 py-2.5 text-sm rounded-lg border ${
-          error ? 'border-error' : 'border-border'
-        } bg-white text-text-primary focus:outline-none focus:ring-2 ${
-          error ? 'focus:ring-error/20' : 'focus:ring-primary/20'
-        } focus:border-primary transition-colors ${className}`}
+        aria-invalid={!!error}
+        aria-describedby={
+          error
+            ? `${selectId}-error`
+            : helperText
+              ? `${selectId}-helper`
+              : undefined
+        }
+        className={`w-full h-11 px-3.5 text-body-md rounded-[10px] border bg-white text-text-primary
+          focus:outline-none focus:ring-2 focus:ring-primary/15 focus:border-primary transition-colors
+          ${error ? 'border-error focus:ring-error/15 focus:border-error' : 'border-border'}
+          ${className}`}
         {...props}
       >
-        {options.map(opt => (
+        {options.map((opt) => (
           <option key={opt.value} value={opt.value}>
             {opt.label}
           </option>
         ))}
       </select>
-      {error && <span className="text-xs text-error">{error}</span>}
+      {error && (
+        <span
+          id={`${selectId}-error`}
+          className="text-body-sm text-error"
+          role="alert"
+        >
+          {error}
+        </span>
+      )}
+      {helperText && !error && (
+        <span id={`${selectId}-helper`} className="text-body-sm text-text-muted">
+          {helperText}
+        </span>
+      )}
     </div>
   );
 };

@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Cobro y Modal de Pago · Casa Lis TPV</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,300..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "tertiary-fixed-dim": "#8fd3cc",
+            "on-tertiary-container": "#b3f7f0",
+            "inverse-surface": "#213145",
+            "tertiary-fixed": "#abefe8",
+            "primary-container": "#0f766e",
+            "surface-bright": "#f8f9ff",
+            "on-background": "#0b1c30",
+            "surface-container-high": "#dce9ff",
+            "on-primary-fixed": "#00201d",
+            "on-secondary-fixed": "#0d1b36",
+            "surface-variant": "#d3e4fe",
+            "outline-variant": "#bdc9c6",
+            "outline": "#6e7977",
+            "primary-fixed-dim": "#80d5cb",
+            "primary-fixed": "#9cf2e8",
+            "surface-container-highest": "#d3e4fe",
+            "on-tertiary": "#ffffff",
+            "error-container": "#ffdad6",
+            "on-error-container": "#93000a",
+            "on-secondary": "#ffffff",
+            "on-surface-variant": "#3e4947",
+            "on-primary-container": "#a3faef",
+            "on-secondary-container": "#525f7e",
+            "on-primary-fixed-variant": "#00504a",
+            "on-surface": "#0b1c30",
+            "surface-tint": "#006a63",
+            "on-primary": "#ffffff",
+            "surface-container-low": "#eff4ff",
+            "surface": "#f8f9ff",
+            "on-secondary-fixed-variant": "#3a4664",
+            "on-error": "#ffffff",
+            "secondary-fixed": "#d9e2ff",
+            "secondary-container": "#cdd9fe",
+            "error": "#ba1a1a",
+            "secondary-fixed-dim": "#b9c6ea",
+            "inverse-on-surface": "#eaf1ff",
+            "tertiary-container": "#2f746f",
+            "primary": "#005c55",
+            "tertiary": "#0c5b56",
+            "background": "#f8f9ff",
+            "inverse-primary": "#80d5cb",
+            "secondary": "#525e7d",
+            "on-tertiary-fixed": "#00201e",
+            "on-tertiary-fixed-variant": "#00504b",
+            "surface-dim": "#cbdbf5",
+            "surface-container-lowest": "#ffffff",
+            "surface-container": "#e5eeff"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "gutter": "1rem",
+            "space-lg": "1.5rem",
+            "space-xxs": "0.25rem",
+            "space-sm": "0.75rem",
+            "space-2xl": "3rem",
+            "gutter-compact": "0.5rem",
+            "space-xl": "2rem",
+            "space-xs": "0.5rem",
+            "space-md": "1rem",
+            "margin": "1.5rem",
+            "margin-mobile": "1rem"
+          },
+          "fontFamily": {
+            "headline-lg": ["Roboto Flex"],
+            "headline-sm": ["Roboto Flex"],
+            "label-sm": ["Roboto Flex"],
+            "body-sm": ["Roboto Flex"],
+            "headline-md": ["Roboto Flex"],
+            "body-md": ["Roboto Flex"],
+            "numeric-pos": ["Roboto Flex"],
+            "label-md": ["Roboto Flex"],
+            "body-lg": ["Roboto Flex"],
+            "label-lg": ["Roboto Flex"],
+            "display-lg": ["Roboto Flex"]
+          },
+          "fontSize": {
+            "headline-lg": ["28px", { "lineHeight": "36px", "fontWeight": "600" }],
+            "headline-sm": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+            "label-sm": ["11px", { "lineHeight": "14px", "fontWeight": "600" }],
+            "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }],
+            "headline-md": ["22px", { "lineHeight": "28px", "fontWeight": "600" }],
+            "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+            "numeric-pos": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+            "label-md": ["13px", { "lineHeight": "18px", "fontWeight": "500" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "label-lg": ["14px", { "lineHeight": "20px", "fontWeight": "600" }],
+            "display-lg": ["36px", { "lineHeight": "44px", "fontWeight": "700" }]
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-background text-on-surface font-body-md antialiased min-h-screen flex flex-col selection:bg-primary selection:text-on-primary">
+<!-- Focus Header for Linear Checkout Flow -->
+<header class="bg-surface-container-lowest sticky top-0 z-40 shadow-sm border-b border-outline-variant/30">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<a class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-primary font-label-lg hover:bg-surface-container transition-colors duration-150 min-h-[44px] focus:outline-none focus:ring-2 focus:ring-primary/20" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="arrow_back">arrow_back</span>
+<span>Volver al TPV</span>
+</a>
+<div class="h-6 w-px bg-outline-variant/50 mx-1 hidden sm:block"></div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-headline-sm text-on-surface tracking-tight">Cobrar venta</span>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded bg-surface-container-high text-secondary font-semibold">Ticket #T-2026-0843</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Caja 01 · Turno Tarde · Casa Lis Textil</span>
+</div>
+</div>
+<!-- Live POS Connectivity Indicator -->
+<div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-container text-on-surface-variant text-label-sm font-label-sm">
+<span class="material-symbols-outlined text-primary text-[18px]" data-icon="cloud_done">cloud_done</span>
+<span class="hidden md:inline font-medium">Pinpad &amp; TPV Online</span>
+</div>
+</div>
+</header>
+<!-- Checkout Main Container -->
+<main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+<!-- LEFT COLUMN: Ticket Financial Breakdown & Linked Customer (5 Cols) -->
+<div class="lg:col-span-5 flex flex-col gap-6">
+<!-- Linked Customer Card -->
+<section class="bg-surface-container-lowest rounded-xl p-5 border border-outline-variant/40 shadow-sm flex flex-col gap-3">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-secondary">Cliente Vinculado</span>
+<button class="font-label-sm text-label-sm text-primary hover:text-primary-container font-semibold inline-flex items-center gap-1 min-h-[44px] px-2 rounded hover:bg-surface-container transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]" data-icon="sync_alt">sync_alt</span>
+              Cambiar cliente
+            </button>
+</div>
+<div class="flex items-start gap-3.5 pt-1">
+<div class="w-11 h-11 rounded-full bg-primary-container/15 flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[24px]" data-icon="person">person</span>
+</div>
+<div class="flex-1 min-w-0">
+<h3 class="font-headline-sm text-headline-sm text-on-surface truncate">Carmen Gómez Díaz</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5 flex items-center gap-2">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-surface-container-highest text-secondary">
+                  Cliente Plata
+                </span>
+<span>·</span>
+<span class="font-medium text-primary flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="stars">stars</span>
+                  420 puntos disponibles
+                </span>
+</p>
+</div>
+</div>
+</section>
+<!-- Ticket Balance Details Card -->
+<section class="bg-surface-container-lowest rounded-xl p-6 border border-outline-variant/40 shadow-sm flex flex-col justify-between flex-1">
+<div>
+<div class="flex items-center justify-between pb-4 border-b border-outline-variant/25">
+<span class="font-headline-sm text-headline-sm text-on-surface">Resumen de Venta</span>
+<span class="font-label-md text-label-md text-secondary">3 artículos en ticket</span>
+</div>
+<!-- Itemized mini preview -->
+<div class="py-4 space-y-3 font-body-md text-body-md">
+<div class="flex justify-between text-on-surface-variant">
+<span>Subtotal base (3 artículos)</span>
+<span class="tabular-nums text-on-surface font-medium">89,55 €</span>
+</div>
+<div class="flex justify-between text-on-surface-variant">
+<span class="flex items-center gap-1.5">
+                  IVA (21% incluido)
+                  <span class="material-symbols-outlined text-outline text-[16px]" data-icon="info" title="Régimen general textil">info</span>
+</span>
+<span class="tabular-nums text-on-surface font-medium">18,80 €</span>
+</div>
+<div class="flex justify-between text-primary font-medium">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[18px]" data-icon="loyalty">loyalty</span>
+                  Descuento fidelización (Nivel Plata -5%)
+                </span>
+<span class="tabular-nums text-primary font-semibold">-5,42 €</span>
+</div>
+</div>
+</div>
+<!-- Highlighted Hero Total -->
+<div class="mt-4 pt-4 border-t border-outline-variant/30 bg-surface-container-low rounded-xl p-5 flex flex-col justify-center">
+<span class="font-label-md text-label-md text-secondary font-semibold uppercase tracking-wider">Total neto a pagar</span>
+<div class="flex items-baseline justify-between mt-1">
+<span class="font-display-lg text-display-lg text-primary font-bold tracking-tight">102,93 <span class="text-headline-md font-headline-md font-normal">€</span></span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Impuestos y descuentos aplicados</span>
+</div>
+</div>
+</section>
+<!-- Receipt & Invoicing Output Preference -->
+<section class="bg-surface-container-lowest rounded-xl p-5 border border-outline-variant/40 shadow-sm">
+<h4 class="font-label-lg text-label-lg text-on-surface mb-3 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]" data-icon="receipt_long">receipt_long</span>
+            Entrega de comprobante
+          </h4>
+<div class="grid grid-cols-1 gap-2.5">
+<label class="flex items-center gap-3 p-3 rounded-lg border border-outline-variant/30 hover:bg-surface-container cursor-pointer transition-colors min-h-[44px]">
+<input checked="" class="w-5 h-5 text-primary focus:ring-primary focus:ring-offset-1 border-outline text-primary-container" name="ticket_mode" type="radio" value="paper"/>
+<span class="font-body-md text-body-md text-on-surface font-medium flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-secondary" data-icon="print">print</span>
+                Imprimir ticket en papel (80 mm)
+              </span>
+</label>
+<label class="flex items-center gap-3 p-3 rounded-lg border border-outline-variant/30 hover:bg-surface-container cursor-pointer transition-colors min-h-[44px]">
+<input class="w-5 h-5 text-primary focus:ring-primary focus:ring-offset-1 border-outline text-primary-container" name="ticket_mode" type="radio" value="digital"/>
+<span class="font-body-md text-body-md text-on-surface font-medium flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-secondary" data-icon="send_to_mobile">send_to_mobile</span>
+                Enviar por WhatsApp / Email
+              </span>
+</label>
+<label class="flex items-center gap-3 p-3 rounded-lg border border-outline-variant/30 hover:bg-surface-container cursor-pointer transition-colors min-h-[44px]">
+<input class="w-5 h-5 text-primary focus:ring-primary focus:ring-offset-1 border-outline text-primary-container" name="ticket_mode" type="radio" value="none"/>
+<span class="font-body-md text-body-md text-on-surface-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]" data-icon="block">block</span>
+                No imprimir ticket
+              </span>
+</label>
+</div>
+</section>
+</div>
+<!-- RIGHT COLUMN: Payment Methods & Cash Register Keypad (7 Cols) -->
+<div class="lg:col-span-7 flex flex-col gap-6">
+<!-- Payment Mode Selectors (Grid with 56px+ tactile buttons) -->
+<div class="bg-surface-container-lowest rounded-xl p-5 border border-outline-variant/40 shadow-sm">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-secondary mb-3 block">Seleccionar Método de Pago</span>
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-3" id="paymentMethodsGrid">
+<!-- Efectivo (Active) -->
+<button class="flex flex-col items-center justify-center p-3 rounded-xl border-2 border-primary bg-primary/5 text-primary min-h-[64px] font-label-lg text-label-lg transition-all active:scale-[0.98] shadow-sm" id="btn-cash" onclick="setPaymentMethod('cash')" type="button">
+<span class="material-symbols-outlined text-[26px] mb-1" data-icon="payments">payments</span>
+<span>Efectivo</span>
+</button>
+<!-- Tarjeta Pinpad -->
+<button class="flex flex-col items-center justify-center p-3 rounded-xl border border-outline-variant/60 bg-surface-container-lowest hover:bg-surface-container text-on-surface min-h-[64px] font-label-lg text-label-lg transition-all active:scale-[0.98]" id="btn-card" onclick="setPaymentMethod('card')" type="button">
+<span class="material-symbols-outlined text-[26px] mb-1 text-secondary" data-icon="credit_card">credit_card</span>
+<span>Tarjeta</span>
+</button>
+<!-- Bizum -->
+<button class="flex flex-col items-center justify-center p-3 rounded-xl border border-outline-variant/60 bg-surface-container-lowest hover:bg-surface-container text-on-surface min-h-[64px] font-label-lg text-label-lg transition-all active:scale-[0.98]" id="btn-bizum" onclick="setPaymentMethod('bizum')" type="button">
+<span class="material-symbols-outlined text-[26px] mb-1 text-secondary" data-icon="qr_code_2">qr_code_2</span>
+<span>Bizum</span>
+</button>
+<!-- Pago mixto -->
+<button class="flex flex-col items-center justify-center p-3 rounded-xl border border-outline-variant/60 bg-surface-container-lowest hover:bg-surface-container text-on-surface min-h-[64px] font-label-lg text-label-lg transition-all active:scale-[0.98]" id="btn-split" onclick="setPaymentMethod('split')" type="button">
+<span class="material-symbols-outlined text-[26px] mb-1 text-secondary" data-icon="call_split">call_split</span>
+<span>Pago Mixto</span>
+</button>
+</div>
+</div>
+<!-- Dynamic Payment Workspace -->
+<div class="bg-surface-container-lowest rounded-xl p-6 border border-outline-variant/40 shadow-sm flex-1 flex flex-col justify-between" id="cashPaymentSection">
+<div>
+<div class="flex items-center justify-between pb-3 border-b border-outline-variant/25 mb-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[24px]" data-icon="point_of_sale">point_of_sale</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">Gestión de Efectivo y Cambio</span>
+</div>
+<span class="font-label-sm text-label-sm text-secondary bg-surface-container px-2.5 py-1 rounded-md">Cajón portamonedas listo</span>
+</div>
+<!-- Fast Bill Quick Buttons -->
+<div class="mb-5">
+<label class="font-label-sm text-label-sm text-on-surface-variant block mb-2">Importe Entregado Rápido</label>
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+<button class="quick-cash-btn h-12 rounded-lg border border-outline-variant/60 hover:border-primary bg-surface hover:bg-surface-container font-label-lg text-label-lg text-on-surface flex items-center justify-center transition-colors active:scale-95" onclick="setReceived(102.93)" type="button">
+                  Exacto (102,93 €)
+                </button>
+<button class="quick-cash-btn h-12 rounded-lg border-2 border-primary bg-primary/10 font-label-lg text-label-lg text-primary flex items-center justify-center font-bold transition-colors active:scale-95" onclick="setReceived(110.00)" type="button">
+                  110,00 €
+                </button>
+<button class="quick-cash-btn h-12 rounded-lg border border-outline-variant/60 hover:border-primary bg-surface hover:bg-surface-container font-label-lg text-label-lg text-on-surface flex items-center justify-center transition-colors active:scale-95" onclick="setReceived(120.00)" type="button">
+                  120,00 €
+                </button>
+<button class="quick-cash-btn h-12 rounded-lg border border-outline-variant/60 hover:border-primary bg-surface hover:bg-surface-container font-label-lg text-label-lg text-on-surface flex items-center justify-center transition-colors active:scale-95" onclick="setReceived(150.00)" type="button">
+                  150,00 €
+                </button>
+</div>
+</div>
+<!-- Interactive Currency Display and Change Computation -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+<!-- Entregado Input Container -->
+<div class="p-4 rounded-xl bg-surface-container-low border border-outline-variant/40 flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-secondary font-medium">Importe Entregado</span>
+<span class="material-symbols-outlined text-secondary text-[20px]" data-icon="account_balance_wallet">account_balance_wallet</span>
+</div>
+<div class="flex items-baseline gap-1 mt-2">
+<span class="font-numeric-pos text-[32px] font-bold text-on-surface leading-tight tabular-nums" id="display-received">110,00</span>
+<span class="text-headline-sm font-headline-sm text-on-surface-variant font-normal">€</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-1">Efectivo recibido en ventanilla</span>
+</div>
+<!-- Cambio a Devolver Box (High Tactical Prominence) -->
+<div class="p-4 rounded-xl bg-surface-bright border-2 border-primary/30 flex flex-col justify-between shadow-sm relative overflow-hidden">
+<div class="absolute -right-3 -top-3 w-16 h-16 bg-primary-container/10 rounded-full flex items-center justify-center pointer-events-none">
+<span class="material-symbols-outlined text-primary text-[32px] opacity-40" data-icon="change_circle">change_circle</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-primary font-bold uppercase tracking-wider">Cambio a Devolver</span>
+<span class="font-label-sm text-label-sm bg-primary/10 text-primary px-2 py-0.5 rounded-full font-semibold">Automático</span>
+</div>
+<div class="flex items-baseline gap-1 mt-2">
+<span class="font-numeric-pos text-[32px] font-bold text-primary leading-tight tabular-nums" id="display-change">7,07</span>
+<span class="text-headline-sm font-headline-sm text-primary font-medium">€</span>
+</div>
+<span class="font-body-sm text-body-sm text-secondary font-medium mt-1">Sugerencia: 1 billete 5€ + 1 moneda 2€ + 7 céntimos</span>
+</div>
+</div>
+<!-- Visual Tactile Cash Breakdown Guidance -->
+<div class="bg-surface-container rounded-lg p-3.5 flex items-center justify-between text-body-sm font-body-sm text-on-surface mb-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]" data-icon="savings">savings</span>
+<span>Fórmula de arqueo: <strong class="font-medium">110,00 € (Entregado) - 102,93 € (Total)</strong></span>
+</div>
+<span class="text-primary font-bold font-label-md text-label-md tabular-nums">= +7,07 €</span>
+</div>
+</div>
+<!-- Alternate Dynamic Content for Card/Bizum/Split (Hidden by default) -->
+<div class="hidden py-8 text-center" id="cardPaymentSection">
+<div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 text-primary">
+<span class="material-symbols-outlined text-[36px]" data-icon="contactless">contactless</span>
+</div>
+<h4 class="font-headline-sm text-headline-sm text-on-surface">Esperando lectura en Pinpad</h4>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">Acerque o inserte la tarjeta del cliente en el datáfono TPV Ingenico.</p>
+<div class="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-surface-container rounded-full text-primary font-label-md font-medium animate-pulse">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+              Enviando 102,93 € a terminal...
+            </div>
+</div>
+<div class="hidden py-6" id="bizumPaymentSection">
+<div class="max-w-xs mx-auto text-center">
+<div class="p-4 bg-surface-container-lowest border border-outline-variant/60 rounded-xl inline-block shadow-sm mb-3">
+<div class="w-40 h-40 bg-surface-container-high rounded flex items-center justify-center border border-dashed border-outline">
+<span class="material-symbols-outlined text-[64px] text-secondary" data-icon="qr_code_2">qr_code_2</span>
+</div>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Escanee el código QR o solicite el pago al móvil:</p>
+<div class="mt-2 text-headline-sm font-headline-sm font-bold text-on-surface">+34 691 82 73 64</div>
+</div>
+</div>
+<!-- Big Confirm Action Button (Anchor min 48px tactile requirement) -->
+<div class="pt-4 border-t border-outline-variant/30 mt-auto">
+<button class="w-full min-h-[56px] py-4 px-6 bg-primary hover:bg-primary-container active:scale-[0.99] text-on-primary rounded-xl font-label-lg text-[16px] font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-3 focus:outline-none focus:ring-4 focus:ring-primary/20" onclick="confirmPayment()" type="button">
+<span class="material-symbols-outlined text-[24px]" data-icon="task_alt">task_alt</span>
+<span>Confirmar cobro y finalizar (102,93 €)</span>
+</button>
+<div class="flex items-center justify-center gap-4 mt-3 text-on-surface-variant text-label-sm font-label-sm">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]" data-icon="lock">lock</span>
+                Transacción cifrada y fiscalizada
+              </span>
+<span>·</span>
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]" data-icon="schedule">schedule</span>
+                Registro inmediato en libro de caja
+              </span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Success Toast Modal Mock (Simulated when payment triggers) -->
+<div class="fixed inset-0 z-50 bg-inverse-surface/40 backdrop-blur-sm hidden items-center justify-center p-4" id="toastSuccess">
+<div class="bg-surface-container-lowest max-w-md w-full rounded-2xl p-6 shadow-2xl border border-outline-variant/40 flex flex-col items-center text-center animate-in fade-in zoom-in duration-200">
+<div class="w-16 h-16 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-4">
+<span class="material-symbols-outlined text-[36px]" data-icon="check_circle">check_circle</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface">¡Cobro Completado con Éxito!</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mt-2">Ticket #T-2026-0843 registrado. El cajón portamonedas se ha abierto automáticamente.</p>
+<div class="w-full bg-surface-container-low rounded-xl p-4 my-5 text-left border border-outline-variant/30 space-y-2 font-body-sm">
+<div class="flex justify-between">
+<span class="text-on-surface-variant">Importe Cobrado:</span>
+<span class="font-bold text-on-surface">102,93 €</span>
+</div>
+<div class="flex justify-between">
+<span class="text-on-surface-variant">Entregado:</span>
+<span class="text-on-surface font-medium" id="modal-received">110,00 €</span>
+</div>
+<div class="flex justify-between text-primary font-bold text-body-md">
+<span>Cambio Devolución:</span>
+<span id="modal-change">7,07 €</span>
+</div>
+</div>
+<div class="flex gap-3 w-full">
+<button class="flex-1 min-h-[48px] px-4 py-2.5 rounded-xl border border-outline-variant text-on-surface font-label-md font-semibold hover:bg-surface-container transition-colors" onclick="closeModal()" type="button">
+          Imprimir copia
+        </button>
+<button class="flex-1 min-h-[48px] px-4 py-2.5 rounded-xl bg-primary text-on-primary font-label-md font-semibold hover:bg-primary-container transition-colors" onclick="closeModal()" type="button">
+          Nueva Venta
+        </button>
+</div>
+</div>
+</div>
+<script>
+    const TOTAL_PAYABLE = 102.93;
+    let currentReceived = 110.00;
+    let activeMethod = 'cash';
+
+    function calculateChange(received) {
+      const change = Math.max(0, received - TOTAL_PAYABLE);
+      return change.toFixed(2).replace('.', ',');
+    }
+
+    function setReceived(amount) {
+      currentReceived = amount;
+      const formattedAmount = amount.toFixed(2).replace('.', ',');
+      document.getElementById('display-received').textContent = formattedAmount;
+      document.getElementById('display-change').textContent = calculateChange(amount);
+
+      // Highlight active button state
+      const buttons = document.querySelectorAll('.quick-cash-btn');
+      buttons.forEach(btn => {
+        btn.classList.remove('border-2', 'border-primary', 'bg-primary/10', 'text-primary', 'font-bold');
+        btn.classList.add('border', 'border-outline-variant/60', 'bg-surface', 'text-on-surface');
+      });
+
+      const clickedBtn = event.currentTarget;
+      if (clickedBtn) {
+        clickedBtn.classList.remove('border-outline-variant/60', 'bg-surface', 'text-on-surface');
+        clickedBtn.classList.add('border-2', 'border-primary', 'bg-primary/10', 'text-primary', 'font-bold');
+      }
+    }
+
+    function setPaymentMethod(method) {
+      activeMethod = method;
+      const methods = ['cash', 'card', 'bizum', 'split'];
+
+      methods.forEach(m => {
+        const btn = document.getElementById(`btn-${m}`);
+        if (m === method) {
+          btn.className = "flex flex-col items-center justify-center p-3 rounded-xl border-2 border-primary bg-primary/5 text-primary min-h-[64px] font-label-lg text-label-lg transition-all active:scale-[0.98] shadow-sm";
+          const icon = btn.querySelector('.material-symbols-outlined');
+          if (icon) icon.className = "material-symbols-outlined text-[26px] mb-1 text-primary";
+        } else {
+          btn.className = "flex flex-col items-center justify-center p-3 rounded-xl border border-outline-variant/60 bg-surface-container-lowest hover:bg-surface-container text-on-surface min-h-[64px] font-label-lg text-label-lg transition-all active:scale-[0.98]";
+          const icon = btn.querySelector('.material-symbols-outlined');
+          if (icon) icon.className = "material-symbols-outlined text-[26px] mb-1 text-secondary";
+        }
+      });
+
+      // Manage internal view visibility
+      const cashSection = document.getElementById('cashPaymentSection');
+      const cardSection = document.getElementById('cardPaymentSection');
+      const bizumSection = document.getElementById('bizumPaymentSection');
+
+      if (method === 'cash') {
+        cardSection.classList.add('hidden');
+        bizumSection.classList.add('hidden');
+      } else if (method === 'card') {
+        cardSection.classList.remove('hidden');
+        bizumSection.classList.add('hidden');
+      } else if (method === 'bizum') {
+        cardSection.classList.add('hidden');
+        bizumSection.classList.remove('hidden');
+      } else if (method === 'split') {
+        cardSection.classList.add('hidden');
+        bizumSection.classList.add('hidden');
+      }
+    }
+
+    function confirmPayment() {
+      const toast = document.getElementById('toastSuccess');
+      document.getElementById('modal-received').textContent = currentReceived.toFixed(2).replace('.', ',') + ' €';
+      document.getElementById('modal-change').textContent = calculateChange(currentReceived) + ' €';
+      toast.classList.remove('hidden');
+      toast.classList.add('flex');
+    }
+
+    function closeModal() {
+      const toast = document.getElementById('toastSuccess');
+      toast.classList.add('hidden');
+      toast.classList.remove('flex');
+    }
+  </script>
+</body></html>

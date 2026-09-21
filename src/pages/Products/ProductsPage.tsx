@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/store';
 import { setSearchQuery, setSelectedCategory, setStatusFilter, setStockFilter, setPublishedFilter, setBrandFilter, selectProduct, createProductAsync, processDeliveryNoteAsync } from '../../features/products/productsSlice';
-import { selectCategories, selectBrands, selectPosSettings } from '../../features/settings/settingsSlice';
+import { selectCategories, selectPosSettings } from '../../features/settings/settingsSlice';
 import ProductsTable from '../../features/products/ProductsTable';
 import ProductDetailPanel from '../../features/products/ProductDetailPanel';
 import ProductCreateModal from '../../features/products/ProductCreateModal';
@@ -21,7 +21,6 @@ const ProductsPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const { searchQuery, selectedCategory, selectedProduct, statusFilter, stockFilter, publishedFilter, brandFilter } = useAppSelector(state => state.products);
   const categories = useAppSelector(selectCategories);
-  const brands = useAppSelector(selectBrands);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [duplicatingProduct, setDuplicatingProduct] = useState<ProductFormState | null>(null);
@@ -225,33 +224,38 @@ return (
     <div className="flex flex-col">
       {selectedProduct ? (
         <div className="flex-1 p-6 flex flex-col gap-6">
-          <div className="flex items-center gap-2 text-sm">
+          <div className="flex items-center gap-2 text-body-md">
             <button
               onClick={handleCloseProduct}
-              className="text-text-muted hover:text-text-primary transition-colors"
+              className="text-text-muted hover:text-text-primary transition-colors p-1 rounded-[10px] hover:bg-surface-container-low"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
+            <span className="text-text-muted">Productos</span>
             <span className="text-text-muted">/</span>
-            <span className="font-medium text-text-primary">Products</span>
-            <span className="text-text-muted">/</span>
-            <span className="text-primary">{selectedProduct.name}</span>
+            <span className="font-medium text-primary">{selectedProduct.name}</span>
           </div>
           <ProductDetailPanel onDuplicate={handleDuplicate} />
         </div>
       ) : (
         <>
           <StockAlertBanner />
-          <div className="px-6 pt-6 pb-4 border-b border-border bg-white">
-            <div className="flex items-center justify-between mb-4">
+          <div className="w-full max-w-[1440px] mx-auto px-4 md:px-6 py-6 flex flex-col gap-6">
+            {/* Header */}
+            <section className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               <div>
-                <h1 className="text-xl font-bold text-text-primary">{t.products.title}</h1>
-                <p className="text-sm text-text-muted mt-0.5">{t.products.title}</p>
+                <div className="flex items-baseline gap-3">
+                  <h1 className="text-headline-lg text-text-primary tracking-tight">{t.products.title}</h1>
+                  <span className="text-label-md text-text-muted bg-surface-container px-2.5 py-1 rounded-full border border-border">
+                    {allItems.length} productos registrados
+                  </span>
+                </div>
+                <p className="text-body-sm text-text-muted mt-1">Catálogo maestro, control de tarifas e inventario.</p>
               </div>
               {hasPermission('product:create') && (
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2.5">
                   <input
                     type="file"
                     accept=".csv"
@@ -263,11 +267,11 @@ return (
                       (e.target as HTMLInputElement).value = '';
                     }}
                   />
-                  <label htmlFor="csv-import" className="cursor-pointer inline-flex items-center justify-center font-semibold rounded-lg transition-all duration-150 focus:outline-none px-3 py-1.5 text-sm bg-transparent border border-border text-text-primary hover:bg-gray-50 active:scale-[0.98]">
-                    <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                  <label htmlFor="csv-import" className="cursor-pointer inline-flex items-center gap-1.5 px-3.5 py-2.5 min-h-[44px] bg-white border border-border hover:bg-surface-container-low text-text-primary text-label-md font-semibold rounded-[10px] active:scale-95 transition-all shadow-card">
+                    <svg className="w-4 h-4 text-info" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                     </svg>
-                    Import CSV
+                    Importar CSV
                   </label>
                   {posSettings.enableAiDeliveryNote && (
                     <>
@@ -284,144 +288,140 @@ return (
                       />
                       <label
                         htmlFor="delivery-note-upload"
-                        className={`cursor-pointer inline-flex items-center justify-center font-semibold rounded-lg transition-all duration-150 focus:outline-none px-3 py-1.5 text-sm bg-transparent border border-border text-text-primary hover:bg-gray-50 active:scale-[0.98] ${isProcessingDelivery ? 'opacity-50 pointer-events-none' : ''}`}
+                        className={`cursor-pointer inline-flex items-center gap-1.5 px-3.5 py-2.5 min-h-[44px] bg-white border border-border hover:bg-surface-container-low text-text-primary text-label-md font-semibold rounded-[10px] active:scale-95 transition-all shadow-card ${isProcessingDelivery ? 'opacity-50 pointer-events-none' : ''}`}
                       >
-                        <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        <svg className="w-4 h-4 text-info" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                         </svg>
-                        {isProcessingDelivery ? 'Processing...' : 'Scan Albarán'}
+                        {isProcessingDelivery ? 'Procesando...' : 'Escanear albarán'}
                       </label>
                     </>
                   )}
-                  <Button variant="secondary" size="sm" onClick={handleExportCsv}>
+                  <Button variant="secondary" size="md" onClick={handleExportCsv}>
                     <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                     </svg>
-                    Export CSV
+                    Exportar
                   </Button>
-                  <Button variant="primary" size="sm" onClick={() => setIsCreateModalOpen(true)}>
-                    <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  <Button variant="primary" size="lg" onClick={() => setIsCreateModalOpen(true)}>
+                    <svg className="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
                     </svg>
                     {t.products.addProduct}
                   </Button>
                 </div>
               )}
-            </div>
+            </section>
 
-            <div className="flex items-center gap-3">
-              <div className="relative flex-1 max-w-xs">
-                <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                <input
-                  type="text"
-                  placeholder={t.products.searchPlaceholder}
-                  value={searchQuery}
-                  onChange={e => dispatch(setSearchQuery(e.target.value))}
-                  className="w-full pl-9 pr-4 py-2 text-sm bg-background border border-border rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
-                />
-              </div>
-
-              <select
-                value={selectedCategory}
-                onChange={e => dispatch(setSelectedCategory(e.target.value))}
-                className="px-3 py-2 text-sm bg-background border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
-              >
-                <option value="All">{t.products.allCategories}</option>
-                {categories.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
-
-              <select
-                value={brandFilter}
-                onChange={e => dispatch(setBrandFilter(e.target.value))}
-                className="px-3 py-2 text-sm bg-background border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
-              >
-                <option value="all">{t.common.all} Brands</option>
-                {brands.map(brand => (
-                  <option key={brand} value={brand}>{brand}</option>
-                ))}
-              </select>
-
-              <div ref={filterRef} className="relative">
-                <Button variant="secondary" size="sm" onClick={() => setIsFiltersOpen(!isFiltersOpen)}>
-                  <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
-                  </svg>
-                  {t.common.filter}
-                  {activeFiltersCount > 0 && (
-                    <span className="ml-1.5 w-5 h-5 rounded-full bg-primary text-white text-xs flex items-center justify-center">
-                      {activeFiltersCount}
-                    </span>
-                  )}
-                </Button>
-
-                {isFiltersOpen && (
-                  <div className="absolute top-full left-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-border z-20 p-4 flex flex-col gap-4">
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">{t.products.status}</label>
-                      <select
-                        value={statusFilter}
-                        onChange={e => dispatch(setStatusFilter(e.target.value))}
-                        className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors bg-white"
-                      >
-                        <option value="all">{t.common.all}</option>
-                        <option value="active">{t.common.active}</option>
-                        <option value="inactive">{t.common.inactive}</option>
-                        <option value="draft">{t.common.draft}</option>
-                      </select>
-                    </div>
-
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">{t.products.stock}</label>
-                      <select
-                        value={stockFilter}
-                        onChange={e => dispatch(setStockFilter(e.target.value))}
-                        className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors bg-white"
-                      >
-                        <option value="all">{t.common.all}</option>
-                        <option value="in">{t.products.inStock}</option>
-                        <option value="low">{t.products.lowStock}</option>
-                        <option value="out">{t.products.outOfStock}</option>
-                      </select>
-                    </div>
-
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">{t.products.publishedOnline}</label>
-                      <select
-                        value={publishedFilter}
-                        onChange={e => dispatch(setPublishedFilter(e.target.value))}
-                        className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors bg-white"
-                      >
-                        <option value="all">{t.common.all}</option>
-                        <option value="published">Published</option>
-                        <option value="not-published">Not Published</option>
-                      </select>
-                    </div>
-
-                    {activeFiltersCount > 0 && (
-                      <button
-                        onClick={() => {
-                          dispatch(setStatusFilter('all'));
-                          dispatch(setStockFilter('all'));
-                          dispatch(setPublishedFilter('all'));
-                          dispatch(setBrandFilter('all'));
-                        }}
-                        className="text-xs text-primary hover:text-primary-dark font-medium transition-colors text-left"
-                      >
-                        {t.common.filter}
-                      </button>
-                    )}
+            {/* Search and Filter Bar */}
+            <section className="bg-white rounded-xl p-3.5 border border-border shadow-card space-y-3">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="relative flex-1">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-text-muted">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
                   </div>
-                )}
-              </div>
-            </div>
-          </div>
+                  <input
+                    type="search"
+                    placeholder={t.products.searchPlaceholder}
+                    value={searchQuery}
+                    onChange={e => dispatch(setSearchQuery(e.target.value))}
+                    className="w-full h-12 pl-11 pr-4 bg-background rounded-[10px] border border-border text-body-md text-text-primary placeholder-text-muted focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all"
+                  />
+                </div>
+                <select
+                  value={selectedCategory}
+                  onChange={e => dispatch(setSelectedCategory(e.target.value))}
+                  className="h-12 px-3.5 text-body-md bg-white border border-border rounded-[10px] text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/15 focus:border-primary transition-colors"
+                >
+                  <option value="All">{t.products.allCategories}</option>
+                  {categories.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+                <div ref={filterRef} className="relative">
+                  <button
+                    onClick={() => setIsFiltersOpen(!isFiltersOpen)}
+                    className="inline-flex items-center justify-center gap-2 px-4 h-12 bg-white border border-border hover:bg-surface-container-low text-text-primary text-label-md font-semibold rounded-[10px] active:scale-95 transition-all"
+                  >
+                    <svg className="w-4 h-4 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
+                    </svg>
+                    {t.common.filter}
+                    {activeFiltersCount > 0 && (
+                      <span className="w-5 h-5 rounded-full bg-primary text-white text-label-sm flex items-center justify-center">
+                        {activeFiltersCount}
+                      </span>
+                    )}
+                  </button>
 
-          <div className="flex-1 bg-white">
-            <ProductsTable />
+                  {isFiltersOpen && (
+                    <div className="absolute top-full right-0 mt-2 w-64 bg-white rounded-xl shadow-modal border border-border z-20 p-5 flex flex-col gap-4">
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-label-md text-text-muted">{t.products.status}</label>
+                        <select
+                          value={statusFilter}
+                          onChange={e => dispatch(setStatusFilter(e.target.value))}
+                          className="w-full h-11 px-3.5 text-body-md bg-white border border-border rounded-[10px] text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/15 focus:border-primary transition-colors"
+                        >
+                          <option value="all">{t.common.all}</option>
+                          <option value="active">{t.common.active}</option>
+                          <option value="inactive">{t.common.inactive}</option>
+                          <option value="draft">{t.common.draft}</option>
+                        </select>
+                      </div>
+
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-label-md text-text-muted">{t.products.stock}</label>
+                        <select
+                          value={stockFilter}
+                          onChange={e => dispatch(setStockFilter(e.target.value))}
+                          className="w-full h-11 px-3.5 text-body-md bg-white border border-border rounded-[10px] text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/15 focus:border-primary transition-colors"
+                        >
+                          <option value="all">{t.common.all}</option>
+                          <option value="in">{t.products.inStock}</option>
+                          <option value="low">{t.products.lowStock}</option>
+                          <option value="out">{t.products.outOfStock}</option>
+                        </select>
+                      </div>
+
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-label-md text-text-muted">{t.products.publishedOnline}</label>
+                        <select
+                          value={publishedFilter}
+                          onChange={e => dispatch(setPublishedFilter(e.target.value))}
+                          className="w-full h-11 px-3.5 text-body-md bg-white border border-border rounded-[10px] text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/15 focus:border-primary transition-colors"
+                        >
+                          <option value="all">{t.common.all}</option>
+                          <option value="published">Publicados</option>
+                          <option value="not-published">No publicados</option>
+                        </select>
+                      </div>
+
+                      {activeFiltersCount > 0 && (
+                        <button
+                          onClick={() => {
+                            dispatch(setStatusFilter('all'));
+                            dispatch(setStockFilter('all'));
+                            dispatch(setPublishedFilter('all'));
+                            dispatch(setBrandFilter('all'));
+                          }}
+                          className="text-body-sm text-primary hover:text-primary-dark font-medium transition-colors text-left"
+                        >
+                          {t.common.clearFilters}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </section>
+
+            {/* Products Table */}
+            <div className="flex-1">
+              <ProductsTable />
+            </div>
           </div>
         </>
       )}

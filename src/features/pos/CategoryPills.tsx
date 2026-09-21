@@ -23,9 +23,9 @@ const CategoryPills: React.FC = () => {
           <button
             key={cat}
             onClick={() => dispatch(setCategory(cat))}
-            className={`flex-shrink-0 px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-150 snap-start ${
+            className={`flex-shrink-0 px-4 py-2.5 rounded-full text-label-md transition-all duration-150 snap-start ${
               selected === cat
-                ? 'bg-dark-navy text-white shadow-sm'
+                ? 'bg-secondary text-white shadow-sm'
                 : 'bg-white border border-border text-text-muted hover:border-primary hover:text-text-primary'
             }`}
           >
@@ -38,7 +38,7 @@ const CategoryPills: React.FC = () => {
         <div className="flex gap-2 overflow-x-auto pb-1 px-1 -mx-1 scrollbar-hide snap-x snap-mandatory">
           <button
             onClick={() => dispatch(setSubcategory(null))}
-            className={`flex-shrink-0 px-3.5 py-2 rounded-full text-xs font-medium transition-all duration-150 snap-start ${
+            className={`flex-shrink-0 px-3.5 py-2 rounded-full text-body-sm font-medium transition-all duration-150 snap-start ${
               selectedSubcategory === null
                 ? 'bg-primary text-white shadow-sm'
                 : 'bg-white border border-border text-text-muted hover:border-primary hover:text-text-primary'
@@ -50,7 +50,7 @@ const CategoryPills: React.FC = () => {
             <button
               key={sub}
               onClick={() => dispatch(setSubcategory(sub))}
-              className={`flex-shrink-0 px-3.5 py-2 rounded-full text-xs font-medium transition-all duration-150 snap-start ${
+              className={`flex-shrink-0 px-3.5 py-2 rounded-full text-body-sm font-medium transition-all duration-150 snap-start ${
                 selectedSubcategory === sub
                   ? 'bg-primary text-white shadow-sm'
                   : 'bg-white border border-border text-text-muted hover:border-primary hover:text-text-primary'

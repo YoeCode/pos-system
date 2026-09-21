@@ -1,112 +1,171 @@
 import { useAppSelector } from '../../app/store';
 import { selectFilteredSales } from '../../features/dashboard/dashboardSlice';
-import KpiCard from './KpiCard';
+import MetricCard from '../../components/ui/MetricCard';
 import SalesChart from './SalesChart';
 import PaymentMethodChart from './PaymentMethodChart';
 import RecentSales from './RecentSales';
 import LowStockAlerts from './LowStockAlerts';
 import StockAlertBanner from '../../components/StockAlertBanner';
 import { useI18n } from '../../i18n/useI18n';
+import { selectStoreName } from '../../features/settings/settingsSlice';
+
+const formatEUR = (value: number) =>
+  new Intl.NumberFormat('es-ES', {
+    style: 'currency',
+    currency: 'EUR',
+  }).format(value);
 
 const DashboardPage = () => {
   const sales = useAppSelector(selectFilteredSales);
   const t = useI18n();
+  const storeName = useAppSelector(selectStoreName);
 
   const totalRevenue = sales.reduce((sum, s) => sum + s.order.total, 0);
   const totalTickets = sales.length;
   const avgTicket = totalTickets > 0 ? totalRevenue / totalTickets : 0;
 
-  const productSales: Record<string, { name: string; qty: number; revenue: number }> = {};
-  sales.forEach(sale => {
-    sale.order.items.forEach(item => {
-      if (!productSales[item.product.id]) {
-        productSales[item.product.id] = { name: item.product.name, qty: 0, revenue: 0 };
-      }
-      productSales[item.product.id].qty += item.quantity;
-      productSales[item.product.id].revenue += item.lineTotal;
-    });
+  const today = new Date().toLocaleDateString('es-ES', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
   });
 
-  const topProduct = Object.values(productSales).sort((a, b) => b.revenue - a.revenue)[0];
-
   return (
-    <div className="flex flex-col gap-4 lg:gap-6">
-      <div className="px-4 lg:px-6 pt-4 lg:pt-6">
-        <StockAlertBanner />
-      </div>
-      <div className="px-4 lg:px-6 pb-4 lg:pb-6 flex flex-col gap-4 lg:gap-6">
-        {/* Header */}
+    <div className="w-full max-w-[1440px] mx-auto px-4 md:px-6 py-6 flex flex-col space-y-6">
+      <StockAlertBanner />
+
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white p-4 md:p-6 rounded-xl border border-border shadow-card">
         <div>
-          <h1 className="text-xl lg:text-2xl font-bold text-text-primary">{t.dashboard.title}</h1>
-          <p className="text-text-muted mt-1 text-sm lg:text-base">{t.dashboard.title}</p>
+          <div className="flex items-center gap-2">
+            <h1 className="text-headline-lg text-text-primary">
+              {t.dashboard.title}
+            </h1>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-label-sm font-semibold bg-success-light text-success border border-success/20">
+              <span className="w-1.5 h-1.5 rounded-full bg-success" />
+              En línea
+            </span>
+          </div>
+          <p className="text-body-md text-text-muted mt-1 capitalize">
+            {today} · {storeName}
+          </p>
         </div>
+      </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
-        <KpiCard
-          title={t.dashboard.todaySales}
-          value={`$${totalRevenue.toFixed(2)}`}
-          trend="+12.5%"
-          trendUp={true}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <MetricCard
+          label={t.dashboard.todaySales}
+          value={formatEUR(totalRevenue)}
           icon={
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
             </svg>
           }
         />
-        <KpiCard
-          title={t.dashboard.totalOrders}
-          value={totalTickets.toString()}
-          trend="+3"
-          trendUp={true}
+        <MetricCard
+          label={t.dashboard.totalOrders}
+          value={`${totalTickets} tickets`}
           icon={
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+              />
             </svg>
           }
         />
-        <KpiCard
-          title={t.dashboard.averageTicket}
-          value={`$${avgTicket.toFixed(2)}`}
-          trend="-2.1%"
-          trendUp={false}
+        <MetricCard
+          label={t.dashboard.averageTicket}
+          value={formatEUR(avgTicket)}
           icon={
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+              />
             </svg>
           }
         />
-        <KpiCard
-          title={t.dashboard.topProducts}
-          value={topProduct?.name || '—'}
-          subtitle={topProduct ? `${topProduct.qty} sold · $${topProduct.revenue.toFixed(2)}` : ''}
+        <MetricCard
+          label="Margen bruto estimado"
+          value="—"
           icon={
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"
+              />
             </svg>
           }
         />
       </div>
 
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 lg:gap-4">
-        <div className="lg:col-span-2 bg-white rounded-xl border border-border p-4 lg:p-5">
-          <SalesChart sales={sales} />
-        </div>
-        <div className="bg-white rounded-xl border border-border p-4 lg:p-5">
-          <PaymentMethodChart sales={sales} />
-        </div>
-      </div>
+      {/* Main Content: 7/5 split */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left Column */}
+        <div className="lg:col-span-7 flex flex-col space-y-6">
+          {/* Recent Sales */}
+          <div className="bg-white p-5 rounded-xl border border-border shadow-card">
+            <RecentSales sales={sales.slice(0, 5)} />
+          </div>
 
-      {/* Bottom Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 lg:gap-4">
-        <div className="lg:col-span-2 bg-white rounded-xl border border-border p-4 lg:p-5">
-          <RecentSales sales={sales.slice(0, 5)} />
+          {/* Sales Chart */}
+          <div className="bg-white p-5 rounded-xl border border-border shadow-card">
+            <SalesChart sales={sales} />
+          </div>
         </div>
-        <div className="bg-white rounded-xl border border-border p-4 lg:p-5">
-          <LowStockAlerts />
+
+        {/* Right Column */}
+        <div className="lg:col-span-5 flex flex-col space-y-6">
+          {/* Payment Methods */}
+          <div className="bg-white p-5 rounded-xl border border-border shadow-card">
+            <PaymentMethodChart sales={sales} />
+          </div>
+
+          {/* Low Stock Alerts */}
+          <div className="bg-white p-5 rounded-xl border border-border shadow-card">
+            <LowStockAlerts />
+          </div>
         </div>
-      </div>
       </div>
     </div>
   );

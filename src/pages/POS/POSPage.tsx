@@ -181,7 +181,7 @@ const POSPage: React.FC = () => {
                 <div className="relative" ref={actionsMenuRef}>
                   <button
                     onClick={() => setIsActionsMenuOpen(o => !o)}
-                    className="w-11 h-11 flex items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-gray-100 transition-colors"
+                    className="w-11 h-11 flex items-center justify-center rounded-[10px] text-text-muted hover:text-text-primary hover:bg-surface-container-low transition-colors"
                     title={t.pos.actions || 'Acciones'}
                     aria-label={t.pos.actions || 'Acciones'}
                     aria-expanded={isActionsMenuOpen}
@@ -191,11 +191,11 @@ const POSPage: React.FC = () => {
                     </svg>
                   </button>
                   {isActionsMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-52 bg-white rounded-xl border border-border shadow-lg z-50 py-1.5">
+                    <div className="absolute right-0 mt-2 w-52 bg-white rounded-xl border border-border shadow-modal z-50 py-1.5">
                       {hasPermission('cashbox:add_employee') && (
                         <button
                           onClick={() => { setShowAddEmployeeModal(true); setIsActionsMenuOpen(false); }}
-                          className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-text-primary hover:bg-gray-50 transition-colors text-left"
+                          className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-body-md text-text-primary hover:bg-surface-container-low transition-colors text-left"
                         >
                           <svg className="w-4 h-4 text-info flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
@@ -206,7 +206,7 @@ const POSPage: React.FC = () => {
                       {hasPermission('pos:refund') && (
                         <button
                           onClick={() => { setShowRefundModal(true); setIsActionsMenuOpen(false); }}
-                          className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-text-primary hover:bg-gray-50 transition-colors text-left"
+                          className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-body-md text-text-primary hover:bg-surface-container-low transition-colors text-left"
                         >
                           <svg className="w-4 h-4 text-warning flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
@@ -231,7 +231,7 @@ const POSPage: React.FC = () => {
                       <div className="mx-3.5 my-1 h-px bg-border" />
                       <button
                         onClick={() => { setShowShortcutsModal(true); setIsActionsMenuOpen(false); }}
-                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-text-muted hover:bg-gray-50 transition-colors text-left"
+                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-body-md text-text-muted hover:bg-surface-container-low transition-colors text-left"
                       >
                         <svg className="w-4 h-4 text-text-muted flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -255,7 +255,7 @@ const POSPage: React.FC = () => {
               {enableManualProduct && hasPermission('pos:manual_product') && (
                 <button
                   onClick={() => setIsManualModalOpen(true)}
-                  className="flex px-3 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors items-center gap-2 whitespace-nowrap"
+                  className="flex px-3 py-2 text-body-md bg-primary text-white rounded-[10px] hover:bg-primary-dark transition-colors items-center gap-2 whitespace-nowrap"
                   title={t.settings.addManualProduct}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -273,18 +273,18 @@ const POSPage: React.FC = () => {
           <div className="flex-1 px-3 lg:px-6 pb-4 md:overflow-y-auto md:overscroll-y-contain">
             {filteredBySearch.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
-                <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center">
+                <div className="w-16 h-16 rounded-full bg-surface-container-low flex items-center justify-center">
                   <svg className="w-8 h-8 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                 </div>
-                <p className="text-text-muted text-sm font-medium">
+                <p className="text-text-muted text-body-md font-medium">
                   {searchQuery ? t.pos.noSearchResults || 'No se encontraron productos' : t.common.noResults}
                 </p>
                 {searchQuery && (
                   <button
                     onClick={() => dispatch(setSearchQuery(''))}
-                    className="text-sm text-primary hover:text-primary-dark font-medium"
+                    className="text-body-md text-primary hover:text-primary-dark font-medium"
                   >
                     {t.pos.clearSearch || 'Ver todos los productos'}
                   </button>
@@ -305,19 +305,19 @@ const POSPage: React.FC = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
             </div>
-            <h3 className="text-xl font-bold text-text-primary mb-2">{t.pos.cashBoxClosedTitle || 'Caja cerrada'}</h3>
-            <p className="text-sm text-text-muted max-w-sm mb-6 leading-relaxed">
+            <h3 className="text-headline-sm text-text-primary mb-2">{t.pos.cashBoxClosedTitle || 'Caja cerrada'}</h3>
+            <p className="text-body-md text-text-muted max-w-sm mb-6 leading-relaxed">
               {t.pos.cashBoxClosedDesc || 'Abre la caja registradora para registrar tu turno y empezar a procesar ventas.'}
             </p>
             {hasPermission('cashbox:open') ? (
               <button
                 onClick={() => setShowCashBoxModal(true)}
-                className="px-6 py-3 bg-primary text-white rounded-xl font-semibold text-sm hover:bg-primary-dark transition-colors shadow-sm"
+                className="px-6 py-3 bg-primary text-white rounded-[10px] font-semibold text-body-md hover:bg-primary-dark transition-colors shadow-card"
               >
                 {t.pos.openCashBox || 'Abrir caja'}
               </button>
             ) : (
-              <div className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 rounded-lg text-sm text-text-muted">
+              <div className="flex items-center gap-2 px-4 py-2.5 bg-surface-container-low rounded-[10px] text-body-md text-text-muted">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
@@ -339,10 +339,10 @@ const POSPage: React.FC = () => {
           {cart.length > 0 ? (
             <button
               onClick={() => setIsCartOpen(true)}
-              className="w-full bg-white border-t border-border text-text-primary py-3.5 px-4 flex items-center justify-between shadow-[0_-4px_20px_rgba(0,0,0,0.08)] hover:bg-gray-50 transition-colors"
+              className="w-full bg-white border-t border-border text-text-primary py-3.5 px-4 flex items-center justify-between shadow-card hover:bg-surface-container-low transition-colors"
             >
               <div className="flex items-center gap-3">
-                <span className="bg-primary text-white px-2.5 py-1 rounded-lg text-sm font-semibold">
+                <span className="bg-primary text-white px-2.5 py-1 rounded-[10px] text-body-md font-semibold">
                   {cart.length}
                 </span>
                 <span className="font-medium text-sm">{t.pos.viewCart || 'Ver carrito'}</span>
@@ -352,7 +352,7 @@ const POSPage: React.FC = () => {
           ) : (
             <button
               onClick={() => setIsCartOpen(true)}
-              className="w-full bg-white border-t border-border py-3 px-4 text-center text-sm text-text-muted hover:bg-gray-50 transition-colors"
+              className="w-full bg-white border-t border-border py-3 px-4 text-center text-body-md text-text-muted hover:bg-surface-container-low transition-colors"
             >
               {t.pos.emptyCart}
             </button>
@@ -420,9 +420,9 @@ const POSPage: React.FC = () => {
             { key: 'F4', action: t.pos.shortcutCheckout || 'Abrir checkout' },
             { key: 'Esc', action: t.pos.shortcutClose || 'Cerrar modal / carrito' },
           ].map(item => (
-            <div key={item.key} className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg">
-              <span className="text-sm text-text-primary">{item.action}</span>
-              <kbd className="px-2 py-1 bg-white border border-border rounded text-xs font-mono font-semibold text-text-muted shadow-sm">{item.key}</kbd>
+            <div key={item.key} className="flex items-center justify-between py-2 px-3 bg-surface-container-low rounded-[10px]">
+              <span className="text-body-md text-text-primary">{item.action}</span>
+              <kbd className="px-2 py-1 bg-white border border-border rounded-[10px] text-body-sm font-mono font-semibold text-text-muted shadow-card">{item.key}</kbd>
             </div>
           ))}
         </div>

@@ -65,7 +65,7 @@ const CashBoxOpenModal: React.FC<CashBoxOpenModalProps> = ({ isOpen, closedBoxCo
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 bg-white rounded-xl shadow-2xl w-full max-w-md mx-4">
+      <div className="relative z-10 bg-white rounded-xl shadow-modal w-full max-w-md mx-4">
         <div className="p-6">
           <div className="text-center mb-6">
             <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -74,7 +74,7 @@ const CashBoxOpenModal: React.FC<CashBoxOpenModalProps> = ({ isOpen, closedBoxCo
               </svg>
             </div>
             {loggedInUser && (
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-700 text-sm rounded-full mb-3">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-info-light text-info text-body-md rounded-full mb-3">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h4m0 0v4m-4-4h4" />
                 </svg>
@@ -82,8 +82,8 @@ const CashBoxOpenModal: React.FC<CashBoxOpenModalProps> = ({ isOpen, closedBoxCo
                 <span className="text-primary/70">(sesión activa)</span>
               </div>
             )}
-            <h2 className="text-xl font-bold text-text-primary">Abrir Caja</h2>
-            <p className="text-sm text-text-muted mt-1">
+            <h2 className="text-headline-sm text-text-primary">Abrir Caja</h2>
+            <p className="text-body-md text-text-muted mt-1">
               Selecciona los empleados que trabajan en este turno
             </p>
           </div>
@@ -94,7 +94,7 @@ const CashBoxOpenModal: React.FC<CashBoxOpenModalProps> = ({ isOpen, closedBoxCo
                 key={emp.id}
                 type="button"
                 onClick={() => toggleEmployee(emp.id)}
-                className={`w-full flex items-center gap-3 p-3 rounded-lg border-2 transition-all text-left ${
+                className={`w-full flex items-center gap-3 p-3 rounded-[10px] border-2 transition-all text-left ${
                   selectedIds.includes(emp.id)
                     ? 'border-primary bg-primary/5'
                     : 'border-border hover:border-primary/40'
@@ -112,8 +112,8 @@ const CashBoxOpenModal: React.FC<CashBoxOpenModalProps> = ({ isOpen, closedBoxCo
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-text-primary truncate">{emp.name}</p>
-                  <p className="text-xs text-text-muted">{emp.role} • {emp.shift}</p>
+                   <p className="font-medium text-text-primary text-body-md truncate">{emp.name}</p>
+                   <p className="text-body-sm text-text-muted">{emp.role} • {emp.shift}</p>
                 </div>
               </button>
             ))}
@@ -123,7 +123,7 @@ const CashBoxOpenModal: React.FC<CashBoxOpenModalProps> = ({ isOpen, closedBoxCo
             <button
               type="button"
               onClick={() => setSelectedIds(otherEmployees.map(e => e.id))}
-              className="flex-1 py-3 text-sm font-medium text-text-muted border border-border rounded-lg hover:bg-gray-50"
+              className="flex-1 py-3 text-body-md font-medium text-text-muted border border-border rounded-[10px] hover:bg-surface-container-low"
             >
               Seleccionar todos
             </button>
@@ -131,7 +131,7 @@ const CashBoxOpenModal: React.FC<CashBoxOpenModalProps> = ({ isOpen, closedBoxCo
               type="button"
               onClick={handleOpenCashBox}
               disabled={isSubmitting}
-              className="flex-1 py-3 text-sm font-bold rounded-lg bg-primary text-white hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+              className="flex-1 py-3 text-body-md font-bold rounded-[10px] bg-primary text-white hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
             >
               {isSubmitting ? (
                 <>

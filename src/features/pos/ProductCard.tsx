@@ -62,15 +62,15 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   return (
     <>
       <div
-        className={`bg-white rounded-xl border border-border overflow-hidden transition-all duration-150 ${
+        className={`bg-white rounded-xl border border-border shadow-card overflow-hidden transition-all duration-150 ${
           isOutOfStock || isInactive
             ? 'opacity-50 cursor-not-allowed'
-            : 'hover:shadow-md cursor-pointer'
+            : 'hover:shadow-card-hover cursor-pointer'
         }`}
         onClick={isOutOfStock || isInactive ? undefined : handleClick}
       >
         {/* Image area */}
-        <div className="aspect-square bg-gray-100 flex items-center justify-center relative overflow-hidden">
+        <div className="aspect-square bg-surface-container-low flex items-center justify-center relative overflow-hidden">
           {product.image ? (
             <img src={product.image} alt={product.name} className="w-full h-full object-cover" loading="lazy" />
           ) : (
@@ -114,22 +114,22 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
         {/* Info */}
         <div className="p-3 flex flex-col gap-1.5">
-          <p className="text-sm font-semibold text-text-primary leading-tight line-clamp-2">{product.name}</p>
+          <p className="text-label-lg text-text-primary leading-tight line-clamp-2">{product.name}</p>
           {product.brand && (
-            <p className="text-xs text-text-muted truncate">{product.brand}</p>
+            <p className="text-body-sm text-text-muted truncate">{product.brand}</p>
           )}
           {product.sku && (
             <p className="text-[11px] text-text-muted font-mono tracking-wide uppercase">{product.sku}</p>
           )}
           <div className="flex items-center justify-between mt-0.5">
-            <span className="text-sm font-semibold text-primary font-mono">€{product.price.toFixed(2)}</span>
+            <span className="text-label-lg text-primary font-mono font-[tabular-nums]">€{product.price.toFixed(2)}</span>
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 handleClick();
               }}
               disabled={isOutOfStock || isInactive}
-              className="w-11 h-11 bg-primary hover:bg-primary-dark disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-md flex items-center justify-center transition-all duration-150 active:scale-95"
+              className="w-11 h-11 bg-primary hover:bg-primary-dark disabled:bg-outline-variant disabled:cursor-not-allowed text-white rounded-[10px] flex items-center justify-center transition-all duration-150 active:scale-95"
               aria-label={isOutOfStock ? `${product.name} ${t.pos.outOfStock || 'sin stock'}` : isInactive ? `${product.name} ${t.pos.inactive || 'inactivo'}` : `${t.pos.addToCart || 'Añadir'} ${product.name} ${t.pos.toCart || 'al carrito'}`}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

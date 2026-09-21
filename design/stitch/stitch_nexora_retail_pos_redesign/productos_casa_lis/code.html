@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+
+<html class="h-full bg-surface" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Gestión de Productos · Nexora | Casa Lis</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Flex:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "tertiary-fixed-dim": "#8fd3cc",
+            "on-tertiary-container": "#b3f7f0",
+            "inverse-surface": "#213145",
+            "tertiary-fixed": "#abefe8",
+            "primary-container": "#0f766e",
+            "surface-bright": "#f8f9ff",
+            "on-background": "#0b1c30",
+            "surface-container-high": "#dce9ff",
+            "on-primary-fixed": "#00201d",
+            "on-secondary-fixed": "#0d1b36",
+            "surface-variant": "#d3e4fe",
+            "outline-variant": "#bdc9c6",
+            "outline": "#6e7977",
+            "primary-fixed-dim": "#80d5cb",
+            "primary-fixed": "#9cf2e8",
+            "surface-container-highest": "#d3e4fe",
+            "on-tertiary": "#ffffff",
+            "error-container": "#ffdad6",
+            "on-error-container": "#93000a",
+            "on-secondary": "#ffffff",
+            "on-surface-variant": "#3e4947",
+            "on-primary-container": "#a3faef",
+            "on-secondary-container": "#525f7e",
+            "on-primary-fixed-variant": "#00504a",
+            "on-surface": "#0b1c30",
+            "surface-tint": "#006a63",
+            "on-primary": "#ffffff",
+            "surface-container-low": "#eff4ff",
+            "surface": "#f8f9ff",
+            "on-secondary-fixed-variant": "#3a4664",
+            "on-error": "#ffffff",
+            "secondary-fixed": "#d9e2ff",
+            "secondary-container": "#cdd9fe",
+            "error": "#ba1a1a",
+            "secondary-fixed-dim": "#b9c6ea",
+            "inverse-on-surface": "#eaf1ff",
+            "tertiary-container": "#2f746f",
+            "primary": "#005c55",
+            "tertiary": "#0c5b56",
+            "background": "#f8f9ff",
+            "inverse-primary": "#80d5cb",
+            "secondary": "#525e7d",
+            "on-tertiary-fixed": "#00201e",
+            "on-tertiary-fixed-variant": "#00504b",
+            "surface-dim": "#cbdbf5",
+            "surface-container-lowest": "#ffffff",
+            "surface-container": "#e5eeff"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "gutter": "1rem",
+            "space-lg": "1.5rem",
+            "space-xxs": "0.25rem",
+            "space-sm": "0.75rem",
+            "space-2xl": "3rem",
+            "gutter-compact": "0.5rem",
+            "space-xl": "2rem",
+            "space-xs": "0.5rem",
+            "space-md": "1rem",
+            "margin": "1.5rem",
+            "margin-mobile": "1rem"
+          },
+          "fontFamily": {
+            "headline-lg": ["Roboto Flex"],
+            "headline-sm": ["Roboto Flex"],
+            "label-sm": ["Roboto Flex"],
+            "body-sm": ["Roboto Flex"],
+            "headline-md": ["Roboto Flex"],
+            "body-md": ["Roboto Flex"],
+            "numeric-pos": ["Roboto Flex"],
+            "label-md": ["Roboto Flex"],
+            "body-lg": ["Roboto Flex"],
+            "label-lg": ["Roboto Flex"],
+            "display-lg": ["Roboto Flex"]
+          },
+          "fontSize": {
+            "headline-lg": ["28px", {"lineHeight": "36px", "fontWeight": "600"}],
+            "headline-sm": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+            "label-sm": ["11px", {"lineHeight": "14px", "fontWeight": "600"}],
+            "body-sm": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+            "headline-md": ["22px", {"lineHeight": "28px", "fontWeight": "600"}],
+            "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+            "numeric-pos": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+            "label-md": ["13px", {"lineHeight": "18px", "fontWeight": "500"}],
+            "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+            "label-lg": ["14px", {"lineHeight": "20px", "fontWeight": "600"}],
+            "display-lg": ["36px", {"lineHeight": "44px", "fontWeight": "700"}]
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="h-full font-body-md text-on-surface bg-background flex flex-col antialiased selection:bg-primary selection:text-on-primary">
+<!-- TopAppBar Component (from Shared Components JSON) -->
+<header class="bg-surface-container-lowest dark:bg-inverse-surface shadow-sm sticky top-0 z-40">
+<div class="flex justify-between items-center w-full px-4 h-14 max-w-full">
+<div class="flex items-center gap-3">
+<button aria-label="Abrir TPV" class="active:scale-95 duration-100 min-h-[44px] min-w-[44px] flex items-center justify-center text-primary dark:text-inverse-primary hover:bg-surface-container dark:hover:bg-surface-container-high transition-colors rounded-lg">
+<span class="material-symbols-outlined text-primary" data-icon="point_of_sale">point_of_sale</span>
+</button>
+<span class="text-headline-sm font-headline-sm font-bold text-primary dark:text-inverse-primary tracking-tight">Casa Lis · TPV</span>
+<span class="hidden md:inline-flex items-center px-2 py-0.5 rounded-full text-label-sm font-label-sm bg-surface-container text-secondary">Terminal 01 · Nexora Suite</span>
+</div>
+<!-- Quick Status & Profile Trailing (from JSON) -->
+<div class="flex items-center gap-2">
+<div class="hidden sm:flex items-center gap-1 text-label-md font-label-md text-on-surface-variant pr-2">
+<span class="inline-block w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+<span>Sincronizado</span>
+</div>
+<button aria-label="Estado nube" class="active:scale-95 duration-100 min-h-[44px] min-w-[44px] flex items-center justify-center text-primary dark:text-inverse-primary hover:bg-surface-container dark:hover:bg-surface-container-high transition-colors rounded-lg">
+<span class="material-symbols-outlined" data-icon="cloud_done">cloud_done</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 overflow-y-auto pb-28 md:pb-12">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+<!-- Header Section: Title, Counter & Actions -->
+<section class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+<div>
+<div class="flex items-baseline gap-3">
+<h1 class="text-headline-lg font-headline-lg text-on-surface tracking-tight">Productos</h1>
+<span class="text-label-md font-label-md text-on-surface-variant bg-surface-container px-2.5 py-1 rounded-full border border-outline-variant/30">184 productos registrados</span>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-1">Catálogo maestro textil, control de tarifas minoristas e inventario por almacén.</p>
+</div>
+<!-- Action Cluster: Primary CTA & Secondary Operations -->
+<div class="flex flex-wrap items-center gap-2.5">
+<button class="inline-flex items-center gap-1.5 px-3.5 py-2.5 min-h-[44px] bg-surface-container-lowest border border-outline-variant hover:bg-surface-container text-on-surface text-label-md font-label-md rounded-lg active:scale-95 transition-all shadow-sm">
+<span class="material-symbols-outlined text-secondary text-base" data-icon="upload_file">upload_file</span>
+<span>Importar CSV</span>
+</button>
+<button class="inline-flex items-center gap-1.5 px-3.5 py-2.5 min-h-[44px] bg-surface-container-lowest border border-outline-variant hover:bg-surface-container text-on-surface text-label-md font-label-md rounded-lg active:scale-95 transition-all shadow-sm">
+<span class="material-symbols-outlined text-secondary text-base" data-icon="document_scanner">document_scanner</span>
+<span>Escanear albarán</span>
+</button>
+<button class="inline-flex items-center gap-1.5 px-3.5 py-2.5 min-h-[44px] bg-surface-container-lowest border border-outline-variant hover:bg-surface-container text-on-surface text-label-md font-label-md rounded-lg active:scale-95 transition-all shadow-sm">
+<span class="material-symbols-outlined text-secondary text-base" data-icon="file_download">file_download</span>
+<span>Exportar</span>
+</button>
+<!-- Primary Hero Button: High tactile certainty for retail operators -->
+<button class="inline-flex items-center gap-2 px-5 py-3 min-h-[48px] bg-primary hover:bg-primary-container text-on-primary text-label-lg font-label-lg rounded-xl shadow-md active:scale-95 transition-all ml-auto sm:ml-0">
+<span class="material-symbols-outlined text-lg" data-icon="add_circle">add_circle</span>
+<span>Añadir producto</span>
+</button>
+</div>
+</section>
+<!-- Search and Filter Bar -->
+<section class="bg-surface-container-lowest rounded-xl p-3.5 border border-outline-variant/40 shadow-sm space-y-3">
+<div class="flex flex-col sm:flex-row gap-3">
+<!-- Tactile POS Search Input -->
+<div class="relative flex-1">
+<div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-secondary">
+<span class="material-symbols-outlined text-xl" data-icon="search">search</span>
+</div>
+<input class="w-full h-12 pl-11 pr-12 bg-surface rounded-lg border border-outline-variant/60 text-body-md font-body-md text-on-surface placeholder-outline focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all" placeholder="Buscar por nombre, marca, SKU o código de barras..." type="search"/>
+<button class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-on-surface-variant hover:text-primary active:scale-95" title="Escanear con cámara">
+<span class="material-symbols-outlined" data-icon="barcode_scanner">barcode_scanner</span>
+</button>
+</div>
+<!-- Filter Drawer Trigger -->
+<button class="inline-flex items-center justify-center gap-2 px-4 h-12 bg-surface border border-outline-variant/60 hover:bg-surface-container text-on-surface text-label-md font-label-md rounded-lg active:scale-95 transition-all">
+<span class="material-symbols-outlined text-secondary" data-icon="tune">tune</span>
+<span>Filtros</span>
+<span class="w-5 h-5 flex items-center justify-center rounded-full bg-surface-container-highest text-secondary text-label-sm font-label-sm">3</span>
+</button>
+</div>
+<!-- Quick Filter Chips Horizontal Track -->
+<div class="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none pt-1">
+<button class="inline-flex items-center gap-1.5 px-3.5 py-1.5 min-h-[36px] rounded-lg bg-primary-container text-on-primary-container text-label-md font-label-md shrink-0 shadow-sm">
+<span>Todos (184)</span>
+</button>
+<button class="inline-flex items-center gap-1.5 px-3.5 py-1.5 min-h-[36px] rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant text-label-md font-label-md shrink-0 border border-outline-variant/30">
+<span class="w-2 h-2 rounded-full bg-amber-500"></span>
+<span>Stock bajo (4)</span>
+</button>
+<button class="inline-flex items-center gap-1.5 px-3.5 py-1.5 min-h-[36px] rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant text-label-md font-label-md shrink-0 border border-outline-variant/30">
+<span class="w-2 h-2 rounded-full bg-error"></span>
+<span>Agotados (2)</span>
+</button>
+<div class="h-5 w-[1px] bg-outline-variant/40 mx-1 shrink-0"></div>
+<button class="inline-flex items-center px-3.5 py-1.5 min-h-[36px] rounded-lg bg-surface hover:bg-surface-container text-on-surface-variant text-label-md font-label-md shrink-0 border border-outline-variant/30">
+<span>Ropa de cama</span>
+</button>
+<button class="inline-flex items-center px-3.5 py-1.5 min-h-[36px] rounded-lg bg-surface hover:bg-surface-container text-on-surface-variant text-label-md font-label-md shrink-0 border border-outline-variant/30">
+<span>Baño</span>
+</button>
+<button class="inline-flex items-center px-3.5 py-1.5 min-h-[36px] rounded-lg bg-surface hover:bg-surface-container text-on-surface-variant text-label-md font-label-md shrink-0 border border-outline-variant/30">
+<span>Pijamas</span>
+</button>
+</div>
+</section>
+<!-- Tactical Rich Product Cards Grid (Optimized for Mobile/Vertical Tablets) -->
+<section class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Tarjeta 1: Juego de sábanas satén 300 hilos -->
+<article class="bg-surface-container-lowest rounded-xl border border-outline-variant/40 p-5 shadow-sm hover:border-primary/40 transition-all flex flex-col justify-between group">
+<div>
+<!-- Card Head: Brand, SKU & Status Badge -->
+<div class="flex items-start justify-between gap-2 mb-2">
+<div class="flex flex-wrap items-center gap-2">
+<span class="text-label-sm font-label-sm uppercase tracking-wider text-secondary font-semibold">Lis Home</span>
+<span class="text-outline-variant text-xs">•</span>
+<span class="font-mono text-body-sm font-body-sm text-on-surface-variant bg-surface px-2 py-0.5 rounded border border-outline-variant/30">SKU: SAB-SAT-150-BL</span>
+</div>
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-label-sm font-label-sm bg-emerald-50 text-emerald-800 border border-emerald-200 shrink-0">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                Activo
+              </span>
+</div>
+<!-- Product Title -->
+<h2 class="text-headline-sm font-headline-sm text-on-surface group-hover:text-primary transition-colors">
+              Juego de sábanas satén 300 hilos
+            </h2>
+<p class="text-body-sm font-body-sm text-secondary mt-0.5">Categoría: <span class="font-medium text-on-surface">Ropa de cama</span></p>
+<!-- Commercial Economics Bento Section -->
+<div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 my-4 p-3 bg-surface rounded-lg border border-outline-variant/30">
+<div>
+<span class="text-label-sm font-label-sm text-on-surface-variant block">PVP (Final)</span>
+<span class="text-numeric-pos font-numeric-pos text-on-surface">48,50 €</span>
+</div>
+<div>
+<span class="text-label-sm font-label-sm text-on-surface-variant block">Coste Neto</span>
+<span class="text-body-lg font-body-lg font-semibold text-secondary">22,00 €</span>
+</div>
+<div class="col-span-2 sm:col-span-1">
+<span class="text-label-sm font-label-sm text-on-surface-variant block">Régimen IVA</span>
+<span class="text-body-md font-body-md text-on-surface-variant font-medium">21% General</span>
+</div>
+</div>
+</div>
+<!-- Stock Level & Action Bar -->
+<div class="pt-3 border-t border-outline-variant/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+<div class="flex items-center gap-3">
+<div class="p-2 rounded-lg bg-surface-container text-primary">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+</div>
+<div>
+<div class="flex items-baseline gap-1.5">
+<span class="text-body-lg font-body-lg font-bold text-on-surface">14 uds</span>
+<span class="text-label-sm font-label-sm text-on-surface-variant">en tienda</span>
+</div>
+<span class="text-label-sm font-label-sm text-outline block">Mínimo sugerido: 5 uds</span>
+</div>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<button class="flex-1 sm:flex-none px-3.5 py-2 min-h-[44px] bg-surface hover:bg-surface-container border border-outline-variant/50 text-on-surface text-label-md font-label-md rounded-lg active:scale-95 transition-all inline-flex items-center justify-center gap-1.5">
+<span class="material-symbols-outlined text-sm text-secondary" data-icon="tune">tune</span>
+<span>Ajustar stock</span>
+</button>
+<button class="flex-1 sm:flex-none px-3.5 py-2 min-h-[44px] bg-surface hover:bg-surface-container border border-outline-variant/50 text-on-surface text-label-md font-label-md rounded-lg active:scale-95 transition-all inline-flex items-center justify-center gap-1.5">
+<span class="material-symbols-outlined text-sm text-secondary" data-icon="edit">edit</span>
+<span>Editar</span>
+</button>
+</div>
+</div>
+</article>
+<!-- Tarjeta 2: Edredón nórdico plumón natural -->
+<article class="bg-surface-container-lowest rounded-xl border border-outline-variant/40 p-5 shadow-sm hover:border-amber-400/60 transition-all flex flex-col justify-between group">
+<div>
+<!-- Card Head: Brand, SKU & Warning Badge -->
+<div class="flex items-start justify-between gap-2 mb-2">
+<div class="flex flex-wrap items-center gap-2">
+<span class="text-label-sm font-label-sm uppercase tracking-wider text-secondary font-semibold">Icelis</span>
+<span class="text-outline-variant text-xs">•</span>
+<span class="font-mono text-body-sm font-body-sm text-on-surface-variant bg-surface px-2 py-0.5 rounded border border-outline-variant/30">SKU: EDR-PLUM-240</span>
+</div>
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-label-sm font-label-sm bg-amber-50 text-amber-800 border border-amber-300 shrink-0 font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
+                Stock bajo (3 uds)
+              </span>
+</div>
+<!-- Product Title -->
+<h2 class="text-headline-sm font-headline-sm text-on-surface group-hover:text-primary transition-colors">
+              Edredón nórdico plumón natural
+            </h2>
+<p class="text-body-sm font-body-sm text-secondary mt-0.5">Categoría: <span class="font-medium text-on-surface">Relleno nórdico</span></p>
+<!-- Commercial Economics -->
+<div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 my-4 p-3 bg-surface rounded-lg border border-outline-variant/30">
+<div>
+<span class="text-label-sm font-label-sm text-on-surface-variant block">PVP (Final)</span>
+<span class="text-numeric-pos font-numeric-pos text-on-surface">129,90 €</span>
+</div>
+<div>
+<span class="text-label-sm font-label-sm text-on-surface-variant block">Coste Neto</span>
+<span class="text-body-lg font-body-lg font-semibold text-secondary">64,00 €</span>
+</div>
+<div class="col-span-2 sm:col-span-1">
+<span class="text-label-sm font-label-sm text-on-surface-variant block">Margen Bruto</span>
+<span class="text-body-md font-body-md text-emerald-700 font-semibold">+50,7%</span>
+</div>
+</div>
+</div>
+<!-- Stock Level & Action Bar -->
+<div class="pt-3 border-t border-outline-variant/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+<div class="flex items-center gap-3">
+<div class="p-2 rounded-lg bg-amber-50 text-amber-700">
+<span class="material-symbols-outlined" data-icon="warning">warning</span>
+</div>
+<div>
+<div class="flex items-baseline gap-1.5">
+<span class="text-body-lg font-body-lg font-bold text-amber-800">3 uds</span>
+<span class="text-label-sm font-label-sm text-amber-700 font-medium">alerta de quiebre</span>
+</div>
+<span class="text-label-sm font-label-sm text-outline block">Mínimo requerido: 4 uds</span>
+</div>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<button class="flex-1 sm:flex-none px-3.5 py-2 min-h-[44px] bg-primary/10 hover:bg-primary/20 text-primary text-label-md font-label-md rounded-lg active:scale-95 transition-all inline-flex items-center justify-center gap-1.5 font-semibold">
+<span class="material-symbols-outlined text-sm" data-icon="local_shipping">local_shipping</span>
+<span>Pedir pedido</span>
+</button>
+<button aria-label="Editar edredón" class="px-3 py-2 min-h-[44px] bg-surface hover:bg-surface-container border border-outline-variant/50 text-on-surface rounded-lg active:scale-95 transition-all inline-flex items-center justify-center">
+<span class="material-symbols-outlined text-sm text-secondary" data-icon="edit">edit</span>
+</button>
+</div>
+</div>
+</article>
+<!-- Tarjeta 3: Protector colchón impermeable bambú -->
+<article class="bg-surface-container-lowest rounded-xl border border-outline-variant/40 p-5 shadow-sm hover:border-error/40 transition-all flex flex-col justify-between group">
+<div>
+<!-- Card Head: Brand, SKU & Depleted Stock Badge -->
+<div class="flex items-start justify-between gap-2 mb-2">
+<div class="flex flex-wrap items-center gap-2">
+<span class="text-label-sm font-label-sm uppercase tracking-wider text-secondary font-semibold">Lis Protect</span>
+<span class="text-outline-variant text-xs">•</span>
+<span class="font-mono text-body-sm font-body-sm text-on-surface-variant bg-surface px-2 py-0.5 rounded border border-outline-variant/30">SKU: PRO-BAM-150</span>
+</div>
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-label-sm font-label-sm bg-error-container text-on-error-container border border-error/20 shrink-0 font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-error"></span>
+                Agotado
+              </span>
+</div>
+<!-- Product Title -->
+<h2 class="text-headline-sm font-headline-sm text-on-surface group-hover:text-primary transition-colors">
+              Protector colchón impermeable bambú
+            </h2>
+<p class="text-body-sm font-body-sm text-secondary mt-0.5">Categoría: <span class="font-medium text-on-surface">Protección y descanso</span></p>
+<!-- Commercial Economics -->
+<div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 my-4 p-3 bg-surface rounded-lg border border-outline-variant/30">
+<div>
+<span class="text-label-sm font-label-sm text-on-surface-variant block">PVP (Final)</span>
+<span class="text-numeric-pos font-numeric-pos text-on-surface">24,00 €</span>
+</div>
+<div>
+<span class="text-label-sm font-label-sm text-on-surface-variant block">Estado Almacén</span>
+<span class="text-body-md font-body-md text-error font-semibold">0 uds disponibles</span>
+</div>
+<div class="col-span-2 sm:col-span-1 flex items-center">
+<div class="inline-flex items-center gap-1 px-2 py-1 bg-amber-50 border border-amber-200 rounded text-label-sm font-label-sm text-amber-800">
+<span class="material-symbols-outlined text-xs" data-icon="sync">sync</span>
+                  Pendiente de reposición
+                </div>
+</div>
+</div>
+</div>
+<!-- Stock Level & Action Bar -->
+<div class="pt-3 border-t border-outline-variant/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+<div class="flex items-center gap-3">
+<div class="p-2 rounded-lg bg-error-container text-error">
+<span class="material-symbols-outlined" data-icon="production_quantity_limits">production_quantity_limits</span>
+</div>
+<div>
+<div class="flex items-baseline gap-1.5">
+<span class="text-body-lg font-body-lg font-bold text-error">0 uds</span>
+<span class="text-label-sm font-label-sm text-on-surface-variant">en tienda</span>
+</div>
+<span class="text-label-sm font-label-sm text-secondary block">Albarán pendiente: #ALB-9921</span>
+</div>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<button class="flex-1 sm:flex-none px-3.5 py-2 min-h-[44px] bg-surface hover:bg-surface-container border border-outline-variant/50 text-on-surface text-label-md font-label-md rounded-lg active:scale-95 transition-all inline-flex items-center justify-center gap-1.5">
+<span class="material-symbols-outlined text-sm text-secondary" data-icon="history">history</span>
+<span>Trazabilidad</span>
+</button>
+<button class="px-3.5 py-2 min-h-[44px] bg-primary hover:bg-primary-container text-on-primary text-label-md font-label-md rounded-lg active:scale-95 transition-all inline-flex items-center justify-center gap-1.5">
+<span class="material-symbols-outlined text-sm" data-icon="add_box">add_box</span>
+<span>Recepcionar</span>
+</button>
+</div>
+</div>
+</article>
+<!-- Tarjeta 4: Bata mujer terciopelo suave -->
+<article class="bg-surface-container-lowest rounded-xl border border-outline-variant/40 p-5 shadow-sm hover:border-primary/40 transition-all flex flex-col justify-between group">
+<div>
+<!-- Card Head: Brand, SKU & Active Badge -->
+<div class="flex items-start justify-between gap-2 mb-2">
+<div class="flex flex-wrap items-center gap-2">
+<span class="text-label-sm font-label-sm uppercase tracking-wider text-secondary font-semibold">Velvet Home</span>
+<span class="text-outline-variant text-xs">•</span>
+<span class="font-mono text-body-sm font-body-sm text-on-surface-variant bg-surface px-2 py-0.5 rounded border border-outline-variant/30">SKU: BAT-TERC-M</span>
+</div>
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-label-sm font-label-sm bg-emerald-50 text-emerald-800 border border-emerald-200 shrink-0">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                Activo
+              </span>
+</div>
+<!-- Product Title -->
+<h2 class="text-headline-sm font-headline-sm text-on-surface group-hover:text-primary transition-colors">
+              Bata mujer terciopelo suave
+            </h2>
+<p class="text-body-sm font-body-sm text-secondary mt-0.5">Categoría: <span class="font-medium text-on-surface">Pijamas y batas</span></p>
+<!-- Commercial Economics -->
+<div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 my-4 p-3 bg-surface rounded-lg border border-outline-variant/30">
+<div>
+<span class="text-label-sm font-label-sm text-on-surface-variant block">PVP (Final)</span>
+<span class="text-numeric-pos font-numeric-pos text-on-surface">45,00 €</span>
+</div>
+<div>
+<span class="text-label-sm font-label-sm text-on-surface-variant block">Talla Principal</span>
+<span class="text-body-lg font-body-lg font-semibold text-secondary">M (Mediana)</span>
+</div>
+<div class="col-span-2 sm:col-span-1">
+<span class="text-label-sm font-label-sm text-on-surface-variant block">Ubicación</span>
+<span class="text-body-md font-body-md text-on-surface-variant font-medium">Perchero B-04</span>
+</div>
+</div>
+</div>
+<!-- Stock Level & Action Bar -->
+<div class="pt-3 border-t border-outline-variant/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+<div class="flex items-center gap-3">
+<div class="p-2 rounded-lg bg-surface-container text-primary">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+</div>
+<div>
+<div class="flex items-baseline gap-1.5">
+<span class="text-body-lg font-body-lg font-bold text-on-surface">9 uds</span>
+<span class="text-label-sm font-label-sm text-on-surface-variant">en tienda</span>
+</div>
+<span class="text-label-sm font-label-sm text-outline block">Mínimo sugerido: 3 uds</span>
+</div>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<button class="flex-1 sm:flex-none px-3.5 py-2 min-h-[44px] bg-surface hover:bg-surface-container border border-outline-variant/50 text-on-surface text-label-md font-label-md rounded-lg active:scale-95 transition-all inline-flex items-center justify-center gap-1.5">
+<span class="material-symbols-outlined text-sm text-secondary" data-icon="tune">tune</span>
+<span>Ajustar stock</span>
+</button>
+<button class="flex-1 sm:flex-none px-3.5 py-2 min-h-[44px] bg-surface hover:bg-surface-container border border-outline-variant/50 text-on-surface text-label-md font-label-md rounded-lg active:scale-95 transition-all inline-flex items-center justify-center gap-1.5">
+<span class="material-symbols-outlined text-sm text-secondary" data-icon="edit">edit</span>
+<span>Editar</span>
+</button>
+</div>
+</div>
+</article>
+</section>
+<!-- Tactical Pagination / Record Overview -->
+<section class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-outline-variant/30 text-body-sm font-body-sm text-on-surface-variant">
+<div>
+          Mostrando <span class="font-semibold text-on-surface">1-4</span> de <span class="font-semibold text-on-surface">184</span> productos
+        </div>
+<div class="flex items-center gap-1.5">
+<button class="px-3 py-2 min-h-[44px] bg-surface-container-lowest border border-outline-variant/50 rounded-lg text-on-surface-variant hover:bg-surface-container disabled:opacity-40" disabled="">
+            Anterior
+          </button>
+<button class="px-3.5 py-2 min-h-[44px] bg-primary-container text-on-primary-container font-semibold rounded-lg">1</button>
+<button class="px-3.5 py-2 min-h-[44px] bg-surface-container-lowest border border-outline-variant/50 rounded-lg text-on-surface hover:bg-surface-container">2</button>
+<button class="px-3.5 py-2 min-h-[44px] bg-surface-container-lowest border border-outline-variant/50 rounded-lg text-on-surface hover:bg-surface-container">3</button>
+<span class="px-1 text-outline">...</span>
+<button class="px-3.5 py-2 min-h-[44px] bg-surface-container-lowest border border-outline-variant/50 rounded-lg text-on-surface hover:bg-surface-container">46</button>
+<button class="px-3 py-2 min-h-[44px] bg-surface-container-lowest border border-outline-variant/50 rounded-lg text-on-surface hover:bg-surface-container">
+            Siguiente
+          </button>
+</div>
+</section>
+</div>
+</main>
+<!-- Persistent Floating Fast Action Button (Optimized for Floor Staff) -->
+<aside class="fixed right-5 bottom-20 md:bottom-8 z-30">
+<button aria-label="Añadir producto rápido" class="flex items-center gap-2 px-5 h-14 bg-inverse-surface text-surface-bright rounded-full shadow-xl hover:bg-on-surface active:scale-95 transition-all border border-secondary/30">
+<span class="material-symbols-outlined text-primary-fixed" data-icon="add">add</span>
+<span class="text-label-lg font-label-lg tracking-wide pr-1">Nuevo producto</span>
+</button>
+</aside>
+<!-- BottomNavBar Component (Exact match from Shared Components JSON) -->
+<!-- Contextual State: "Productos" is strictly active per page semantic mapping -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-2 py-1 h-16 md:hidden bg-surface-container-lowest dark:bg-inverse-surface shadow-md">
+<!-- Tab 1: Panel -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant py-1 px-3 min-h-[48px] hover:text-primary dark:hover:text-inverse-primary transition-colors duration-150 active:scale-95 duration-100" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="text-label-sm font-label-sm mt-0.5">Panel</span>
+</a>
+<!-- Tab 2: TPV -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant py-1 px-3 min-h-[48px] hover:text-primary dark:hover:text-inverse-primary transition-colors duration-150 active:scale-95 duration-100" href="#">
+<span class="material-symbols-outlined" data-icon="point_of_sale">point_of_sale</span>
+<span class="text-label-sm font-label-sm mt-0.5">TPV</span>
+</a>
+<!-- Tab 3: Productos (ACTIVE: Exact Match to page identity) -->
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-lg py-1 px-3 min-h-[48px] active:scale-95 duration-100" href="#">
+<span class="material-symbols-outlined" data-icon="checkroom" data-weight="fill" style="font-variation-settings: 'FILL' 1;">checkroom</span>
+<span class="text-label-sm font-label-sm mt-0.5 font-semibold">Productos</span>
+</a>
+<!-- Tab 4: Inventario -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant py-1 px-3 min-h-[48px] hover:text-primary dark:hover:text-inverse-primary transition-colors duration-150 active:scale-95 duration-100" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="text-label-sm font-label-sm mt-0.5">Inventario</span>
+</a>
+<!-- Tab 5: Más -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant py-1 px-3 min-h-[48px] hover:text-primary dark:hover:text-inverse-primary transition-colors duration-150 active:scale-95 duration-100" href="#">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+<span class="text-label-sm font-label-sm mt-0.5">Más</span>
+</a>
+</nav>
+</body></html>
