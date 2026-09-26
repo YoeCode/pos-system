@@ -608,6 +608,38 @@ settings, sales, dashboard, refunds, realtime, layouts, hooks, UI components, ro
 
 ## 12. Git y Commits
 
+### Workflow de ramas (OBLIGATORIO)
+
+**Nunca** trabajar directamente en `main`. Antes de empezar cualquier tarea:
+
+1. **Crear rama** desde `main` actualizado:
+   ```bash
+   git checkout main && git pull
+   git checkout -b tipo/descripción-corta
+   ```
+2. **Trabajar en la rama** — commits convencionales
+3. **Al terminar** — crear PR o merge a `main`
+
+**Si te atascas** con los cambios de una rama:
+- Cambiar a otra rama y seguir trabajando
+- `main` queda limpio para empezar otra tarea
+- Volver a la rama anterior cuando quieras reanudar
+
+**Naming de ramas:**
+| Tipo | Formato | Ejemplo |
+|------|---------|---------|
+| Feature | `feat/nombre-corto` | `feat/loyalty-points` |
+| Bug fix | `fix/nombre-corto` | `fix/tax-calculation` |
+| Refactor | `refactor/nombre-corto` | `refactor/checkout-flow` |
+| Chore | `chore/nombre-corto` | `chore/update-deps` |
+| Docs | `docs/nombre-corto` | `docs/api-reference` |
+
+**Flujo del agente:**
+1. Al inicio de cada sesión → verificar rama actual (`git branch --show-current`)
+2. Si estoy en `main` → crear rama antes de cualquier cambio
+3. Si ya estoy en una rama de tarea → continuar en ella
+4. Nunca commitear directamente a `main`
+
 ### Conventional Commits
 
 ```
