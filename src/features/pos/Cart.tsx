@@ -102,10 +102,17 @@ const Cart: React.FC<CartProps> = ({ variant = 'sidebar', onClose }) => {
     <div className={isSheet ? 'flex flex-col h-full' : 'w-full flex-shrink-0 bg-white border-l border-border flex flex-col h-full'}>
       {/* Header */}
       <div className={isSheet ? 'px-4 py-4 border-b border-border flex items-center justify-between' : 'px-4 sm:px-5 py-3 sm:py-4 border-b border-border'}>
+        <div className="flex items-center center gap-2">
+            <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+            <span className="text-body-md font-bold text-text-primary">{cart.length}</span> 
+        </div>
         <div className={isSheet ? 'flex items-center justify-between w-full' : 'flex items-center justify-between mb-3'}>
           <h2 className="font-bold text-text-primary text-body-lg">
             {isSheet ? t.pos.cart : (cart.length === 0 ? t.pos.cart : `${t.pos.orderNumber}${orderNumber}`)}
           </h2>
+          
           {cart.length > 0 && (
             <div className="flex items-center gap-1">
               {!isSheet && canUndo && (
