@@ -40,6 +40,9 @@ class MainActivity : AppCompatActivity() {
         // Enable WebView debugging for Chrome DevTools
         WebView.setWebContentsDebuggingEnabled(true)
 
+        // Clear WebView cache on every launch to prevent stale data
+        webView.clearCache(true)
+
         webView.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true

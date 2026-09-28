@@ -29,14 +29,7 @@ export async function fetchCustomers(tenantId: string): Promise<Customer[]> {
     .eq('tenant_id', tenantId)
     .order('name');
 
-  if (error) {
-    console.error('[customersService] fetchCustomers error:', error);
-    return [];
-  }
-  if (!data) {
-    console.warn('[customersService] fetchCustomers returned null data');
-    return [];
-  }
+  if (error || !data) return [];
   return (data as any[]).map(mapDbCustomer);
 }
 
