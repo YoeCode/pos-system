@@ -37,13 +37,24 @@ class MainActivity : AppCompatActivity() {
 
         printerBridge = PrinterBridge(this)
 
+        // Enable WebView debugging for Chrome DevTools
+        WebView.setWebContentsDebuggingEnabled(true)
+
         webView.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
+            databaseEnabled = true
             allowFileAccess = true
             cacheMode = WebSettings.LOAD_NO_CACHE
             mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
             setSupportMultipleWindows(false)
+            javaScriptCanOpenWindowsAutomatically = false
+        }
+
+        // Enable cookies for Supabase auth persistence
+        android.webkit.CookieManager.getInstance().apply {
+            setAcceptCookie(true)
+            setAcceptThirdPartyCookies(webView, true)
         }
 
         webView.webViewClient = object : WebViewClient() {
