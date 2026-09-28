@@ -639,6 +639,7 @@ settings, sales, dashboard, refunds, realtime, layouts, hooks, UI components, ro
 2. Si estoy en `main` → crear rama antes de cualquier cambio
 3. Si ya estoy en una rama de tarea → continuar en ella
 4. Nunca commitear directamente a `main`
+5. **Cambio nuevo = rama nueva.** Si el usuario pide un cambio nuevo (feature, fix, refactor) y no es continuación directa de la rama actual, crear una rama nueva desde `main` actualizado ANTES de tocar cualquier archivo. No mezclar cambios distintos en la misma rama.
 
 ### Conventional Commits
 

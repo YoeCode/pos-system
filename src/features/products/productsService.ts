@@ -83,7 +83,14 @@ export async function fetchProducts(tenantId: string): Promise<Product[]> {
     .eq('tenant_id', tenantId)
     .order('name');
 
-  if (error || !data) return [];
+  if (error) {
+    console.error('[productsService] fetchProducts error:', error);
+    return [];
+  }
+  if (!data) {
+    console.warn('[productsService] fetchProducts returned null data');
+    return [];
+  }
   return (data as any[]).map(mapDbProduct);
 }
 
