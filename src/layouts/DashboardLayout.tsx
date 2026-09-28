@@ -634,7 +634,7 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({
         {/* Main content */}
         <main
           id="main-content"
-          className="flex-1 overflow-y-auto overscroll-y-contain pb-20 lg:pb-0"
+          className="flex-1 overflow-y-auto overscroll-y-contain pb-[4rem] lg:pb-0"
           tabIndex={-1}
         >
           {children}
