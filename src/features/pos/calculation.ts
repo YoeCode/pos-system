@@ -71,7 +71,7 @@ export function calculateCart(
   });
 
   const grossSubtotal = lines.reduce((sum, l) => sum + l.lineTotal, 0);
-  const itemDiscountsTotal = lines.reduce((sum, l) => sum + l.itemDiscountAmount, 0);
+  const itemDiscountsTotal = lines.reduce((sum, l) => sum + (l.discountSource === 'manual' ? l.appliedDiscount : 0), 0);
   const loyaltyTotal = lines.reduce((sum, l) => sum + (l.discountSource === 'loyalty' ? l.appliedDiscount : 0), 0);
 
   const tierOrManualDiscount = Math.max(manualDiscount, loyaltyTotal);
@@ -88,8 +88,7 @@ export function calculateCart(
   let total: number;
 
   if (taxIncludedInPrice) {
-    const basePrice = netSubtotal / (1 + taxRate);
-    tax = netSubtotal - basePrice;
+    tax = netSubtotal * taxRate;
     total = netSubtotal;
   } else {
     tax = netSubtotal * taxRate;

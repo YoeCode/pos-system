@@ -68,11 +68,10 @@ const Cart: React.FC<CartProps> = ({ variant = 'sidebar', onClose }) => {
     pointsToRedeem,
   });
 
-  const { grossSubtotal, totalDiscount, tax, total } = calc;
+  const { grossSubtotal, netSubtotal, totalDiscount, tax, total } = calc;
 
   const handleIncrement = (item: typeof cart[number]) => {
-    const product = products.find(p => p.id === item.product.id);
-    if (!product) return;
+    const product = products.find(p => p.id === item.product.id) ?? item.product;
     const newQty = item.quantity + 1;
 
     if (item.selectedVariant) {
@@ -99,7 +98,7 @@ const Cart: React.FC<CartProps> = ({ variant = 'sidebar', onClose }) => {
   };
 
   return (
-    <div className={isSheet ? 'flex flex-col h-full' : 'w-full flex-shrink-0 bg-white border-l border-border flex flex-col h-full'}>
+    <div className={isSheet ? 'flex flex-col h-full min-h-0' : 'w-full flex-shrink-0 bg-white border-l border-border flex flex-col h-full'}>
       {/* Header */}
       <div className={isSheet ? 'px-4 py-4 border-b border-border flex items-center justify-between' : 'px-4 sm:px-5 py-3 sm:py-4 border-b border-border'}>
         <div className="flex items-center center gap-2">
@@ -156,7 +155,7 @@ const Cart: React.FC<CartProps> = ({ variant = 'sidebar', onClose }) => {
       </div>
 
       {/* Items list */}
-      <div className={isSheet ? 'flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-4' : 'flex-1 overflow-y-auto px-5 py-3 flex flex-col gap-3'}>
+      <div className={isSheet ? 'flex-1 overflow-y-auto overscroll-contain px-4 py-4 flex flex-col gap-4' : 'flex-1 overflow-y-auto px-5 py-3 flex flex-col gap-3'} style={isSheet ? { touchAction: 'pan-y' } : undefined}>
         {cart.length === 0 ? (
           <div className={isSheet ? 'flex flex-col items-center justify-center py-8 gap-2 text-center' : 'flex flex-col items-center justify-center h-full gap-3 text-center py-10 px-4'}>
             <div className={isSheet ? 'w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center' : 'w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center'}>
@@ -272,7 +271,7 @@ const Cart: React.FC<CartProps> = ({ variant = 'sidebar', onClose }) => {
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between text-body-md">
             <span className="text-text-muted">{t.pos.subtotal}</span>
-            <span className="font-mono font-[tabular-nums] text-text-primary">€{grossSubtotal.toFixed(2)}</span>
+            <span className="font-mono font-[tabular-nums] text-text-primary">€{(taxIncludedInPrice ? netSubtotal - tax : grossSubtotal).toFixed(2)}</span>
           </div>
           {calc.lines.some(l => l.discountSource === 'loyalty') && (
             <div className="flex items-center justify-between text-body-md">

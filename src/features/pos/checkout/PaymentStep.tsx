@@ -279,7 +279,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between text-sm">
           <span className="text-text-muted">{t.pos.subtotal}</span>
-          <span className="font-mono text-text-primary">€{subtotal.toFixed(2)}</span>
+          <span className="font-mono text-text-primary">€{(taxIncludedInPrice ? calc.netSubtotal - calc.tax : subtotal).toFixed(2)}</span>
         </div>
         {tierDiscount > 0 && (
           <div className="flex items-center justify-between text-sm">
@@ -352,7 +352,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
               onClick={() => dispatch(setPaymentMethod(method.id))}
               className={`py-2.5 rounded-lg text-xs font-semibold transition-all duration-150 flex flex-col items-center justify-center gap-1 ${
                 paymentMethod === method.id
-                  ? 'bg-dark-navy text-white'
+                  ? 'bg-primary text-white shadow-sm'
                   : 'bg-white border border-border text-text-muted hover:border-text-primary hover:text-text-primary'
               }`}
             >

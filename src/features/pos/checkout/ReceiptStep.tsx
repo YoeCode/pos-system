@@ -7,6 +7,7 @@ import {
   selectStoreName,
   selectReceiptFooterMessage,
   selectTaxLabel,
+  selectTaxIncludedInPrice,
   selectTicketConfig,
   selectTicketSize,
 } from '../../settings/settingsSlice';
@@ -35,6 +36,7 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, 
   const storeName = useAppSelector(selectStoreName);
   const footerMessage = useAppSelector(selectReceiptFooterMessage);
   const taxLabel = useAppSelector(selectTaxLabel);
+  const taxIncludedInPrice = useAppSelector(selectTaxIncludedInPrice);
   const allEmployees = useAppSelector(selectActiveEmployees);
   const ticketConfig = useAppSelector(selectTicketConfig);
   const ticketSize = useAppSelector(selectTicketSize);
@@ -199,7 +201,7 @@ const ReceiptStep: React.FC<ReceiptStepProps> = ({ saleId, loyaltyPointsEarned, 
             <div className="flex flex-col gap-1">
               <div className="flex justify-between">
                 <span className="text-text-muted">{t.pos.subtotal}</span>
-                <span className="text-text-primary">€{order.subtotal.toFixed(2)}</span>
+                <span className="text-text-primary">€{(taxIncludedInPrice ? (order.subtotal - order.discount) - order.tax : order.subtotal).toFixed(2)}</span>
               </div>
               {order.discount > 0 && (
                 <div className="flex justify-between text-green-600">
