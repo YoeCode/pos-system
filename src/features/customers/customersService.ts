@@ -22,6 +22,18 @@ export function computeTier(points: number, tiers: LoyaltyTierConfig[]): Loyalty
   return match ? match.tier : 'bronze';
 }
 
+export function applyLoyaltyDelta(
+  currentPoints: number,
+  currentSpent: number,
+  pointsDelta: number,
+  spentDelta: number,
+  tiers: LoyaltyTierConfig[],
+): { points: number; spent: number; tier: LoyaltyTier } {
+  const points = Math.max(0, currentPoints + pointsDelta);
+  const spent = Math.max(0, currentSpent + spentDelta);
+  return { points, spent, tier: computeTier(points, tiers) };
+}
+
 export async function fetchCustomers(tenantId: string): Promise<Customer[]> {
   const { data, error } = await supabase
     .from('customers')
@@ -103,7 +115,7 @@ export async function updateLoyaltyPoints(
   customerId: string,
   points: number,
   amountSpent: number,
-  tier: LoyaltyTier,
+  tiers: LoyaltyTierConfig[],
   tenantId: string,
 ): Promise<Customer | null> {
   const { data: current } = await supabase
@@ -115,8 +127,13 @@ export async function updateLoyaltyPoints(
 
   if (!current) return null;
 
-  const newPoints = Math.max(0, (current as any).loyalty_points + points);
-  const newSpent = Math.max(0, (current as any).total_spent + amountSpent);
+  const { points: newPoints, spent: newSpent, tier } = applyLoyaltyDelta(
+    (current as any).loyalty_points,
+    (current as any).total_spent,
+    points,
+    amountSpent,
+    tiers,
+  );
 
   const { data, error } = await supabase
     .from('customers')
