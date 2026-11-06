@@ -20,11 +20,11 @@ const ManualProductModal: React.FC<ManualProductModalProps> = ({ isOpen, onClose
   const categoryGroups = useAppSelector(selectCategoryGroups);
   const brands = useAppSelector(selectBrands);
   const [name, setName] = useState('');
-  const [category, setCategory] = useState(categories[0] || '');
+  const [category, setCategory] = useState('');
   const [subcategory, setSubcategory] = useState<string | null>(null);
   const [brand, setBrand] = useState('');
   const [price, setPrice] = useState('');
-  const [errors, setErrors] = useState<{ name?: string; price?: string }>({});
+  const [errors, setErrors] = useState<{ name?: string; price?: string; category?: string }>({});
 
   const activeGroup = categoryGroups.find(g => g.name === category);
   const subcategories = activeGroup?.subcategories ?? [];
@@ -32,6 +32,7 @@ const ManualProductModal: React.FC<ManualProductModalProps> = ({ isOpen, onClose
   const handleCategorySelect = (cat: string) => {
     setCategory(cat);
     setSubcategory(null);
+    if (errors.category) setErrors(prev => ({ ...prev, category: undefined }));
   };
 
   useEffect(() => {
@@ -43,10 +44,13 @@ const ManualProductModal: React.FC<ManualProductModalProps> = ({ isOpen, onClose
   }, [isOpen, onClose]);
 
   const validate = (): boolean => {
-    const newErrors: { name?: string; price?: string } = {};
+    const newErrors: { name?: string; price?: string; category?: string } = {};
     const trimmedName = name.trim();
     if (!trimmedName) {
       newErrors.name = 'El nombre es obligatorio';
+    }
+    if (!category) {
+      newErrors.category = 'Selecciona una categoría';
     }
     const parsedPrice = parseFloat(price);
     if (isNaN(parsedPrice) || parsedPrice <= 0) {
@@ -73,7 +77,7 @@ const ManualProductModal: React.FC<ManualProductModalProps> = ({ isOpen, onClose
     addToast(`Añadido: ${trimmedName} — €${parsedPrice.toFixed(2)}`, 'success');
 
     setName('');
-    setCategory(categories[0] || '');
+    setCategory('');
     setSubcategory(null);
     setBrand('');
     setPrice('');
@@ -83,7 +87,7 @@ const ManualProductModal: React.FC<ManualProductModalProps> = ({ isOpen, onClose
 
   const handleClose = () => {
     setName('');
-    setCategory(categories[0] || '');
+    setCategory('');
     setSubcategory(null);
     setBrand('');
     setPrice('');
@@ -134,6 +138,7 @@ const ManualProductModal: React.FC<ManualProductModalProps> = ({ isOpen, onClose
               </button>
             ))}
           </div>
+          {errors.category && <p className="text-xs text-error mt-1">{errors.category}</p>}
         </div>
 
         {subcategories.length > 0 && (

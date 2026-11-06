@@ -335,36 +335,31 @@ const POSPage: React.FC = () => {
       )}
 
       {isCashBoxOpen && (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 z-30 pb-[env(safe-area-inset-bottom)]">
+        <button
+          onClick={() => setIsCartOpen(true)}
+          className="md:hidden fixed bottom-[calc(4rem+env(safe-area-inset-bottom,0px)+12px)] left-1/2 -translate-x-1/2 z-35 bg-primary hover:bg-primary-dark text-white rounded-full shadow-lg flex items-center gap-2 pl-5 pr-4 py-3 transition-all duration-200 active:scale-95"
+        >
           {cart.length > 0 ? (
-            <button
-              onClick={() => setIsCartOpen(true)}
-              className="w-full bg-white border-t border-border text-text-primary py-3.5 px-4 flex items-center justify-between shadow-card hover:bg-surface-container-low transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <span className="bg-primary text-white px-2.5 py-1 rounded-[10px] text-body-md font-semibold">
-                  {cart.length}
-                </span>
-                <span className="font-medium text-sm">{t.pos.viewCart || 'Ver carrito'}</span>
-              </div>
-              <span className="font-bold text-lg text-primary">€{total.toFixed(2)}</span>
-            </button>
+            <>
+              <span className="bg-white text-primary rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">
+                {cart.length}
+              </span>
+              <span className="font-semibold text-sm">€{total.toFixed(2)}</span>
+            </>
           ) : (
-            <button
-              onClick={() => setIsCartOpen(true)}
-              className="w-full bg-white border-t border-border py-3 px-4 text-center text-body-md text-text-muted hover:bg-surface-container-low transition-colors"
-            >
-              {t.pos.emptyCart}
-            </button>
+            <span className="font-semibold text-sm">{t.pos.cart || 'Carrito'}</span>
           )}
-        </div>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
+          </svg>
+        </button>
       )}
 
       {/* Full Bottom Sheet Cart Modal */}
       {isCartOpen && (
-        <div className="md:hidden fixed inset-0 z-40 flex flex-col">
+        <div className="md:hidden fixed inset-0 z-40">
           <div className="absolute inset-0 bg-black/60" onClick={() => setIsCartOpen(false)} />
-          <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-xl max-h-[85vh] flex flex-col">
+          <div className="absolute bottom-0 left-0 right-0 z-10 bg-white rounded-t-xl max-h-[85vh] flex flex-col" style={{ touchAction: 'pan-y' }}>
             <Cart variant="bottomSheet" onClose={() => setIsCartOpen(false)} />
           </div>
         </div>
