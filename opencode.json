@@ -28,7 +28,7 @@
       "__managed_by": "gentle-ai/sdd",
       "description": "Gentle AI SDD Orchestrator - coordinates sub-agents, never does work inline",
       "mode": "primary",
-      "model": "opencode-go/mimo-v2.5-pro",
+      "model": "opencode-go/mimo-v2.6-pro",
       "permission": {
         "question": "allow",
         "task": {
@@ -65,7 +65,7 @@
       "description": "Surgical fix agent for judgment-day protocol",
       "hidden": true,
       "mode": "subagent",
-      "model": "opencode-go/mimo-v2.5-pro",
+      "model": "opencode-go/mimo-v2.6-pro",
       "permission": {},
       "prompt": "You are a judgment-day surgical fix agent. Execute the fix instructions provided in the task prompt exactly. Do NOT delegate further. Fix ONLY the confirmed issues listed — do NOT refactor beyond what is strictly needed.\n\n\u003c!-- gentle-ai:agent-language-contract --\u003e\n## Artifact Language Contract\n\nGenerated artifacts (code, comments, UI copy, docs, specs, tests, commit messages, memory entries) default to English. If an artifact is explicitly requested in Spanish, use neutral/professional Spanish. Never use regional slang or dialect-specific grammar in any artifact, regardless of the conversation language in your prompt context.\n\nBefore any Write/Edit whose content is an artifact, re-verify these artifact language rules.\n\u003c!-- /gentle-ai:agent-language-contract --\u003e\n\n\u003c!-- gentle-ai:remote-authorization --\u003e\n## Remote operation authorization\n\nPermission to develop locally does not authorize remote execution or file transfer. Before remote work, require explicit user authorization for the destination, operation, and credential/session to use. If any part is missing or ambiguous, ask and remain local; do not probe the destination to resolve the ambiguity.\n\n- Do not discover, inspect, or reuse ambient SSH agents, ControlMaster sockets, credentials, authenticated sessions, or other remote access channels without explicit authorization. Their availability is not permission to use them.\n- Apply this boundary regardless of the tool or spelling: direct commands, wrappers, interpreters, libraries, and delegated work do not bypass it. Pass the authorized scope to delegates; delegation cannot expand it.\n- Explicitly authorized remote work is allowed within that scope. Preserve stricter user instructions and runtime restrictions; do not weaken them or change approval settings to proceed.\n- Native ask rules are an additional runtime mechanism, not authorization inferred from local-development access. Automation modes and remembered approvals may suppress prompts. This behavioral contract is not a sandbox and does not guarantee a fresh human prompt for every execution.\n\u003c!-- /gentle-ai:remote-authorization --\u003e\n",
       "variant": ""
@@ -75,7 +75,7 @@
       "description": "Adversarial code reviewer — blind judge A for judgment-day protocol",
       "hidden": true,
       "mode": "subagent",
-      "model": "opencode-go/mimo-v2.5-pro",
+      "model": "opencode-go/mimo-v2.6-pro",
       "permission": {
         "bash": "deny",
         "edit": "deny",
@@ -90,7 +90,7 @@
       "description": "Adversarial code reviewer — blind judge B for judgment-day protocol",
       "hidden": true,
       "mode": "subagent",
-      "model": "opencode-go/mimo-v2.5-pro",
+      "model": "opencode-go/mimo-v2.6-pro",
       "permission": {
         "bash": "deny",
         "edit": "deny",
@@ -105,7 +105,7 @@
       "description": "R2 Readability reviewer — naming, complexity, intention, maintainability, review size, and context clarity",
       "hidden": true,
       "mode": "subagent",
-      "model": "opencode-go/mimo-v2.5-pro",
+      "model": "opencode-go/mimo-v2.6-pro",
       "permission": {
         "*": "deny"
       },
@@ -117,7 +117,7 @@
       "description": "Batched adversarial refuter — evaluates every BLOCKER/CRITICAL candidate through one assigned lens and returns one verdict per finding",
       "hidden": true,
       "mode": "subagent",
-      "model": "opencode-go/mimo-v2.5-pro",
+      "model": "opencode-go/mimo-v2.6-pro",
       "permission": {
         "bash": "deny",
         "edit": "deny",
@@ -132,7 +132,7 @@
       "description": "R3 Reliability reviewer — behavior-first tests, coverage value, edge cases, determinism, contracts, and regressions",
       "hidden": true,
       "mode": "subagent",
-      "model": "opencode-go/mimo-v2.5-pro",
+      "model": "opencode-go/mimo-v2.6-pro",
       "permission": {
         "*": "deny"
       },
@@ -144,7 +144,7 @@
       "description": "R4 Resilience reviewer — fallbacks, retry/backoff, graceful degradation, observability, load, rollback, and SLO risks",
       "hidden": true,
       "mode": "subagent",
-      "model": "opencode-go/mimo-v2.5-pro",
+      "model": "opencode-go/mimo-v2.6-pro",
       "permission": {
         "*": "deny"
       },
@@ -156,7 +156,7 @@
       "description": "R1 Risk reviewer — security, privilege boundaries, data exposure, dependency risks, and merge-blocking vulnerabilities",
       "hidden": true,
       "mode": "subagent",
-      "model": "opencode-go/mimo-v2.5-pro",
+      "model": "opencode-go/mimo-v2.6-pro",
       "permission": {
         "*": "deny"
       },
@@ -168,7 +168,7 @@
       "description": "Targeted read-only validator for provider-issued review checks",
       "hidden": true,
       "mode": "subagent",
-      "model": "opencode-go/mimo-v2.5-pro",
+      "model": "opencode-go/mimo-v2.6-pro",
       "permission": {
         "bash": {
           "*": "deny",
@@ -186,7 +186,7 @@
       "description": "Implement code changes from task definitions",
       "hidden": true,
       "mode": "subagent",
-      "model": "opencode-go/mimo-v2.5-pro",
+      "model": "opencode-go/mimo-v2.6-pro",
       "permission": {},
       "prompt": "{file:../../../../.config/opencode/prompts/sdd/sdd-apply.md}",
       "variant": ""
@@ -196,7 +196,7 @@
       "description": "Archive completed change artifacts",
       "hidden": true,
       "mode": "subagent",
-      "model": "opencode-go/mimo-v2.5-pro",
+      "model": "opencode-go/mimo-v2.6-pro",
       "permission": {},
       "prompt": "{file:../../../../.config/opencode/prompts/sdd/sdd-archive.md}",
       "variant": ""
@@ -206,7 +206,7 @@
       "description": "Create technical design from proposals",
       "hidden": true,
       "mode": "subagent",
-      "model": "opencode-go/mimo-v2.5-pro",
+      "model": "opencode-go/mimo-v2.6-pro",
       "permission": {},
       "prompt": "{file:../../../../.config/opencode/prompts/sdd/sdd-design.md}",
       "variant": ""
@@ -216,7 +216,7 @@
       "description": "Investigate codebase and think through ideas",
       "hidden": true,
       "mode": "subagent",
-      "model": "opencode-go/mimo-v2.5-pro",
+      "model": "opencode-go/mimo-v2.6-pro",
       "permission": {},
       "prompt": "{file:../../../../.config/opencode/prompts/sdd/sdd-explore.md}",
       "variant": ""
@@ -226,7 +226,7 @@
       "description": "Bootstrap SDD context and project configuration",
       "hidden": true,
       "mode": "subagent",
-      "model": "opencode-go/mimo-v2.5-pro",
+      "model": "opencode-go/mimo-v2.6-pro",
       "permission": {},
       "prompt": "{file:../../../../.config/opencode/prompts/sdd/sdd-init.md}",
       "variant": ""
@@ -236,7 +236,7 @@
       "description": "Guide user through a complete SDD cycle using their real codebase",
       "hidden": true,
       "mode": "subagent",
-      "model": "opencode-go/mimo-v2.5-pro",
+      "model": "opencode-go/mimo-v2.6-pro",
       "permission": {},
       "prompt": "{file:../../../../.config/opencode/prompts/sdd/sdd-onboard.md}",
       "variant": ""
@@ -246,7 +246,7 @@
       "description": "Create change proposals from explorations",
       "hidden": true,
       "mode": "subagent",
-      "model": "opencode-go/mimo-v2.5-pro",
+      "model": "opencode-go/mimo-v2.6-pro",
       "permission": {},
       "prompt": "{file:../../../../.config/opencode/prompts/sdd/sdd-propose.md}",
       "variant": ""
@@ -256,7 +256,7 @@
       "description": "Collect source-backed evidence for selected SDD research",
       "hidden": true,
       "mode": "subagent",
-      "model": "opencode-go/mimo-v2.5-pro",
+      "model": "opencode-go/mimo-v2.6-pro",
       "permission": {
         "bash": "deny",
         "task": "deny",
@@ -271,7 +271,7 @@
       "description": "Write detailed specifications from proposals",
       "hidden": true,
       "mode": "subagent",
-      "model": "opencode-go/mimo-v2.5-pro",
+      "model": "opencode-go/mimo-v2.6-pro",
       "permission": {},
       "prompt": "{file:../../../../.config/opencode/prompts/sdd/sdd-spec.md}",
       "variant": ""
@@ -281,7 +281,7 @@
       "description": "Break down specs and designs into implementation tasks",
       "hidden": true,
       "mode": "subagent",
-      "model": "opencode-go/mimo-v2.5-pro",
+      "model": "opencode-go/mimo-v2.6-pro",
       "permission": {},
       "prompt": "{file:../../../../.config/opencode/prompts/sdd/sdd-tasks.md}",
       "variant": ""
@@ -291,7 +291,7 @@
       "description": "Validate implementation against specs",
       "hidden": true,
       "mode": "subagent",
-      "model": "opencode-go/mimo-v2.5-pro",
+      "model": "opencode-go/mimo-v2.6-pro",
       "permission": {},
       "prompt": "{file:../../../../.config/opencode/prompts/sdd/sdd-verify.md}",
       "variant": ""
