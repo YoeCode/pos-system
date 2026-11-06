@@ -111,7 +111,7 @@ const Modal: React.FC<ModalProps> = ({
       className="fixed inset-0 z-50 flex items-center justify-center"
       role="presentation"
       onClick={(e) => {
-        if (e.target === overlayRef.current) onClose();
+        if (!contentRef.current?.contains(e.target as Node)) onClose();
       }}
     >
       <div className="absolute inset-0 bg-secondary/40 backdrop-blur-sm" />
