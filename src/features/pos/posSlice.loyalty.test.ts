@@ -43,6 +43,32 @@ describe('posSlice — loyalty additions', () => {
       const window = getActiveWindow(INITIAL_STATE);
       expect(window?.selectedCustomerId).toBeNull();
     });
+
+    it('resets pointsToRedeem when switching to a different customer', () => {
+      let state = posReducer(INITIAL_STATE, setSelectedCustomer('cust-001'));
+      state = posReducer(state, setPointsToRedeem(80));
+      state = posReducer(state, setSelectedCustomer('cust-002'));
+      const window = getActiveWindow(state);
+      expect(window?.selectedCustomerId).toBe('cust-002');
+      expect(window?.pointsToRedeem).toBe(0);
+    });
+
+    it('resets pointsToRedeem when switching to walk-in customer (null)', () => {
+      let state = posReducer(INITIAL_STATE, setSelectedCustomer('cust-001'));
+      state = posReducer(state, setPointsToRedeem(80));
+      state = posReducer(state, setSelectedCustomer(null));
+      const window = getActiveWindow(state);
+      expect(window?.selectedCustomerId).toBeNull();
+      expect(window?.pointsToRedeem).toBe(0);
+    });
+
+    it('keeps pointsToRedeem when re-selecting the same customer', () => {
+      let state = posReducer(INITIAL_STATE, setSelectedCustomer('cust-001'));
+      state = posReducer(state, setPointsToRedeem(80));
+      state = posReducer(state, setSelectedCustomer('cust-001'));
+      const window = getActiveWindow(state);
+      expect(window?.pointsToRedeem).toBe(80);
+    });
   });
 
   describe('clearCart', () => {
