@@ -8,7 +8,6 @@ import {
   updateCustomer,
   deactivateCustomer,
   updateLoyaltyPoints,
-  computeTier,
 } from './customersService';
 
 interface CustomersState {
@@ -72,8 +71,7 @@ export const addLoyaltyPointsAsync = createAsyncThunk(
     { getState },
   ) => {
     const tenantId = (getState() as RootState).auth.user?.tenantId || '';
-    const newTier = computeTier(points, tiers);
-    const result = await updateLoyaltyPoints(customerId, points, amountSpent, newTier, tenantId);
+    const result = await updateLoyaltyPoints(customerId, points, amountSpent, tiers, tenantId);
     if (!result) throw new Error('Failed to update loyalty points');
     return result;
   },
@@ -86,8 +84,7 @@ export const deductLoyaltyPointsAsync = createAsyncThunk(
     { getState },
   ) => {
     const tenantId = (getState() as RootState).auth.user?.tenantId || '';
-    const newTier = computeTier(points, tiers);
-    const result = await updateLoyaltyPoints(customerId, -points, -amountSpent, newTier, tenantId);
+    const result = await updateLoyaltyPoints(customerId, -points, -amountSpent, tiers, tenantId);
     if (!result) throw new Error('Failed to deduct loyalty points');
     return result;
   },

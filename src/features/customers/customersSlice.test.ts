@@ -9,7 +9,7 @@ import customersReducer, {
   selectActiveCustomers,
   selectCustomerById,
 } from './customersSlice';
-import { computeTier } from './customersService';
+import { applyLoyaltyDelta, computeTier } from './customersService';
 import type { Customer, LoyaltyTierConfig } from '../../types';
 
 const DEFAULT_TIERS: LoyaltyTierConfig[] = [
@@ -226,6 +226,40 @@ describe('customersSlice', () => {
 
     it('returns correct tier at exact threshold', () => {
       expect(computeTier(1500, DEFAULT_TIERS)).toBe('gold');
+    });
+  });
+
+  // ── applyLoyaltyDelta helper ─────────────────────────────────────────────
+
+  describe('applyLoyaltyDelta', () => {
+    it('derives tier from the accumulated total, not the transaction delta', () => {
+      // 600 existing + 80 earned = 680 → silver. Computing from the 80-point
+      // delta alone would wrongly return bronze (regression: tier corrupted on sale).
+      const result = applyLoyaltyDelta(600, 100, 80, 20, DEFAULT_TIERS);
+      expect(result).toEqual({ points: 680, spent: 120, tier: 'silver' });
+    });
+
+    it('upgrades tier when the delta crosses a threshold', () => {
+      const result = applyLoyaltyDelta(450, 0, 100, 0, DEFAULT_TIERS);
+      expect(result.points).toBe(550);
+      expect(result.tier).toBe('silver');
+    });
+
+    it('keeps tier at exact threshold after redemption', () => {
+      const result = applyLoyaltyDelta(600, 0, -100, 0, DEFAULT_TIERS);
+      expect(result.points).toBe(500);
+      expect(result.tier).toBe('silver');
+    });
+
+    it('downgrades tier when redemption drops below threshold', () => {
+      const result = applyLoyaltyDelta(550, 0, -100, 0, DEFAULT_TIERS);
+      expect(result.points).toBe(450);
+      expect(result.tier).toBe('bronze');
+    });
+
+    it('clamps points and spent at zero', () => {
+      const result = applyLoyaltyDelta(50, 10, -100, -50, DEFAULT_TIERS);
+      expect(result).toEqual({ points: 0, spent: 0, tier: 'bronze' });
     });
   });
 });
