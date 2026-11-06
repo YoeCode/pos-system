@@ -50,6 +50,31 @@ function renderModal(isOpen: boolean, onClose = vi.fn(), store = createTestStore
   return { ...result, store, onClose };
 }
 
+function getSelectByLabel(labelText: string): HTMLSelectElement {
+  const select = screen.getByText(labelText).parentElement?.querySelector('select');
+  if (!select) throw new Error(`Select for label "${labelText}" not found`);
+  return select;
+}
+
+interface FillRequiredFieldsOptions {
+  name: string;
+  sku: string;
+  category?: string;
+  season?: string;
+  brand?: string;
+}
+
+// Fills every field the create form requires: name, a manual SKU
+// (auto-generation toggled off), category, season and brand.
+async function fillRequiredFields(user: ReturnType<typeof userEvent.setup>, options: FillRequiredFieldsOptions) {
+  await user.type(screen.getByPlaceholderText('Enter product name'), options.name);
+  await user.click(screen.getByRole('checkbox', { name: 'Autogenerar código' }));
+  await user.type(screen.getByPlaceholderText('e.g. PR-001'), options.sku);
+  await user.selectOptions(getSelectByLabel('Category'), options.category ?? 'Food');
+  await user.selectOptions(getSelectByLabel('Temporada'), options.season ?? 'Permanente');
+  await user.selectOptions(getSelectByLabel('Marca'), options.brand ?? 'Nestlé');
+}
+
 describe('ProductCreateModal', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
@@ -88,15 +113,14 @@ describe('ProductCreateModal', () => {
     expect(createButton).toBeDisabled();
   });
 
-  it('enables create button when name and sku are filled', async () => {
+  it('enables create button when all required fields are filled', async () => {
     const user = userEvent.setup();
     renderModal(true);
-    const nameInput = screen.getByPlaceholderText('Enter product name');
-    const skuInput = screen.getByPlaceholderText('e.g. PR-001');
     const createButton = screen.getByRole('button', { name: 'Add' });
 
-    await user.type(nameInput, 'Test Product');
-    await user.type(skuInput, 'TP-001');
+    expect(createButton).toBeDisabled();
+
+    await fillRequiredFields(user, { name: 'Test Product', sku: 'TP-001' });
 
     expect(createButton).not.toBeDisabled();
   });
@@ -151,8 +175,7 @@ describe('ProductCreateModal', () => {
     const store = createTestStore();
     renderModal(true, vi.fn(), store);
 
-    await user.type(screen.getByPlaceholderText('Enter product name'), 'Test Widget');
-    await user.type(screen.getByPlaceholderText('e.g. PR-001'), 'TW-100');
+    await fillRequiredFields(user, { name: 'Test Widget', sku: 'TW-100', category: 'Food' });
     await user.click(screen.getByRole('button', { name: 'Add' }));
 
     await waitFor(() => {
@@ -162,7 +185,7 @@ describe('ProductCreateModal', () => {
     const product = store.getState().products.items.find(p => p.sku === 'TW-100')!;
     expect(product.name).toBe('Test Widget');
     expect(product.sku).toBe('TW-100');
-    expect(product.category).toBe('Uncategorized');
+    expect(product.category).toBe('Food');
     expect(product.status).toBe('draft');
     expect(product.publishedOnline).toBe(false);
   });
@@ -172,8 +195,7 @@ describe('ProductCreateModal', () => {
     const store = createTestStore();
     renderModal(true, vi.fn(), store);
 
-    await user.type(screen.getByPlaceholderText('Enter product name'), '  Trimmed Name  ');
-    await user.type(screen.getByPlaceholderText('e.g. PR-001'), '  TW-200  ');
+    await fillRequiredFields(user, { name: '  Trimmed Name  ', sku: '  TW-200  ' });
     await user.click(screen.getByRole('button', { name: 'Add' }));
 
     await waitFor(() => {
@@ -190,10 +212,14 @@ describe('ProductCreateModal', () => {
     renderModal(true, vi.fn(), store);
 
     await user.type(screen.getByPlaceholderText('Enter product name'), 'Category Item');
+    await user.click(screen.getByRole('checkbox', { name: 'Autogenerar código' }));
     await user.type(screen.getByPlaceholderText('e.g. PR-001'), 'CI-400');
 
-    const categorySelect = screen.getByRole('combobox');
+    const categorySelect = getSelectByLabel('Category');
     await user.selectOptions(categorySelect, 'Food');
+
+    await user.selectOptions(getSelectByLabel('Temporada'), 'Permanente');
+    await user.selectOptions(getSelectByLabel('Marca'), 'Nestlé');
 
     await user.click(screen.getByRole('button', { name: 'Add' }));
 
@@ -210,11 +236,12 @@ describe('ProductCreateModal', () => {
     const onClose = vi.fn();
     renderModal(true, onClose);
 
-    await user.type(screen.getByPlaceholderText('Enter product name'), 'Final Item');
-    await user.type(screen.getByPlaceholderText('e.g. PR-001'), 'FI-700');
+    await fillRequiredFields(user, { name: 'Final Item', sku: 'FI-700' });
     await user.click(screen.getByRole('button', { name: 'Add' }));
 
-    expect(onClose).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(onClose).toHaveBeenCalledTimes(1);
+    });
   });
 
   it('sets description on created product', async () => {
@@ -222,8 +249,7 @@ describe('ProductCreateModal', () => {
     const store = createTestStore();
     renderModal(true, vi.fn(), store);
 
-    await user.type(screen.getByPlaceholderText('Enter product name'), 'Described Item');
-    await user.type(screen.getByPlaceholderText('e.g. PR-001'), 'DI-800');
+    await fillRequiredFields(user, { name: 'Described Item', sku: 'DI-800' });
     await user.type(screen.getByPlaceholderText('Brief product description'), 'A great product');
 
     await user.click(screen.getByRole('button', { name: 'Add' }));
@@ -241,8 +267,7 @@ describe('ProductCreateModal', () => {
     const store = createTestStore();
     renderModal(true, vi.fn(), store);
 
-    await user.type(screen.getByPlaceholderText('Enter product name'), 'UUID Item');
-    await user.type(screen.getByPlaceholderText('e.g. PR-001'), 'UI-900');
+    await fillRequiredFields(user, { name: 'UUID Item', sku: 'UI-900' });
     await user.click(screen.getByRole('button', { name: 'Add' }));
 
     await waitFor(() => {
