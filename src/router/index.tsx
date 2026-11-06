@@ -1,30 +1,25 @@
-import { Suspense, lazy } from 'react';
+import { Suspense } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 
 import AuthLayout from '../layouts/AuthLayout';
 import DashboardLayout from '../layouts/DashboardLayout';
 import ProtectedRoute from './ProtectedRoute';
-
-const LandingPage = lazy(() => import('../pages/Landing/LandingPage'));
-const LoginPage = lazy(() => import('../pages/Login/LoginPage'));
-const RegisterPage = lazy(() => import('../pages/Register/RegisterPage'));
-const TenantSelectPage = lazy(() => import('../pages/TenantSelect/TenantSelectPage'));
-
-const AcceptInvitePage = lazy(() => import('../pages/AcceptInvite/AcceptInvitePage'));
-const POSPage = lazy(() => import('../pages/POS/POSPage'));
-const ProductsPage = lazy(() => import('../pages/Products/ProductsPage'));
-const EmployeesPage = lazy(() => import('../pages/Employees/EmployeesPage'));
-const DashboardPage = lazy(() => import('../pages/Dashboard/DashboardPage'));
-const ReportsPage = lazy(() => import('../pages/Reports/ReportsPage'));
-const SettingsPage = lazy(() => import('../pages/Settings/SettingsPage'));
-const CustomersPage = lazy(() => import('../pages/Customers/CustomersPage'));
-const InventoryPage = lazy(() => import('../pages/Inventory/InventoryPage'));
-
-const PageLoader = () => (
-  <div className="flex h-screen items-center justify-center">
-    <div className="text-lg text-gray-600">Cargando...</div>
-  </div>
-);
+import {
+  AcceptInvitePage,
+  CustomersPage,
+  DashboardPage,
+  EmployeesPage,
+  InventoryPage,
+  LandingPage,
+  LoginPage,
+  PageLoader,
+  POSPage,
+  ProductsPage,
+  RegisterPage,
+  ReportsPage,
+  SettingsPage,
+  TenantSelectPage,
+} from './RouteComponents';
 
 export const router = createBrowserRouter([
   {
