@@ -286,6 +286,12 @@ const Cart: React.FC<CartProps> = ({ variant = 'sidebar', onClose }) => {
               <span className="font-mono font-[tabular-nums] text-success">-€{(calc.lines.reduce((sum, l) => sum + (l.discountSource === 'manual' ? l.appliedDiscount : 0), 0)).toFixed(2)}</span>
             </div>
           )}
+          {pointsToRedeem > 0 && (
+            <div className="flex items-center justify-between text-body-md">
+              <span className="text-purple-600">{t.pos.points} ({pointsToRedeem})</span>
+              <span className="font-mono font-[tabular-nums] text-purple-600">-€{(pointsToRedeem / 100).toFixed(2)}</span>
+            </div>
+          )}
           <div className="flex items-center justify-between text-body-md">
             <span className="text-text-muted">{taxLabel}</span>
             <span className="font-mono font-[tabular-nums] text-text-muted">€{tax.toFixed(2)}</span>

@@ -282,6 +282,11 @@ const posSlice = createSlice({
     },
     setSelectedCustomer: (state, action: PayloadAction<string | null>) => {
       updateActiveWindow(state, (window) => {
+        if (window.selectedCustomerId !== action.payload) {
+          // Redeemed points belong to the previous customer's balance:
+          // reset so they can't leak into the new customer's totals.
+          window.pointsToRedeem = 0;
+        }
         window.selectedCustomerId = action.payload;
       });
     },
