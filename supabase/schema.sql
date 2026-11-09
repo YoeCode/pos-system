@@ -81,7 +81,8 @@ CREATE TABLE sales (
 CREATE TABLE sale_items (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   sale_id UUID NOT NULL REFERENCES sales(id) ON DELETE CASCADE,
-  product_id UUID NOT NULL REFERENCES products(id),
+  -- NULL for manual (non-catalog) product lines; snapshot columns keep the row renderable
+  product_id UUID REFERENCES products(id),
   product_name TEXT NOT NULL,
   product_sku TEXT,
   product_category TEXT,
