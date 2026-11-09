@@ -2,6 +2,7 @@ import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
 import type { CartItem, PaymentMethod, Product, ProductVariant, SaleWindow, CashBoxClosure } from '../../types';
 import type { RootState } from '../../app/store';
+import { createManualProductId, MANUAL_PRODUCT_ID_PREFIX } from '../../utils/manualProduct';
 
 const CASH_BOX_KEY = 'nexopos_cash_box';
 const WINDOWS_KEY = 'nexopos_sale_windows';
@@ -313,10 +314,13 @@ const posSlice = createSlice({
     },
     addCustomProductToCart: (state, action: PayloadAction<{ name: string; category: string; brand?: string; price: number }>) => {
       const { name, category, brand, price } = action.payload;
+      // Unique per call: two manual products added in the same millisecond
+      // must not collide (cart keys, receipt keys, refund lookups).
+      const manualId = createManualProductId();
       const customProduct: Product = {
-        id: `custom-${Date.now()}`,
+        id: manualId,
         name,
-        sku: `CUSTOM-${Date.now().toString(36).toUpperCase()}`,
+        sku: `CUSTOM-${manualId.slice(MANUAL_PRODUCT_ID_PREFIX.length).toUpperCase()}`,
         category,
         brand,
         price,
