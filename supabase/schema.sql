@@ -1,3 +1,34 @@
+-- =====================================================================
+-- Casa Lis POS -- legacy baseline schema (pre-multi-tenant).
+--
+-- This file documents the ORIGINAL single-tenant schema. It is NOT the
+-- authoritative source of the live schema: supabase/migrations/ is.
+-- In particular, the RLS policies defined below (employees_select_active,
+-- products_manage, sales_select, ...) were superseded by the
+-- tenant-scoped policies in migration 001 (employees_tenant_*,
+-- products_tenant_*, sales_tenant_*, ...) and later migrations add
+-- tenant_id columns, more tables (tenants, invitations, categories,
+-- brands, sizes, size_groups, seasons, sku_counters, product_attributes,
+-- product_variants) and additional policies.
+--
+-- SECURITY POSTURE (as of migration 019, 2026-11-10):
+--   * RLS is ENABLED on all 20 public tables. Migration 019 re-enabled
+--     it on employees, products, sales and sale_items, whose *_tenant_*
+--     policies (migration 001) were previously inert because RLS was
+--     disabled on those four tables.
+--   * Role grants: anon holds SELECT on invitations ONLY (pre-auth
+--     accept-invite display, rows gated by the RLS policy
+--     "invitations_select_by_token": status='pending' AND unexpired).
+--     All other anon privileges on public tables are revoked by
+--     migration 019. The `authenticated` role keeps standard Supabase
+--     grants; row access is enforced by the tenant-scoped RLS policies.
+--   * products.cost_price (margin data) is never publicly readable. A
+--     future public storefront must use a column-level grant or a view
+--     excluding cost_price, never a table-level SELECT for anon.
+--   * Test migration 019 against preview/staging before production: it
+--     changes access behavior for authenticated flows.
+-- =====================================================================
+
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TABLE employees (
