@@ -163,3 +163,15 @@ VALUES
   ('00000000-0000-0000-0000-000000000001', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'María García', 'maria@example.es', '+34 600 111 222', 120, 'bronze', 120),
   ('00000000-0000-0000-0000-000000000001', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'Carlos Ruiz', 'carlos@example.es', '+34 600 222 333', 780, 'silver', 780)
 ON CONFLICT (id) DO NOTHING;
+
+-- ============================================
+-- Dev hygiene: remove the legacy backfill tenant
+--
+-- Migration 001 creates a "Casa Lis Legacy" tenant to anchor rows that predate
+-- multi-tenancy. In fresh environments it holds no historical data (only the
+-- backfilled baseline settings row) and confuses local testing, so this seed
+-- leaves exactly one tenant: the demo one. Production never runs seeds, so its
+-- legacy tenant and the historical rows anchored to it remain untouched.
+-- ============================================
+DELETE FROM settings WHERE tenant_id = 'f1d2d2d2-d2d2-d2d2-d2d2-d2d2d2d2d2d2';
+DELETE FROM tenants WHERE id = 'f1d2d2d2-d2d2-d2d2-d2d2-d2d2d2d2d2d2';
