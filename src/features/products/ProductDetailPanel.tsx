@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useLayoutEffect, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/store';
-import { updateProductAsync, deleteProductAsync, selectProduct, type ProductFormState, selectStockMovementsForProduct, createProductVariantAsync, updateProductVariantAsync, deleteProductVariantAsync, fetchProductVariantsAsync, fetchProductAttributesAsync } from './productsSlice';
-import type { ProductVariant, Product, Employee } from '../../types';
+import { updateProductAsync, deleteProductAsync, selectProduct, type ProductFormState, selectStockMovementsForProduct, createProductVariantAsync, updateProductVariantAsync, deleteProductVariantAsync, updateProductSizeAsync, fetchProductVariantsAsync, fetchProductAttributesAsync } from './productsSlice';
+import type { ProductVariant, Product, ProductSize, Employee } from '../../types';
 import { usePermission } from '../../hooks/usePermission';
 import { selectCategories, selectCategoryGroups, selectBrands, selectSeasons } from '../../features/settings/settingsSlice';
 import Button from '../../components/ui/Button';
@@ -15,6 +15,7 @@ import PricingFields from './PricingFields';
 import ImageSection from './ImageSection';
 import PublishToggle from './PublishToggle';
 import StockSection from './StockSection';
+import SizesSection from './SizesSection';
 import ProductBasicFields from './ProductBasicFields';
 import VariantsSection from './VariantsSection';
 
@@ -40,6 +41,7 @@ interface FormState {
   image: string;
   hasVariants: boolean;
   variantAttributes: string[];
+  sizes: ProductSize[];
 }
 
 const ProductDetailPanel: React.FC<ProductDetailPanelProps> = ({ onDuplicate }) => {
@@ -77,6 +79,7 @@ const ProductDetailPanel: React.FC<ProductDetailPanelProps> = ({ onDuplicate }) 
     image: '',
     hasVariants: false,
     variantAttributes: [],
+    sizes: [],
   });
 
   const [snapshot, setSnapshot] = useState<FormState | null>(null);
@@ -110,6 +113,7 @@ const ProductDetailPanel: React.FC<ProductDetailPanelProps> = ({ onDuplicate }) 
         image: product.image || '',
         hasVariants: product.hasVariants || false,
         variantAttributes: product.variantAttributes || [],
+        sizes: product.sizes ? product.sizes.map(s => ({ ...s })) : [],
       });
       if (product.hasVariants) {
         dispatch(fetchProductVariantsAsync(product.id));
@@ -144,6 +148,7 @@ const ProductDetailPanel: React.FC<ProductDetailPanelProps> = ({ onDuplicate }) 
       status: form.status,
       version: form.version,
       image: form.image || undefined,
+      sizes: form.sizes.length > 0 ? form.sizes : undefined,
     };
     setIsSaving(true);
     try {
@@ -223,6 +228,27 @@ const ProductDetailPanel: React.FC<ProductDetailPanelProps> = ({ onDuplicate }) 
       addToast('Variante eliminada correctamente', 'success');
     } catch {
       addToast('Error al eliminar la variante', 'error');
+    }
+  };
+
+  const handleSizeFieldChange = (index: number, field: 'stock' | 'minStock', value: number) => {
+    setForm(prev => ({
+      ...prev,
+      sizes: prev.sizes.map((s, i) =>
+        i === index ? (field === 'stock' ? { ...s, stock: value } : { ...s, minStock: value }) : s
+      ),
+    }));
+  };
+
+  const handleUpdateSize = async (size: ProductSize) => {
+    if (!product) return;
+    try {
+      await dispatch(updateProductSizeAsync({ productId: product.id, size })).unwrap();
+      // Keep the edit snapshot in sync so panel Cancel cannot revert a committed size stock change.
+      setSnapshot(prev => (prev ? { ...prev, sizes: prev.sizes.map(s => (s.size === size.size ? { ...size } : s)) } : prev));
+      addToast('Talla actualizada correctamente', 'success');
+    } catch {
+      addToast('Error al actualizar la talla', 'error');
     }
   };
 
@@ -398,6 +424,13 @@ const ProductDetailPanel: React.FC<ProductDetailPanelProps> = ({ onDuplicate }) 
         <StockSection
           stock={product.stock}
           stockLabel={t.products.detail.stockLevel}
+        />
+
+        <SizesSection
+          product={product}
+          sizes={form.sizes}
+          onSizeFieldChange={handleSizeFieldChange}
+          onUpdateSize={handleUpdateSize}
         />
 
         <VariantsSection
