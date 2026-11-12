@@ -17,6 +17,7 @@ import {
   createProductVariant,
   updateProductVariant,
   deleteProductVariant,
+  updateProductSize,
 } from './productsService';
 import { addCategory } from '../settings/settingsService';
 
@@ -240,6 +241,20 @@ export const deleteProductVariantAsync = createAsyncThunk(
     const result = await deleteProductVariant(tenantId, variantId);
     if (!result) throw new Error('Failed to delete variant');
     return variantId;
+  }
+);
+
+// --------------------------------------------
+// Product Sizes Thunks
+// --------------------------------------------
+
+export const updateProductSizeAsync = createAsyncThunk(
+  'products/updateProductSizeAsync',
+  async ({ productId, size }: { productId: string; size: ProductSize }, { getState }) => {
+    const tenantId = (getState() as RootState).auth.user?.tenantId || '';
+    const result = await updateProductSize(productId, size.size, { stock: size.stock, minStock: size.minStock ?? 0 }, tenantId);
+    if (!result) throw new Error('Failed to update product size');
+    return { productId, size: result };
   }
 );
 
@@ -558,6 +573,27 @@ const productsSlice = createSlice({
           if (idx !== -1) {
             state.selectedProduct.variants.splice(idx, 1);
             state.selectedProduct.stock = state.selectedProduct.variants.reduce((sum, v) => sum + v.stock, 0);
+          }
+        }
+      })
+      // --------------------------------------------
+      // Size handlers
+      // --------------------------------------------
+      .addCase(updateProductSizeAsync.fulfilled, (state, action) => {
+        const { productId, size: updatedSize } = action.payload;
+        const product = state.items.find(p => p.id === productId);
+        if (product && product.sizes) {
+          const idx = product.sizes.findIndex(s => s.size === updatedSize.size);
+          if (idx !== -1) {
+            product.sizes[idx] = updatedSize;
+            product.stock = product.sizes.reduce((sum, s) => sum + s.stock, 0);
+          }
+        }
+        if (state.selectedProduct?.id === productId && state.selectedProduct.sizes) {
+          const idx = state.selectedProduct.sizes.findIndex(s => s.size === updatedSize.size);
+          if (idx !== -1) {
+            state.selectedProduct.sizes[idx] = updatedSize;
+            state.selectedProduct.stock = state.selectedProduct.sizes.reduce((sum, s) => sum + s.stock, 0);
           }
         }
       });

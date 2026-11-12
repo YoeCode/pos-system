@@ -155,6 +155,7 @@ export const es = {
       cancel: 'Cancelar',
       createVariant: 'Crear variante',
       updateVariant: 'Actualizar',
+      updateSize: 'Actualizar',
       noVariants: 'No hay variantes definidas',
       status: 'Estado',
       active: 'Activo',

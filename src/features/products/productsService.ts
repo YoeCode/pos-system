@@ -142,6 +142,7 @@ export async function createProduct(product: Product, tenantId: string): Promise
 }
 
 export async function updateProduct(product: Product, tenantId: string): Promise<Product | null> {
+  const incomingSizes = product.sizes ?? [];
   const updateData: Record<string, any> = {
     name: product.name,
     sku: product.sku,
@@ -151,7 +152,8 @@ export async function updateProduct(product: Product, tenantId: string): Promise
     brand: product.brand || null,
     price: product.price,
     cost_price: product.costPrice,
-    stock: product.stock,
+    // Sized products keep the denormalized total in sync with the per-size rows.
+    stock: incomingSizes.length > 0 ? incomingSizes.reduce((sum, s) => sum + s.stock, 0) : product.stock,
     min_stock: product.minStock,
     image_url: product.image || null,
     description: product.description || null,
@@ -171,27 +173,69 @@ export async function updateProduct(product: Product, tenantId: string): Promise
 
   if (error) return null;
 
-  await supabase.from('product_sizes').delete().eq('product_id', product.id).eq('tenant_id', tenantId);
+  const { data: existingRows, error: existingError } = await supabase
+    .from('product_sizes')
+    .select('size, stock, min_stock, sku')
+    .eq('product_id', product.id)
+    .eq('tenant_id', tenantId);
 
-  if (product.sizes && product.sizes.length > 0) {
-    const sizesToInsert = product.sizes.map(s => ({
-      product_id: product.id,
-      tenant_id: tenantId,
-      size: s.size,
-      stock: s.stock,
-      min_stock: s.minStock,
-      sku: s.sku || null,
-    }));
-    await supabase.from('product_sizes').insert(sizesToInsert as any);
+  if (existingError) return null;
+
+  const existingSizes: ProductSize[] = ((existingRows as any[]) || []).map((s: any) => ({
+    size: s.size,
+    stock: s.stock,
+    minStock: s.min_stock,
+    sku: s.sku || undefined,
+  }));
+
+  const incomingSet = new Set(incomingSizes.map(s => s.size));
+  const existingSet = new Set(existingSizes.map(s => s.size));
+  const sizeSetChanged =
+    incomingSet.size !== existingSet.size || [...incomingSet].some(size => !existingSet.has(size));
+
+  if (sizeSetChanged) {
+    // Delete + reinsert is reserved for actual size-set changes (added/removed sizes).
+    if (existingSizes.length > 0) {
+      const { error: deleteError } = await supabase
+        .from('product_sizes')
+        .delete()
+        .eq('product_id', product.id)
+        .eq('tenant_id', tenantId);
+      if (deleteError) return null;
+    }
+    if (incomingSizes.length > 0) {
+      const sizesToInsert = incomingSizes.map(s => ({
+        product_id: product.id,
+        tenant_id: tenantId,
+        size: s.size,
+        stock: s.stock,
+        min_stock: s.minStock,
+        sku: s.sku || null,
+      }));
+      const { error: insertError } = await supabase.from('product_sizes').insert(sizesToInsert as any);
+      if (insertError) return null;
+    }
+  } else {
+    // Stock-only edits use targeted per-row updates instead of a destructive round-trip.
+    for (const s of incomingSizes) {
+      const existing = existingSizes.find(e => e.size === s.size);
+      if (!existing) continue;
+      const minStock = s.minStock ?? 0;
+      if (existing.stock !== s.stock || existing.minStock !== minStock) {
+        const updated = await updateProductSize(product.id, s.size, { stock: s.stock, minStock }, tenantId);
+        if (!updated) return null;
+      }
+    }
   }
 
-  const { data } = await supabase
+  const { data, error: refetchError } = await supabase
     .from('products')
     .select('*, product_sizes(*), product_variants(*)')
     .eq('id', product.id)
     .single();
 
-  return data ? mapDbProduct(data) : null;
+  if (refetchError || !data) return null;
+  return mapDbProduct(data);
 }
 
 export async function deleteProduct(id: string, tenantId: string): Promise<boolean> {
@@ -468,4 +512,46 @@ export async function deleteProductVariant(tenantId: string, variantId: string):
     .eq('tenant_id', tenantId);
 
   return !error;
+}
+
+// --------------------------------------------
+// Product Sizes CRUD
+// --------------------------------------------
+
+export async function updateProductSize(
+  productId: string,
+  size: string,
+  values: { stock: number; minStock: number },
+  tenantId: string
+): Promise<ProductSize | null> {
+  const updateData = {
+    stock: values.stock,
+    min_stock: values.minStock,
+  };
+
+  const { error } = await supabase
+    .from('product_sizes')
+    .update(updateData as any)
+    .eq('product_id', productId)
+    .eq('size', size)
+    .eq('tenant_id', tenantId);
+
+  if (error) return null;
+
+  const { data, error: fetchError } = await supabase
+    .from('product_sizes')
+    .select('*')
+    .eq('product_id', productId)
+    .eq('size', size)
+    .eq('tenant_id', tenantId)
+    .single();
+
+  if (fetchError || !data) return null;
+  const row = data as any;
+  return {
+    size: row.size,
+    stock: row.stock,
+    minStock: row.min_stock,
+    sku: row.sku || undefined,
+  };
 }
