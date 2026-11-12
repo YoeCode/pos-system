@@ -1,4 +1,5 @@
 import { supabase } from '../../supabase/client';
+import { getEffectiveUnitPrice } from '../pos/calculation';
 import type { Sale, OrderItem, PaymentMethod } from '../../types';
 
 function isValidUuid(id: string | undefined | null): id is string {
@@ -104,7 +105,7 @@ export async function createSale(sale: Sale, tenantId: string): Promise<Sale | n
       product_category: item.product.category,
       product_subcategory: item.product.subcategory ?? null,
       quantity: item.quantity,
-      unit_price: item.product.price,
+      unit_price: getEffectiveUnitPrice(item),
       line_total: item.lineTotal,
       selected_size: item.selectedSize || null,
       variant_id: item.selectedVariant?.id || null,

@@ -4,7 +4,7 @@ import { completeSaleAsync } from '../../sales/salesSlice';
 import { reduceStockAsync, selectAllProducts } from '../../products/productsSlice';
 import { selectTaxLabel, selectTaxRate, selectTaxIncludedInPrice, selectPointsPerEuro, selectLoyaltyTiers, selectMultiTerminalMode, selectTerminalId } from '../../settings/settingsSlice';
 import { addLoyaltyPointsAsync, deductLoyaltyPointsAsync, selectCustomerById } from '../../customers/customersSlice';
-import { calculateCart } from '../calculation';
+import { calculateCart, getEffectiveUnitPrice } from '../calculation';
 import {
   setPaymentMethod,
   startNewSale,
@@ -142,7 +142,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
       items: cart.map(ci => ({
         product: ci.product,
         quantity: ci.quantity,
-        lineTotal: ci.product.price * ci.quantity,
+        lineTotal: getEffectiveUnitPrice(ci) * ci.quantity,
         selectedSize: ci.selectedSize,
         selectedVariant: ci.selectedVariant,
       })),
@@ -267,7 +267,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
                 <span className="text-text-muted ml-1.5">× {item.quantity}</span>
               </span>
               <span className="font-mono text-text-primary">
-                €{(item.product.price * item.quantity).toFixed(2)}
+                €{(getEffectiveUnitPrice(item) * item.quantity).toFixed(2)}
               </span>
             </div>
           ))}
