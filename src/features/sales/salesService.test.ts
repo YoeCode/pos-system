@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createSale } from './salesService';
+import { createSale, fetchSales } from './salesService';
 import { calculateCart, getEffectiveUnitPrice } from '../pos/calculation';
 import { supabase } from '../../supabase/client';
 import type { CartItem, OrderItem, Product, ProductVariant, Sale } from '../../types';
@@ -159,5 +159,154 @@ describe('createSale — effective unit price persistence', () => {
     const rows = saleItemsQuery.insertedRows[0] as any[];
     expect(rows[0].unit_price).toBe(10);
     expect(rows[1].unit_price).toBe(10);
+  });
+});
+
+describe('createSale — variant snapshots on sale lines', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('writes variant_sku and variant_attributes alongside variant_id', async () => {
+    const { saleItemsQuery } = mockSupabaseTables();
+
+    const cart: CartItem[] = [{ product: PRODUCT, quantity: 1, lineId: 'l1', selectedVariant: VARIANT }];
+    await createSale(buildSale(cart.map(cartItemToOrderItem)), 'tenant-1');
+
+    const rows = saleItemsQuery.insertedRows[0] as any[];
+    expect(rows[0].variant_id).toBe(VARIANT_ID);
+    expect(rows[0].variant_sku).toBe('TS-BLU-M');
+    expect(rows[0].variant_attributes).toEqual({ Color: 'Blue', Size: 'M' });
+  });
+
+  it('writes selected_size as-is and leaves snapshot columns null for plain lines', async () => {
+    const { saleItemsQuery } = mockSupabaseTables();
+
+    const cart: CartItem[] = [
+      { product: PRODUCT, quantity: 1, lineId: 'l1', selectedSize: 'M' },
+      { product: PRODUCT, quantity: 1, lineId: 'l2' },
+    ];
+    await createSale(buildSale(cart.map(cartItemToOrderItem)), 'tenant-1');
+
+    const rows = saleItemsQuery.insertedRows[0] as any[];
+    expect(rows[0].selected_size).toBe('M');
+    expect(rows[0].variant_id).toBeNull();
+    expect(rows[0].variant_sku).toBeNull();
+    expect(rows[0].variant_attributes).toBeNull();
+    expect(rows[1].selected_size).toBeNull();
+    expect(rows[1].variant_id).toBeNull();
+  });
+});
+
+describe('mapDbSale — history read-back of the sold dimension', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  function mockFetchSalesRows(rows: unknown[]) {
+    const salesQuery = createQueryMock({ data: rows, error: null });
+    vi.mocked(supabase.from).mockImplementation((() => salesQuery) as never);
+    return salesQuery;
+  }
+
+  const dbRow = {
+    id: SALES_ID,
+    order_number: '#1042',
+    subtotal: 60,
+    tax: 0,
+    total: 60,
+    discount: 0,
+    completed_at: '2026-11-12T10:00:00.000Z',
+    payment_method: 'cash',
+    amount_received: 100,
+    change: 40,
+    employee_id: null,
+    terminal_id: null,
+    customer_id: null,
+    loyalty_points_earned: 0,
+    loyalty_points_redeemed: 0,
+    refunded_amount: 0,
+    sale_items: [
+      {
+        product_id: PRODUCT_ID,
+        product_name: 'T-Shirt',
+        product_sku: 'TS-001',
+        product_category: 'Ropa',
+        product_subcategory: null,
+        quantity: 2,
+        unit_price: 25,
+        line_total: 50,
+        selected_size: null,
+        variant_id: VARIANT_ID,
+        variant_sku: 'TS-BLU-M',
+        variant_attributes: { Color: 'Blue', Size: 'M' },
+      },
+      {
+        product_id: PRODUCT_ID,
+        product_name: 'T-Shirt',
+        product_sku: 'TS-001',
+        product_category: 'Ropa',
+        product_subcategory: null,
+        quantity: 1,
+        unit_price: 10,
+        line_total: 10,
+        selected_size: 'M',
+        variant_id: null,
+        variant_sku: null,
+        variant_attributes: null,
+      },
+    ],
+  };
+
+  it('restores selectedVariant from the variant snapshot', async () => {
+    mockFetchSalesRows([dbRow]);
+
+    const sales = await fetchSales('tenant-1');
+    const variantLine = sales[0].order.items[0];
+
+    expect(variantLine.selectedVariant).toEqual({
+      id: VARIANT_ID,
+      productId: PRODUCT_ID,
+      sku: 'TS-BLU-M',
+      price: null,
+      costPrice: null,
+      stock: 0,
+      minStock: 0,
+      image: null,
+      attributes: { Color: 'Blue', Size: 'M' },
+      status: 'active',
+    });
+    expect(variantLine.selectedSize).toBeUndefined();
+  });
+
+  it('restores selectedSize from the line snapshot', async () => {
+    mockFetchSalesRows([dbRow]);
+
+    const sales = await fetchSales('tenant-1');
+    const sizeLine = sales[0].order.items[1];
+
+    expect(sizeLine.selectedSize).toBe('M');
+    expect(sizeLine.selectedVariant).toBeUndefined();
+  });
+
+  it('keeps the sold unit price on the line product', async () => {
+    mockFetchSalesRows([dbRow]);
+
+    const sales = await fetchSales('tenant-1');
+
+    expect(sales[0].order.items[0].product.price).toBe(25);
+    expect(sales[0].order.items[1].product.price).toBe(10);
+  });
+
+  it('returns a synthesized variant from createSale round-trip', async () => {
+    const { saleItemsQuery } = mockSupabaseTables();
+    void saleItemsQuery;
+
+    const cart: CartItem[] = [{ product: PRODUCT, quantity: 1, lineId: 'l1', selectedVariant: VARIANT }];
+    const saved = await createSale(buildSale(cart.map(cartItemToOrderItem)), 'tenant-1');
+
+    expect(saved?.order.items[0].selectedVariant?.id).toBe(VARIANT_ID);
+    expect(saved?.order.items[0].selectedVariant?.sku).toBe('TS-BLU-M');
+    expect(saved?.order.items[0].selectedVariant?.attributes).toEqual({ Color: 'Blue', Size: 'M' });
   });
 });
