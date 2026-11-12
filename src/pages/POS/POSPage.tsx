@@ -24,7 +24,7 @@ import {
 } from '../../features/pos/posSlice';
 import { selectEnableManualProduct, selectFormattedOrderNumber, selectTaxRate, selectTaxIncludedInPrice, selectLoyaltyTiers } from '../../features/settings/settingsSlice';
 import { selectCustomerById } from '../../features/customers/customersSlice';
-import { calculateCart } from '../../features/pos/calculation';
+import { calculateCart, getEffectiveUnitPrice } from '../../features/pos/calculation';
 import Fuse from 'fuse.js';
 import { usePermission } from '../../hooks/usePermission';
 
@@ -154,7 +154,7 @@ const POSPage: React.FC = () => {
     dispatch(addCustomProductToCart(product));
   };
 
-  const rawSubtotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+  const rawSubtotal = cart.reduce((sum, item) => sum + getEffectiveUnitPrice(item) * item.quantity, 0);
 
   const tierConfig = tiers.find(t => t.tier === selectedCustomer?.tier);
 

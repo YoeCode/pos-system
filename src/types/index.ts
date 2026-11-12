@@ -354,6 +354,7 @@ export interface RefundItem {
   unitPrice: number;
   lineTotal: number;
   selectedSize?: string;
+  variantId?: string;
 }
 
 export interface Refund {

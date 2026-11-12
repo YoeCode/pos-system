@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { useI18n } from '../../i18n/useI18n';
+import { getEffectiveUnitPrice } from './calculation';
 import type { Product, ProductVariant } from '../../types';
 
 interface VariantSelectorModalProps {
@@ -87,7 +88,7 @@ const VariantSelectorModal: React.FC<VariantSelectorModalProps> = ({ isOpen, onC
     onClose();
   }, [onClose]);
 
-  const displayPrice = selectedVariant?.price ?? product.price;
+  const displayPrice = getEffectiveUnitPrice({ product, selectedVariant });
 
   if (!isOpen) return null;
 

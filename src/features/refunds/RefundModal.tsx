@@ -7,9 +7,15 @@ import { restoreStockAsync } from '../../features/products/productsSlice';
 import { deductLoyaltyPointsAsync } from '../../features/customers/customersSlice';
 import { addRefund } from './refundsSlice';
 import Modal from '../../components/ui/Modal';
-import type { Sale, RefundItem, PaymentMethod } from '../../types';
+import { getEffectiveUnitPrice } from '../pos/calculation';
+import type { Sale, RefundItem, PaymentMethod, OrderItem } from '../../types';
 
 type RefundStep = 'search' | 'select' | 'confirm';
+
+// Line identity: two lines of the same product with different variants
+// or sizes must be selectable independently.
+const refundLineKey = (item: OrderItem): string =>
+  `${item.product.id}::${item.selectedVariant?.id ?? ''}::${item.selectedSize ?? ''}`;
 
 interface RefundModalProps {
   isOpen: boolean;
@@ -64,34 +70,34 @@ const RefundModal: React.FC<RefundModalProps> = ({ isOpen, onClose }) => {
     setStep('select');
   };
 
-  const toggleItem = (productId: string, maxQty: number) => {
+  const toggleItem = (lineKey: string, maxQty: number) => {
     setSelectedItems(prev => {
-      const current = prev[productId] || 0;
+      const current = prev[lineKey] || 0;
       if (current >= maxQty) {
-      const { [productId]: removed, ...rest } = prev;
+      const { [lineKey]: removed, ...rest } = prev;
       void removed;
       return rest;
       }
-      return { ...prev, [productId]: current + 1 };
+      return { ...prev, [lineKey]: current + 1 };
     });
   };
 
-  const updateQty = (productId: string, qty: number, maxQty: number) => {
+  const updateQty = (lineKey: string, qty: number, maxQty: number) => {
     if (qty <= 0) {
       setSelectedItems(prev => {
-      const { [productId]: removed, ...rest } = prev;
+      const { [lineKey]: removed, ...rest } = prev;
       void removed;
       return rest;
       });
     } else {
-      setSelectedItems(prev => ({ ...prev, [productId]: Math.min(qty, maxQty) }));
+      setSelectedItems(prev => ({ ...prev, [lineKey]: Math.min(qty, maxQty) }));
     }
   };
 
   const refundTotal = selectedSale
-    ? Object.entries(selectedItems).reduce((sum, [pid, qty]) => {
-        const item = selectedSale.order.items.find(i => i.product.id === pid);
-        return sum + (item ? item.product.price * qty : 0);
+    ? Object.entries(selectedItems).reduce((sum, [lineKey, qty]) => {
+        const item = selectedSale.order.items.find(i => refundLineKey(i) === lineKey);
+        return sum + (item ? getEffectiveUnitPrice(item) * qty : 0);
       }, 0)
     : 0;
 
@@ -108,15 +114,17 @@ const RefundModal: React.FC<RefundModalProps> = ({ isOpen, onClose }) => {
       }
     }
 
-    const items: RefundItem[] = Object.entries(selectedItems).map(([pid, qty]) => {
-      const item = selectedSale.order.items.find(i => i.product.id === pid)!;
+    const items: RefundItem[] = Object.entries(selectedItems).map(([lineKey, qty]) => {
+      const item = selectedSale.order.items.find(i => refundLineKey(i) === lineKey)!;
+      const unitPrice = getEffectiveUnitPrice(item);
       return {
-        productId: pid,
+        productId: item.product.id,
         productName: item.product.name,
         quantity: qty,
-        unitPrice: item.product.price,
-        lineTotal: item.product.price * qty,
-        selectedSize: item.product.sizes?.length ? item.product.sizes[0].size : undefined,
+        unitPrice,
+        lineTotal: unitPrice * qty,
+        selectedSize: item.selectedSize,
+        variantId: item.selectedVariant?.id,
       };
     });
 
@@ -137,7 +145,7 @@ const RefundModal: React.FC<RefundModalProps> = ({ isOpen, onClose }) => {
     dispatch(addRefund(refund));
 
     items.forEach(item => {
-      dispatch(restoreStockAsync({ productId: item.productId, quantity: item.quantity, size: item.selectedSize }));
+      dispatch(restoreStockAsync({ productId: item.productId, quantity: item.quantity, size: item.selectedSize, variantId: item.variantId }));
     });
 
     if (selectedSale.customerId && selectedSale.loyaltyPointsEarned > 0) {
@@ -279,17 +287,18 @@ const RefundModal: React.FC<RefundModalProps> = ({ isOpen, onClose }) => {
 
           <div className="flex flex-col gap-2 max-h-72 overflow-y-auto">
             {selectedSale.order.items.map(item => {
-              const qty = selectedItems[item.product.id] || 0;
+              const lineKey = refundLineKey(item);
+              const qty = selectedItems[lineKey] || 0;
               return (
                 <div
-                  key={item.product.id}
+                  key={lineKey}
                   className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
                     qty > 0 ? 'border-primary bg-primary/5' : 'border-border hover:border-gray-300'
                   }`}
                 >
                   <button
                     type="button"
-                    onClick={() => toggleItem(item.product.id, item.quantity)}
+                    onClick={() => toggleItem(lineKey, item.quantity)}
                     className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
                       qty > 0 ? 'bg-primary border-primary' : 'border-border'
                     }`}
@@ -298,13 +307,19 @@ const RefundModal: React.FC<RefundModalProps> = ({ isOpen, onClose }) => {
                   </button>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-text-primary truncate">{item.product.name}</p>
-                    <p className="text-xs text-text-muted">${item.product.price.toFixed(2)} · max {item.quantity}</p>
+                    {item.selectedVariant && (
+                      <p className="text-xs text-violet-600 truncate">{Object.values(item.selectedVariant.attributes).join(' · ')}</p>
+                    )}
+                    {item.selectedSize && (
+                      <p className="text-xs text-blue-600">{item.selectedSize}</p>
+                    )}
+                    <p className="text-xs text-text-muted">${getEffectiveUnitPrice(item).toFixed(2)} · max {item.quantity}</p>
                   </div>
                   {qty > 0 && (
                     <div className="flex items-center gap-1">
                       <button
                         type="button"
-                        onClick={() => updateQty(item.product.id, qty - 1, item.quantity)}
+                        onClick={() => updateQty(lineKey, qty - 1, item.quantity)}
                         className="w-6 h-6 rounded border border-border text-text-muted hover:border-error hover:text-error flex items-center justify-center"
                       >
                         −
@@ -312,7 +327,7 @@ const RefundModal: React.FC<RefundModalProps> = ({ isOpen, onClose }) => {
                       <span className="w-6 text-center text-sm font-semibold">{qty}</span>
                       <button
                         type="button"
-                        onClick={() => updateQty(item.product.id, qty + 1, item.quantity)}
+                        onClick={() => updateQty(lineKey, qty + 1, item.quantity)}
                         className="w-6 h-6 rounded border border-border text-text-muted hover:border-primary hover:text-primary flex items-center justify-center"
                       >
                         +
@@ -353,12 +368,18 @@ const RefundModal: React.FC<RefundModalProps> = ({ isOpen, onClose }) => {
         <div className="p-6 flex flex-col gap-4">
           <div className="bg-gray-50 rounded-lg p-4 flex flex-col gap-2">
             <p className="text-sm font-medium text-text-primary">Resumen de devolución</p>
-            {Object.entries(selectedItems).map(([pid, qty]) => {
-              const item = selectedSale.order.items.find(i => i.product.id === pid)!;
+            {Object.entries(selectedItems).map(([lineKey, qty]) => {
+              const item = selectedSale.order.items.find(i => refundLineKey(i) === lineKey)!;
+              const lineLabel = item.selectedVariant
+                ? Object.values(item.selectedVariant.attributes).join(' · ')
+                : item.selectedSize ?? '';
               return (
-                <div key={pid} className="flex items-center justify-between text-sm">
-                  <span className="text-text-muted">{item.product.name} × {qty}</span>
-                  <span className="font-mono text-text-primary">${(item.product.price * qty).toFixed(2)}</span>
+                <div key={lineKey} className="flex items-center justify-between text-sm">
+                  <span className="text-text-muted">
+                    {item.product.name}
+                    {lineLabel ? ` (${lineLabel})` : ''} × {qty}
+                  </span>
+                  <span className="font-mono text-text-primary">${(getEffectiveUnitPrice(item) * qty).toFixed(2)}</span>
                 </div>
               );
             })}
