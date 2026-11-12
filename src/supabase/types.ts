@@ -642,7 +642,7 @@ export type Database = {
           id: string
           line_total: number
           product_category: string | null
-          product_id: string
+          product_id: string | null
           product_name: string
           product_sku: string | null
           product_subcategory: string | null
@@ -659,7 +659,7 @@ export type Database = {
           id?: string
           line_total?: number
           product_category?: string | null
-          product_id: string
+          product_id?: string | null
           product_name: string
           product_sku?: string | null
           product_subcategory?: string | null
@@ -676,7 +676,7 @@ export type Database = {
           id?: string
           line_total?: number
           product_category?: string | null
-          product_id?: string
+          product_id?: string | null
           product_name?: string
           product_sku?: string | null
           product_subcategory?: string | null
