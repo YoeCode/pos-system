@@ -320,6 +320,10 @@ const ProductDetailPanel: React.FC<ProductDetailPanelProps> = ({ onDuplicate }) 
 
   if (!product) return null;
 
+  // Plain products own a single editable stock value; size/variant products
+  // derive their aggregate stock from their own per-row editors.
+  const isPlainProduct = !product.hasVariants && (!product.sizes || product.sizes.length === 0);
+
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden bg-white rounded-xl border border-border">
       <div className="px-6 py-5 border-b border-border flex items-center justify-between">
@@ -422,8 +426,10 @@ const ProductDetailPanel: React.FC<ProductDetailPanelProps> = ({ onDuplicate }) 
         />
 
         <StockSection
-          stock={product.stock}
+          stock={isEditing && isPlainProduct ? form.stock : product.stock}
           stockLabel={t.products.detail.stockLevel}
+          isEditing={isEditing && isPlainProduct}
+          onStockChange={v => setForm(prev => ({ ...prev, stock: v }))}
         />
 
         <SizesSection

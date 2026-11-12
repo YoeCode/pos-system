@@ -220,4 +220,27 @@ describe('updateProduct size sync', () => {
     // No delete/reinsert is attempted after a failed read.
     expect(calls).toHaveLength(2);
   });
+
+  it('persists plain-product stock as-is instead of the empty sizes sum', async () => {
+    const plainDbRow = {
+      ...dbProductRow,
+      stock: 42,
+      product_sizes: [],
+    };
+    queueResults(
+      ['products', { error: null }],
+      ['product_sizes', { data: [], error: null }],
+      ['products', { data: plainDbRow, error: null }],
+    );
+
+    const result = await updateProduct(
+      makeProduct({ sizes: undefined, stock: 42 }),
+      't1'
+    );
+
+    expect(result).not.toBeNull();
+    expect(result?.stock).toBe(42);
+    // An empty sizes list must not sum to 0 and clobber the plain stock.
+    expect(calls[0].builder.update).toHaveBeenCalledWith(expect.objectContaining({ stock: 42 }));
+  });
 });
