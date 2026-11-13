@@ -2,6 +2,7 @@ import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
 import type { CartItem, PaymentMethod, Product, ProductVariant, SaleWindow, CashBoxClosure } from '../../types';
 import type { RootState } from '../../app/store';
+import { createManualProductId, MANUAL_PRODUCT_ID_PREFIX } from '../../utils/manualProduct';
 
 const CASH_BOX_KEY = 'nexopos_cash_box';
 const WINDOWS_KEY = 'nexopos_sale_windows';
@@ -215,17 +216,17 @@ const posSlice = createSlice({
         saveWindowsToStorage({ windows: state.windows, activeWindowId: state.activeWindowId, nextWindowNumber: state.nextWindowNumber });
       }
     },
-    addToCart: (state, action: PayloadAction<{ product: Product; size?: string; variant?: ProductVariant }>) => {
-      const { product, size, variant } = action.payload;
+    addToCart: (state, action: PayloadAction<{ product: Product; variant?: ProductVariant }>) => {
+      const { product, variant } = action.payload;
       updateActiveWindow(state, (window) => {
         pushCartHistory(window);
         const existing = window.cart.find(
-          item => item.product.id === product.id && item.selectedSize === size && item.selectedVariant?.id === variant?.id
+          item => item.product.id === product.id && item.selectedVariant?.id === variant?.id
         );
         if (existing) {
           existing.quantity += 1;
         } else {
-          window.cart.push({ product, quantity: 1, lineId: crypto.randomUUID(), selectedSize: size, selectedVariant: variant });
+          window.cart.push({ product, quantity: 1, lineId: crypto.randomUUID(), selectedVariant: variant });
         }
       });
     },
@@ -245,8 +246,7 @@ const posSlice = createSlice({
           window.cart = window.cart.filter(i => i.lineId !== action.payload.lineId);
           return;
         }
-        const hasSizes = item.product.sizes && item.product.sizes.length > 0;
-        if (!hasSizes && newQty > item.product.stock) return;
+        if (newQty > item.product.stock) return;
         pushCartHistory(window);
         item.quantity = newQty;
       });
@@ -313,10 +313,13 @@ const posSlice = createSlice({
     },
     addCustomProductToCart: (state, action: PayloadAction<{ name: string; category: string; brand?: string; price: number }>) => {
       const { name, category, brand, price } = action.payload;
+      // Unique per call: two manual products added in the same millisecond
+      // must not collide (cart keys, receipt keys, refund lookups).
+      const manualId = createManualProductId();
       const customProduct: Product = {
-        id: `custom-${Date.now()}`,
+        id: manualId,
         name,
-        sku: `CUSTOM-${Date.now().toString(36).toUpperCase()}`,
+        sku: `CUSTOM-${manualId.slice(MANUAL_PRODUCT_ID_PREFIX.length).toUpperCase()}`,
         category,
         brand,
         price,

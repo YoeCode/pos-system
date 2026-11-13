@@ -4,7 +4,7 @@ import { completeSaleAsync } from '../../sales/salesSlice';
 import { reduceStockAsync, selectAllProducts } from '../../products/productsSlice';
 import { selectTaxLabel, selectTaxRate, selectTaxIncludedInPrice, selectPointsPerEuro, selectLoyaltyTiers, selectMultiTerminalMode, selectTerminalId } from '../../settings/settingsSlice';
 import { addLoyaltyPointsAsync, deductLoyaltyPointsAsync, selectCustomerById } from '../../customers/customersSlice';
-import { calculateCart } from '../calculation';
+import { calculateCart, getEffectiveUnitPrice } from '../calculation';
 import {
   setPaymentMethod,
   startNewSale,
@@ -142,7 +142,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
       items: cart.map(ci => ({
         product: ci.product,
         quantity: ci.quantity,
-        lineTotal: ci.product.price * ci.quantity,
+        lineTotal: getEffectiveUnitPrice(ci) * ci.quantity,
         selectedSize: ci.selectedSize,
         selectedVariant: ci.selectedVariant,
       })),
@@ -196,11 +196,6 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
             const attrs = Object.entries(variant.attributes).map(([k, v]) => `${k}: ${v}`).join(', ');
             lowStockItems.push(`${product.name} (${attrs})`);
           }
-        } else if (product.sizes && product.sizes.length > 0 && item.selectedSize) {
-          const sizeEntry = product.sizes.find(s => s.size === item.selectedSize);
-          if (sizeEntry && sizeEntry.minStock !== undefined && sizeEntry.stock - item.quantity <= sizeEntry.minStock) {
-            lowStockItems.push(`${product.name} (${item.selectedSize})`);
-          }
         } else if (product.stock - item.quantity <= product.minStock) {
           lowStockItems.push(product.name);
         }
@@ -215,9 +210,6 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
           if (item.selectedVariant) {
             const variant = product.variants?.find(v => v.id === item.selectedVariant!.id);
             return variant ? variant.stock - item.quantity === 0 : false;
-          } else if (product.sizes && item.selectedSize) {
-            const sizeEntry = product.sizes.find(s => s.size === item.selectedSize);
-            return sizeEntry ? sizeEntry.stock - item.quantity === 0 : false;
           }
           return product.stock - item.quantity === 0;
         }).length;
@@ -267,7 +259,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
                 <span className="text-text-muted ml-1.5">× {item.quantity}</span>
               </span>
               <span className="font-mono text-text-primary">
-                €{(item.product.price * item.quantity).toFixed(2)}
+                €{(getEffectiveUnitPrice(item) * item.quantity).toFixed(2)}
               </span>
             </div>
           ))}

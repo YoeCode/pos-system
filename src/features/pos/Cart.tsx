@@ -21,7 +21,7 @@ import CheckoutModal from './checkout/CheckoutModal';
 import CustomerSelector from '../customers/CustomerSelector';
 import DiscountModal from './DiscountModal';
 import { useI18n } from '../../i18n/useI18n';
-import { calculateCart } from './calculation';
+import { calculateCart, getEffectiveUnitPrice } from './calculation';
 import { selectAllProducts } from '../products/productsSlice';
 
 interface CartProps {
@@ -80,15 +80,6 @@ const Cart: React.FC<CartProps> = ({ variant = 'sidebar', onClose }) => {
         const attrDesc = Object.values(item.selectedVariant.attributes).join(' ');
         addToast(`${t.pos.onlyUnitsLeft || 'Solo quedan'} ${variant.stock} ${t.pos.units || 'unidades'} (${attrDesc})`, 'warning');
         return;
-      }
-    } else if (item.selectedSize) {
-      const hasSizes = product.sizes && product.sizes.length > 0;
-      if (hasSizes) {
-        const sizeEntry = product.sizes?.find(s => s.size === item.selectedSize);
-        if (sizeEntry && newQty > sizeEntry.stock) {
-          addToast(`${t.pos.onlyUnitsLeft || 'Solo quedan'} ${sizeEntry.stock} ${t.pos.units || 'unidades'} (${item.selectedSize})`, 'warning');
-          return;
-        }
       }
     } else if (newQty > product.stock) {
       addToast(`${t.pos.onlyUnitsLeft || 'Solo quedan'} ${product.stock} ${t.pos.units || 'unidades'}`, 'warning');
@@ -198,11 +189,11 @@ const Cart: React.FC<CartProps> = ({ variant = 'sidebar', onClose }) => {
                       <span className="text-[11px] text-text-muted truncate">{item.product.brand}</span>
                     ) : null}
                     <span className="text-xs font-mono text-text-muted">
-                      €{((item.selectedVariant?.price ?? item.product.price) * item.quantity).toFixed(2)}
+                      €{(getEffectiveUnitPrice(item) * item.quantity).toFixed(2)}
                     </span>
                     {itemDiscounts[item.lineId] && (
                       <span className="text-xs font-mono text-green-600">
-                        -€{((item.selectedVariant?.price ?? item.product.price) * item.quantity * (itemDiscounts[item.lineId] || 0) / 100).toFixed(2)}
+                        -€{(getEffectiveUnitPrice(item) * item.quantity * (itemDiscounts[item.lineId] || 0) / 100).toFixed(2)}
                       </span>
                     )}
                   </div>
@@ -339,7 +330,7 @@ const Cart: React.FC<CartProps> = ({ variant = 'sidebar', onClose }) => {
         onSuccess={(_, discountAmount) => {
           if (itemDiscountTarget) {
             const item = cart.find(i => i.lineId === itemDiscountTarget);
-            const itemTotal = item ? item.product.price * item.quantity : 0;
+            const itemTotal = item ? getEffectiveUnitPrice(item) * item.quantity : 0;
             const discountPct = itemTotal > 0 ? Math.round((discountAmount / itemTotal) * 10000) / 100 : 0;
             dispatch(setWindowItemDiscounts({ ...itemDiscounts, [itemDiscountTarget]: discountPct }));
           }
@@ -348,7 +339,7 @@ const Cart: React.FC<CartProps> = ({ variant = 'sidebar', onClose }) => {
         }}
         subtotal={(() => {
           const item = cart.find(i => i.lineId === itemDiscountTarget);
-          return item ? item.product.price * item.quantity : 0;
+          return item ? getEffectiveUnitPrice(item) * item.quantity : 0;
         })()}
       />
 

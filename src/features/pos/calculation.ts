@@ -1,4 +1,16 @@
-import type { CartItem, LoyaltyTierConfig } from '../../types';
+import type { CartItem, LoyaltyTierConfig, Product, ProductVariant } from '../../types';
+
+/**
+ * Effective unit price for a cart or order line: the selected variant's
+ * custom price when present, otherwise the product's base price.
+ * Single source of truth for display, totals and persisted unit_price.
+ */
+export function getEffectiveUnitPrice(line: {
+  product: Pick<Product, 'price'>;
+  selectedVariant?: Pick<ProductVariant, 'price'> | null;
+}): number {
+  return line.selectedVariant?.price ?? line.product.price;
+}
 
 export interface LineCalculation {
   lineId: string;
@@ -47,7 +59,7 @@ export function calculateCart(
   const loyaltyPct = loyaltyTierConfig ? loyaltyTierConfig.discountPct : 0;
 
   const lines: LineCalculation[] = cart.map(item => {
-    const lineTotal = item.product.price * item.quantity;
+    const lineTotal = getEffectiveUnitPrice(item) * item.quantity;
     const itemDiscountPct = itemDiscounts[item.lineId] || 0;
     const itemDiscountAmount = lineTotal * itemDiscountPct / 100;
     const loyaltyAmount = lineTotal * loyaltyPct;

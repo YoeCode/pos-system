@@ -79,6 +79,17 @@ src/
 └── utils/                # Utilidades (email, export, fuzzy search)
 ```
 
+### Modelo de catálogo (producto / variante)
+
+El stock vive en **un solo modelo**: `product_variants`. Cada producto es de una de dos formas:
+
+- **Plano:** sin variantes; `stock` y `min_stock` viven en la fila `products`.
+- **Con variantes:** `has_variants = true` y una o más dimensiones en `variant_attributes` (p. ej. `Color`, `Talla`). Cada combinación es una fila `product_variants` con su propio SKU, `stock` y `min_stock`. `price`/`cost_price` en `NULL` heredan del producto padre.
+
+Las **tallas** no son una tabla aparte: son variantes de una dimensión `Talla` (`attributes = {"Talla": "M"}`). La tabla `product_sizes` fue eliminada (migración 023) tras converger todas sus filas en variantes (migración 022). No queda código de creación/edición por talla; el editor de stock unificado (`StockEditor` → `VariantsSection`) cubre todas las formas y el modal de creación genera las combinaciones de N dimensiones.
+
+`products.stock` se mantiene como la SUMA del stock de las variantes mediante el trigger `trg_update_variant_stock`. El historial de ventas conserva `selected_size`/`variant_id` por línea y sigue renderizándose igual; las devoluciones restauran stock en la fila correcta (la variante `Talla` para líneas antiguas).
+
 ### Estructura de cada feature
 
 ```
@@ -758,7 +769,7 @@ pos-system/
 │   │   ├── invitations/                # invitationsService
 │   │   ├── pos/                        # posSlice (493 líneas) + 15+ components
 │   │   │   └── checkout/               # CheckoutModal + PaymentStep + ReceiptStep
-│   │   ├── products/                   # productsSlice + 4 components
+│   │   ├── products/                   # productsSlice + service + StockEditor/VariantsSection (editor de stock unificado) + create modal
 │   │   ├── realtime/                   # realtimeService + 2 hooks
 │   │   ├── refunds/                    # refundsSlice + RefundModal
 │   │   ├── sales/                      # salesSlice + SaleDetailView

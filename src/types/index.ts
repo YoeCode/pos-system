@@ -123,13 +123,6 @@ export const PAGE_PERMISSIONS: Record<string, Permission> = {
   '/dashboard': 'dashboard:view',
 };
 
-export interface ProductSize {
-  size: string;
-  stock: number;
-  minStock?: number;
-  sku?: string;
-}
-
 export interface ProductAttribute {
   id: string;
   name: string;
@@ -172,7 +165,6 @@ export interface Product {
   status: 'active' | 'inactive' | 'draft';
   publishedOnline: boolean;
   version?: string;
-  sizes?: ProductSize[];
   sizeGroupId?: string;
   hasVariants: boolean;
   variantAttributes: string[];
@@ -354,6 +346,7 @@ export interface RefundItem {
   unitPrice: number;
   lineTotal: number;
   selectedSize?: string;
+  variantId?: string;
 }
 
 export interface Refund {

@@ -1,13 +1,17 @@
-import React, { useState, useCallback, useLayoutEffect, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useLayoutEffect, useEffect, useMemo, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/store';
 import { createEmptyForm, addProduct, fetchProductAttributesAsync, type ProductFormState } from './productsSlice';
-import { nextSku, createProduct, createProductVariant } from './productsService';
+import { nextSku, createProduct, createProductVariant, fetchVariantSkus } from './productsService';
 import { selectSizeGroups, selectCategoryGroups, selectCategories, selectBrands, selectSeasons } from '../settings/settingsSlice';
 import type { Product, ProductVariant } from '../../types';
 import Modal from '../../components/ui/Modal';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import { useI18n } from '../../i18n/useI18n';
+import AttributeSlotSelector, { type AttributeSlot } from './AttributeSlotSelector';
+import VariantCombinationsTable, { type VariantCombination } from './VariantCombinationsTable';
+import TallaDimensionEditor from './TallaDimensionEditor';
+import { variantSkuBase, allocateVariantSku } from './variantSku';
 
 interface ProductCreateModalProps {
   isOpen: boolean;
@@ -19,36 +23,44 @@ type ProductCreateFormState = ProductFormState & {
   autoGenerateSku: boolean;
 };
 
-interface VariantCombination {
-  attributes: Record<string, string>;
-  stock: number;
-  minStock: number;
+const TALLA_DIMENSION = 'Talla';
+
+function createEmptySlot(): AttributeSlot {
+  return { id: crypto.randomUUID(), attributeName: '', selectedValues: [] };
 }
 
-interface AttributeSlot {
-  attributeName: string;
-  selectedValues: string[];
+function createTallaSlot(values: string[] = []): AttributeSlot {
+  return { id: crypto.randomUUID(), attributeName: TALLA_DIMENSION, selectedValues: [...values], isTalla: true };
 }
 
-function generateCombinations(slots: AttributeSlot[]): VariantCombination[] {
+function combinationKey(attributes: Record<string, string>): string {
+  return Object.keys(attributes)
+    .sort()
+    .map(k => `${k}\u0000${attributes[k]}`)
+    .join('\u0001');
+}
+
+// Cartesian product across N dimensions. Stock entries survive regeneration
+// (adding one more size keeps the stock already typed on the existing rows).
+function generateCombinations(slots: AttributeSlot[], previous: VariantCombination[] = []): VariantCombination[] {
   const validSlots = slots.filter(s => s.attributeName && s.selectedValues.length > 0);
   if (validSlots.length === 0) return [];
 
-  const result: VariantCombination[][] = [[]];
+  const acc: Record<string, string>[] = [{}];
   for (const slot of validSlots) {
-    const newResult: VariantCombination[][] = [];
-    for (const existing of result) {
+    const next: Record<string, string>[] = [];
+    for (const attrs of acc) {
       for (const value of slot.selectedValues) {
-        newResult.push([...existing, { attributes: { [slot.attributeName]: value }, stock: 0, minStock: 0 }]);
+        next.push({ ...attrs, [slot.attributeName]: value });
       }
     }
-    result.splice(0, result.length, ...newResult);
+    acc.splice(0, acc.length, ...next);
   }
 
-  return result.map(combos => {
-    const merged: Record<string, string> = {};
-    combos.forEach(c => Object.assign(merged, c.attributes));
-    return { attributes: merged, stock: 0, minStock: 0 };
+  const previousByKey = new Map(previous.map(c => [combinationKey(c.attributes), c]));
+  return acc.map(attributes => {
+    const prev = previousByKey.get(combinationKey(attributes));
+    return { attributes, stock: prev?.stock ?? 0, minStock: prev?.minStock ?? 0 };
   });
 }
 
@@ -83,11 +95,10 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
   const tenantId = useAppSelector(state => state.auth.user?.tenantId);
   const [form, setForm] = useState<ProductCreateFormState>(() => createEmptyProductForm(categories));
   const [variantCombinations, setVariantCombinations] = useState<VariantCombination[]>([]);
+  const [attributeSlots, setAttributeSlots] = useState<AttributeSlot[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [attributeSlots, setAttributeSlots] = useState<AttributeSlot[]>([
-    { attributeName: '', selectedValues: [] },
-    { attributeName: '', selectedValues: [] },
-  ]);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [creationDone, setCreationDone] = useState(false);
   const t = useI18n();
 
   // Build attribute values map from attributes
@@ -99,35 +110,62 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
     return map;
   }, [attributes]);
 
-  // Auto-generate combinations when attribute slots change
-  useMemo(() => {
-    if (form.hasVariants) {
-      const combos = generateCombinations(attributeSlots);
-      setVariantCombinations(combos);
-    } else {
-      setVariantCombinations([]);
+  // Regenerate combinations whenever the dimensions change, preserving the
+  // stock already typed for rows whose attributes match. The mount run is
+  // skipped: the layout effect below seeds slots and combinations in the same
+  // commit, and a stale empty-state run here would wipe the seeded stock.
+  const didMountRef = useRef(false);
+  useEffect(() => {
+    if (!didMountRef.current) {
+      didMountRef.current = true;
+      return;
     }
-  }, [form.hasVariants, attributeSlots]);
+    setVariantCombinations(prev => generateCombinations(attributeSlots, prev));
+  }, [attributeSlots]);
 
   useLayoutEffect(() => {
     if (isOpen) {
-      setForm(normalizeInitialForm(initialForm, categories));
-      setVariantCombinations([]);
-      setAttributeSlots([
-        { attributeName: '', selectedValues: [] },
-        { attributeName: '', selectedValues: [] },
-      ]);
+      const normalized = normalizeInitialForm(initialForm, categories);
+      // Duplicating a product seeds its stock shape: a variant product (this
+      // includes one-dimension "Talla" size variants) seeds its dimensions and
+      // per-variant stock.
+      const variantDims = normalized.variantAttributes.length > 0
+        ? normalized.variantAttributes
+        : [...new Set(normalized.variants.flatMap(v => Object.keys(v.attributes)))];
+      const hasVariantSeed = normalized.variants.length > 0 && variantDims.length > 0;
+      const seededSlots: AttributeSlot[] = hasVariantSeed
+        ? variantDims.map(dim =>
+            dim === TALLA_DIMENSION
+              ? createTallaSlot([...new Set(normalized.variants.map(v => v.attributes[dim]).filter(Boolean))])
+              : {
+                  id: crypto.randomUUID(),
+                  attributeName: dim,
+                  selectedValues: [...new Set(normalized.variants.map(v => v.attributes[dim]).filter(Boolean))],
+                }
+          )
+        : [];
+      const seededCombinations = hasVariantSeed
+        ? normalized.variants.map(v => ({ attributes: { ...v.attributes }, stock: v.stock, minStock: v.minStock }))
+        : [];
+      setForm({
+        ...normalized,
+        hasSizes: normalized.hasSizes || seededSlots.some(s => s.isTalla),
+        hasVariants: normalized.hasVariants || seededSlots.some(s => !s.isTalla),
+      });
+      setAttributeSlots(seededSlots);
+      setVariantCombinations(generateCombinations(seededSlots, seededCombinations));
+      setSubmitError(null);
+      setCreationDone(false);
       dispatch(fetchProductAttributesAsync());
     }
   }, [isOpen, initialForm, categories, dispatch]);
 
   const handleClose = useCallback(() => {
     setForm(createEmptyProductForm(categories));
+    setAttributeSlots([]);
     setVariantCombinations([]);
-    setAttributeSlots([
-      { attributeName: '', selectedValues: [] },
-      { attributeName: '', selectedValues: [] },
-    ]);
+    setSubmitError(null);
+    setCreationDone(false);
     onClose();
   }, [onClose, categories]);
 
@@ -144,7 +182,7 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
   const updateAttributeSlot = useCallback((slotIndex: number, attributeName: string) => {
     setAttributeSlots(prev => {
       const newSlots = [...prev];
-      newSlots[slotIndex] = { attributeName, selectedValues: [] };
+      newSlots[slotIndex] = { ...newSlots[slotIndex], attributeName, selectedValues: [] };
       return newSlots;
     });
   }, []);
@@ -174,6 +212,80 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
     });
   }, [attributeValuesMap]);
 
+  // N dynamic attribute slots: add/remove freely.
+  const addAttributeSlot = useCallback(() => {
+    setAttributeSlots(prev => [...prev, createEmptySlot()]);
+  }, []);
+
+  const removeAttributeSlot = useCallback((slotIndex: number) => {
+    setAttributeSlots(prev => prev.filter((_, i) => i !== slotIndex));
+  }, []);
+
+  // "Tallas" adds the Talla variant dimension (one more slot) instead of
+  // creating per-size rows. It can be combined with attribute slots.
+  const handleToggleTallas = (checked: boolean) => {
+    if (checked) {
+      setForm(prev => ({ ...prev, hasSizes: true, hasVariants: true }));
+      setAttributeSlots(prev => {
+        if (prev.some(s => s.isTalla)) return prev;
+        // The Talla slot claims the "Talla" attribute name
+        const cleared = prev.map(s =>
+          s.attributeName === TALLA_DIMENSION ? { ...s, attributeName: '', selectedValues: [] } : s
+        );
+        return [createTallaSlot(), ...cleared];
+      });
+    } else {
+      const remaining = attributeSlots.filter(s => !s.isTalla);
+      setForm(prev => ({ ...prev, hasSizes: false, hasVariants: remaining.length > 0 }));
+      setAttributeSlots(remaining);
+    }
+  };
+
+  const handleToggleVariants = (checked: boolean) => {
+    if (checked) {
+      setForm(prev => ({ ...prev, hasVariants: true }));
+      setAttributeSlots(prev => (prev.some(s => !s.isTalla) ? prev : [...prev, createEmptySlot()]));
+    } else {
+      setForm(prev => ({ ...prev, hasVariants: false, hasSizes: false }));
+      setAttributeSlots([]);
+    }
+  };
+
+  // Talla dimension values: size-group presets fill the slot, manual entry stays possible.
+  const applySizePreset = (groupId: string) => {
+    const group = sizeGroups.find(g => g.id === groupId);
+    setForm(prev => ({ ...prev, sizeGroupId: groupId }));
+    setAttributeSlots(prev =>
+      prev.map(s => (s.isTalla ? { ...s, selectedValues: group ? [...group.sizes] : [] } : s))
+    );
+  };
+
+  const addTallaValue = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    setAttributeSlots(prev =>
+      prev.map(s =>
+        s.isTalla && !s.selectedValues.includes(trimmed)
+          ? { ...s, selectedValues: [...s.selectedValues, trimmed] }
+          : s
+      )
+    );
+  };
+
+  const removeTallaValue = (value: string) => {
+    setAttributeSlots(prev =>
+      prev.map(s => (s.isTalla ? { ...s, selectedValues: s.selectedValues.filter(v => v !== value) } : s))
+    );
+  };
+
+  const updateCombination = useCallback((index: number, next: VariantCombination) => {
+    setVariantCombinations(prev => prev.map((c, i) => (i === index ? next : c)));
+  }, []);
+
+  const tallaSlot = attributeSlots.find(s => s.isTalla);
+  const dimensionSlots = attributeSlots.filter(s => s.attributeName && s.selectedValues.length > 0);
+  const dimensionNames = dimensionSlots.map(s => s.attributeName);
+
   const subcategories = categoryGroups.find(g => g.name === form.category)?.subcategories ?? [];
 
   const missingConfig = categories.length === 0 || seasons.length === 0 || brands.length === 0;
@@ -198,21 +310,16 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
 
     if (!form.name.trim() || !sku || !form.category || !form.season || !form.brand) return;
 
-    const variantAttrNames = attributeSlots
-      .filter(s => s.attributeName && s.selectedValues.length > 0)
-      .map(s => s.attributeName);
+    const variantAttrNames = dimensionNames;
+    const hasVariantDims = dimensionSlots.length > 0;
 
-    const stock = form.hasVariants
+    const stock = hasVariantDims
       ? variantCombinations.reduce((sum, v) => sum + v.stock, 0)
-      : form.hasSizes 
-        ? form.sizes.reduce((sum, s) => sum + s.stock, 0)
-        : form.stock;
-    
-    const minStock = form.hasVariants
+      : form.stock;
+
+    const minStock = hasVariantDims
       ? variantCombinations.reduce((sum, v) => sum + v.minStock, 0)
-      : form.hasSizes
-        ? form.sizes.reduce((sum, s) => sum + (s.minStock || form.minStock), 0)
-        : form.minStock;
+      : form.minStock;
 
     const newProduct: Product = {
       id: crypto.randomUUID(),
@@ -229,22 +336,26 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
       description: form.description.trim() || undefined,
       status: form.status,
       publishedOnline: form.publishedOnline,
-      sizes: form.hasSizes ? form.sizes : undefined,
       sizeGroupId: form.sizeGroupId || undefined,
-      hasVariants: form.hasVariants,
+      hasVariants: hasVariantDims,
       variantAttributes: variantAttrNames,
     };
 
     setIsSubmitting(true);
+    setSubmitError(null);
     try {
       // Create product first
       const created = await createProduct(newProduct, tenantId || '');
       if (!created) throw new Error('Failed to create product');
 
-      // Create variants if enabled
-      if (form.hasVariants && variantCombinations.length > 0) {
+      // Create variants through the same service path as manual variants,
+      // each with a guaranteed-unique SKU.
+      const createdVariants: ProductVariant[] = [];
+      const failedSkus: string[] = [];
+      if (hasVariantDims && variantCombinations.length > 0) {
+        const takenSkus = new Set(await fetchVariantSkus(tenantId || ''));
         for (const combo of variantCombinations) {
-          const variantSku = `${sku}-${Object.values(combo.attributes).map(v => v.substring(0, 2).toUpperCase()).join('')}`;
+          const variantSku = allocateVariantSku(variantSkuBase(sku, combo.attributes, variantAttrNames), takenSkus);
           const variant: Omit<ProductVariant, 'id'> = {
             productId: created.id,
             sku: variantSku,
@@ -256,31 +367,37 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
             attributes: combo.attributes,
             status: 'active',
           };
-          await createProductVariant(tenantId || '', variant);
+          try {
+            const saved = await createProductVariant(tenantId || '', variant);
+            if (saved) createdVariants.push(saved);
+            else failedSkus.push(variantSku);
+          } catch {
+            failedSkus.push(variantSku);
+          }
         }
       }
 
-      // Add to Redux store with the created ID and variant info
+      // Add to Redux store. Only persisted variants reach state - a failed
+      // insert is reported below, never faked with a client-side UUID.
       dispatch(addProduct({
         ...newProduct,
         id: created.id,
         stock,
-        variants: form.hasVariants ? variantCombinations.map((c) => ({
-          id: crypto.randomUUID(),
-          productId: created.id,
-          sku: `${sku}-${Object.values(c.attributes).map(v => v.substring(0, 2).toUpperCase()).join('')}`,
-          price: null,
-          costPrice: null,
-          stock: c.stock,
-          minStock: c.minStock,
-          image: null,
-          attributes: c.attributes,
-          status: 'active' as const,
-        })) : undefined,
+        variants: createdVariants.length > 0 ? createdVariants : undefined,
       }));
+
+      if (failedSkus.length > 0) {
+        setSubmitError(
+          (failedSkus.length === 1 ? t.products.variantCreateFailedOne : t.products.variantCreateFailedMany)
+            .replace('{{count}}', String(failedSkus.length))
+            .replace('{{skus}}', failedSkus.join(', '))
+        );
+        setCreationDone(true);
+        return;
+      }
       handleClose();
     } catch {
-      // Error handled silently
+      setSubmitError(t.products.createFailed);
     } finally {
       setIsSubmitting(false);
     }
@@ -294,14 +411,22 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
       subtitle={t.products.addProduct}
     >
       <div className="flex flex-col gap-5">
+        {submitError && (
+          <div role="alert" className="flex items-center gap-2 px-4 py-3 rounded-lg bg-error/10 border border-error/30 text-error text-sm">
+            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>{submitError}</span>
+          </div>
+        )}
+
         {missingConfig && (
           <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 text-sm">
             <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
             <span>
-              Configura al menos una categoría, temporada y marca en{' '}
-              <strong>Ajustes → Gestión de Productos</strong> antes de crear productos.
+              {t.products.missingConfig}
             </span>
           </div>
         )}
@@ -311,7 +436,7 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
             {t.products.name} <span className="text-error">*</span>
           </label>
           <Input
-            placeholder="Enter product name"
+            placeholder={t.products.namePlaceholder}
             value={form.name}
             onChange={e => setForm(prev => ({ ...prev, name: e.target.value }))}
           />
@@ -320,7 +445,7 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">{t.products.description}</label>
           <textarea
-            placeholder="Brief product description"
+            placeholder={t.products.descriptionPlaceholder}
             value={form.description}
             onChange={e => setForm(prev => ({ ...prev, description: e.target.value }))}
             rows={3}
@@ -335,7 +460,7 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
             </label>
             {categories.length === 0 ? (
               <div className="w-full px-3 py-2.5 text-sm border border-amber-300 rounded-lg bg-amber-50 text-amber-700">
-                Configura categorías en Ajustes
+                {t.products.detail.configCategories}
               </div>
             ) : (
               <select
@@ -343,7 +468,7 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
                 onChange={e => setForm(prev => ({ ...prev, category: e.target.value, subcategory: '' }))}
                 className="w-full px-3 py-2.5 text-sm border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors bg-white"
               >
-                <option value="">Seleccionar categoría</option>
+                <option value="">{t.products.detail.selectCategory}</option>
                 {categories.map(cat => (
                   <option key={cat} value={cat}>{cat}</option>
                 ))}
@@ -351,14 +476,14 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
             )}
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Subcategoría</label>
+            <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">{t.products.detail.subcategory}</label>
             <select
               value={form.subcategory}
               disabled={!form.category || subcategories.length === 0}
               onChange={e => setForm(prev => ({ ...prev, subcategory: e.target.value }))}
               className="w-full px-3 py-2.5 text-sm border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors bg-white disabled:bg-gray-100 disabled:text-text-muted disabled:cursor-not-allowed"
             >
-              <option value="">Sin subcategoría</option>
+              <option value="">{t.products.detail.noSubcategory}</option>
               {subcategories.map(sub => (
                 <option key={sub} value={sub}>{sub}</option>
               ))}
@@ -369,11 +494,11 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">
-              Temporada <span className="text-error">*</span>
+              {t.products.detail.season} <span className="text-error">*</span>
             </label>
             {seasons.length === 0 ? (
               <div className="w-full px-3 py-2.5 text-sm border border-amber-300 rounded-lg bg-amber-50 text-amber-700">
-                Configura temporadas en Ajustes
+                {t.products.detail.configSeasons}
               </div>
             ) : (
               <select
@@ -381,7 +506,7 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
                 onChange={e => setForm(prev => ({ ...prev, season: e.target.value }))}
                 className="w-full px-3 py-2.5 text-sm border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors bg-white"
               >
-                <option value="">Seleccionar temporada</option>
+                <option value="">{t.products.detail.selectSeason}</option>
                 {seasons.map(season => (
                   <option key={season} value={season}>{season}</option>
                 ))}
@@ -390,11 +515,11 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">
-              Marca <span className="text-error">*</span>
+              {t.products.detail.brand} <span className="text-error">*</span>
             </label>
             {brands.length === 0 ? (
               <div className="w-full px-3 py-2.5 text-sm border border-amber-300 rounded-lg bg-amber-50 text-amber-700">
-                Configura marcas en Ajustes
+                {t.products.detail.configBrands}
               </div>
             ) : (
               <select
@@ -402,7 +527,7 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
                 onChange={e => setForm(prev => ({ ...prev, brand: e.target.value }))}
                 className="w-full px-3 py-2.5 text-sm border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors bg-white"
               >
-                <option value="">Seleccionar marca</option>
+                <option value="">{t.products.detail.selectBrand}</option>
                 {brands.map(brand => (
                   <option key={brand} value={brand}>{brand}</option>
                 ))}
@@ -416,7 +541,7 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
             {t.products.sku} <span className="text-error">*</span>
           </label>
           <Input
-            placeholder="e.g. PR-001"
+            placeholder={t.products.skuPlaceholder}
             value={form.sku}
             disabled={form.autoGenerateSku}
             onChange={e => setForm(prev => ({ ...prev, sku: e.target.value }))}
@@ -429,305 +554,105 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
               onChange={e => setForm(prev => ({ ...prev, autoGenerateSku: e.target.checked }))}
               className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
             />
-            <span className="text-sm font-medium text-text-primary">Autogenerar código</span>
+            <span className="text-sm font-medium text-text-primary">{t.products.autoGenerateSku}</span>
           </label>
         </div>
 
+        {/* Tallas -> one "Talla" variant dimension */}
         <div className="flex flex-col gap-2">
           <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
               checked={form.hasSizes}
-              disabled={form.hasVariants}
-              onChange={e => setForm(prev => ({ 
-                ...prev, 
-                hasSizes: e.target.checked,
-                sizes: e.target.checked ? [{ size: '', stock: 0, minStock: 0 }] : []
-              }))}
-              className="w-4 h-4 rounded border-border text-primary focus:ring-primary disabled:opacity-50"
+              onChange={e => handleToggleTallas(e.target.checked)}
+              className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
             />
-            <span className={`text-sm font-medium ${form.hasVariants ? 'text-text-muted' : 'text-text-primary'}`}>{t.inventory.size}</span>
+            <span className="text-sm font-medium text-text-primary">{t.inventory.size}</span>
           </label>
 
-          {form.hasSizes && (
-            <div className="flex flex-col gap-2 pl-6">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-text-muted">{t.settings.sizeGroups || 'Size Group'}</label>
-                <select
-                  value={form.sizeGroupId}
-                  onChange={e => {
-                    const groupId = e.target.value;
-                    const group = sizeGroups.find(g => g.id === groupId);
-                    setForm(prev => ({
-                      ...prev,
-                      sizeGroupId: groupId,
-                      sizes: group ? group.sizes.map(size => ({ size, stock: 0, minStock: 0 })) : [{ size: '', stock: 0, minStock: 0 }]
-                    }));
-                  }}
-                  className="w-full px-3 py-2.5 text-sm border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors bg-white"
-                >
-                  <option value="">{t.common.select || 'Select...'}</option>
-                  {sizeGroups.map(group => (
-                    <option key={group.id} value={group.id}>{group.name}</option>
-                  ))}
-                </select>
-              </div>
-              {form.sizes.map((s, idx) => (
-                <div key={idx} className="grid grid-cols-3 gap-2">
-                  <input
-                    type="text"
-                    placeholder="Talla"
-                    value={s.size}
-                    onChange={e => {
-                      const newSizes = [...form.sizes];
-                      newSizes[idx] = { ...newSizes[idx], size: e.target.value };
-                      setForm(prev => ({ ...prev, sizes: newSizes }));
-                    }}
-                    className="px-2 py-2 text-sm border border-border rounded text-text-primary font-mono"
-                  />
-                  <input
-                    type="number"
-                    min="0"
-                    placeholder="Stock"
-                    value={s.stock}
-                    onChange={e => {
-                      const newSizes = [...form.sizes];
-                      newSizes[idx] = { ...newSizes[idx], stock: parseInt(e.target.value) || 0 };
-                      setForm(prev => ({ ...prev, sizes: newSizes }));
-                    }}
-                    className="px-2 py-2 text-sm border border-border rounded text-text-primary font-mono"
-                  />
-                  <input
-                    type="number"
-                    min="0"
-                    placeholder="Min"
-                    value={s.minStock}
-                    onChange={e => {
-                      const newSizes = [...form.sizes];
-                      newSizes[idx] = { ...newSizes[idx], minStock: parseInt(e.target.value) || 0 };
-                      setForm(prev => ({ ...prev, sizes: newSizes }));
-                    }}
-                    className="px-2 py-2 text-sm border border-border rounded text-text-primary font-mono"
-                  />
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={() => setForm(prev => ({ 
-                  ...prev, 
-                  sizes: [...prev.sizes, { size: '', stock: 0, minStock: 0 }] 
-                }))}
-                className="text-xs text-primary hover:underline"
-              >
-                + Añadir talla
-              </button>
-            </div>
+          {form.hasSizes && tallaSlot && (
+            <TallaDimensionEditor
+              values={tallaSlot.selectedValues}
+              sizeGroups={sizeGroups}
+              sizeGroupId={form.sizeGroupId}
+              onApplyPreset={applySizePreset}
+              onAddValue={addTallaValue}
+              onRemoveValue={removeTallaValue}
+            />
           )}
         </div>
 
-        {/* Variants toggle - similar to hasSizes toggle */}
+        {/* N dynamic attribute slots, combinable with Talla */}
         <div className="flex flex-col gap-2">
           <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
               checked={form.hasVariants}
-              onChange={e => setForm(prev => ({
-                ...prev,
-                hasVariants: e.target.checked,
-                hasSizes: e.target.checked ? false : prev.hasSizes,
-              }))}
+              onChange={e => handleToggleVariants(e.target.checked)}
               className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
             />
-            <span className="text-sm font-medium text-text-primary">{t.settings.productHasVariants || 'Tiene variantes'}</span>
+            <span className="text-sm font-medium text-text-primary">{t.settings.productHasVariants}</span>
           </label>
           {form.hasVariants && (
             <div className="pl-6 flex flex-col gap-4">
-              {attributeSlots.map((slot, slotIndex) => (
-                <AttributeSlotSelector
-                  key={slotIndex}
-                  slotIndex={slotIndex}
-                  slot={slot}
-                  availableAttributes={getAvailableAttributes(slotIndex)}
-                  attributeValuesMap={attributeValuesMap}
-                  onUpdateAttribute={updateAttributeSlot}
-                  onToggleValue={toggleAttributeValue}
-                  onToggleAll={toggleAllValues}
-                />
-              ))}
-
-              {/* Variant combinations preview */}
-              {variantCombinations.length > 0 && (
-                <div className="border border-border rounded-lg overflow-hidden">
-                  <div className="px-3 py-2 bg-gray-50 border-b border-border">
-                    <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">
-                      Combinaciones ({variantCombinations.length})
-                    </p>
-                  </div>
-                  <div className="max-h-60 overflow-y-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-border">
-                          {attributeSlots.filter(s => s.attributeName).map(s => (
-                            <th key={s.attributeName} className="px-3 py-2 text-left text-xs font-semibold text-text-muted uppercase">
-                              {s.attributeName}
-                            </th>
-                          ))}
-                          <th className="px-3 py-2 text-right text-xs font-semibold text-text-muted uppercase w-20">
-                            Stock
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {variantCombinations.map((combo, idx) => (
-                          <tr key={idx} className="border-b border-border last:border-b-0">
-                            {attributeSlots.filter(s => s.attributeName).map(s => (
-                              <td key={s.attributeName} className="px-3 py-2 text-text-primary">
-                                <span className="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs font-medium">
-                                  {combo.attributes[s.attributeName]}
-                                </span>
-                              </td>
-                            ))}
-                            <td className="px-3 py-2">
-                              <input
-                                type="number"
-                                min="0"
-                                value={combo.stock}
-                                onChange={e => {
-                                  const newCombos = [...variantCombinations];
-                                  newCombos[idx] = { ...newCombos[idx], stock: parseInt(e.target.value) || 0 };
-                                  setVariantCombinations(newCombos);
-                                }}
-                                className="w-16 px-2 py-1 text-xs border border-border rounded text-text-primary font-mono text-right"
-                              />
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  <div className="px-3 py-2 bg-gray-50 border-t border-border">
-                    <p className="text-xs text-text-muted">
-                      Stock total: {variantCombinations.reduce((sum, v) => sum + v.stock, 0)} unidades
-                    </p>
-                  </div>
-                </div>
+              {attributeSlots.map((slot, slotIndex) =>
+                slot.isTalla ? null : (
+                  <AttributeSlotSelector
+                    key={slot.id}
+                    slotIndex={slotIndex}
+                    slot={slot}
+                    availableAttributes={getAvailableAttributes(slotIndex)}
+                    attributeValuesMap={attributeValuesMap}
+                    onUpdateAttribute={updateAttributeSlot}
+                    onToggleValue={toggleAttributeValue}
+                    onToggleAll={toggleAllValues}
+                    onRemove={removeAttributeSlot}
+                  />
+                )
               )}
+              <button
+                type="button"
+                onClick={addAttributeSlot}
+                className="self-start text-xs text-primary hover:underline"
+              >
+                {t.products.attributes.add}
+              </button>
             </div>
           )}
         </div>
 
+        {/* Variant combinations preview across N dimensions */}
+        {dimensionSlots.length > 0 && (
+          <VariantCombinationsTable
+            combinations={variantCombinations}
+            dimensionNames={dimensionNames}
+            onChange={updateCombination}
+          />
+        )}
+
         <div className="flex gap-3 pt-2">
-          <Button variant="secondary" fullWidth onClick={handleClose}>
-            {t.common.cancel}
-          </Button>
-          <Button
-            variant="primary"
-            fullWidth
-            onClick={handleSubmit}
-            disabled={!isFormValid || isSubmitting}
-          >
-            {isSubmitting ? (t.common.saving || 'Guardando...') : t.common.add}
-          </Button>
+          {creationDone ? (
+            <Button variant="primary" fullWidth onClick={handleClose}>
+              {t.common.close}
+            </Button>
+          ) : (
+            <>
+              <Button variant="secondary" fullWidth onClick={handleClose}>
+                {t.common.cancel}
+              </Button>
+              <Button
+                variant="primary"
+                fullWidth
+                onClick={handleSubmit}
+                disabled={!isFormValid || isSubmitting}
+              >
+                {isSubmitting ? t.common.saving : t.common.add}
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </Modal>
-  );
-};
-
-interface AttributeSlotSelectorProps {
-  slotIndex: number;
-  slot: AttributeSlot;
-  availableAttributes: { id: string; name: string; values: string[] }[];
-  attributeValuesMap: Record<string, string[]>;
-  onUpdateAttribute: (slotIndex: number, attributeName: string) => void;
-  onToggleValue: (slotIndex: number, value: string) => void;
-  onToggleAll: (slotIndex: number) => void;
-}
-
-const AttributeSlotSelector: React.FC<AttributeSlotSelectorProps> = ({
-  slotIndex,
-  slot,
-  availableAttributes,
-  attributeValuesMap,
-  onUpdateAttribute,
-  onToggleValue,
-  onToggleAll,
-}) => {
-  const [showValuesDropdown, setShowValuesDropdown] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const values = attributeValuesMap[slot.attributeName] || [];
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setShowValuesDropdown(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  return (
-    <div className="flex flex-col gap-2">
-      <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">
-        Atributo {slotIndex + 1}
-      </label>
-      <div className="flex gap-3">
-        {/* Attribute selector */}
-        <select
-          value={slot.attributeName}
-          onChange={e => onUpdateAttribute(slotIndex, e.target.value)}
-          className="flex-1 px-3 py-2 text-sm border border-border rounded-lg text-text-primary bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
-        >
-          <option value="">Seleccionar atributo...</option>
-          {availableAttributes.map(attr => (
-            <option key={attr.id} value={attr.name}>{attr.name}</option>
-          ))}
-        </select>
-
-        {/* Values multi-select */}
-        {slot.attributeName && (
-          <div className="relative flex-1" ref={dropdownRef}>
-            <button
-              type="button"
-              onClick={() => setShowValuesDropdown(!showValuesDropdown)}
-              className="w-full px-3 py-2 text-sm border border-border rounded-lg text-text-primary bg-white text-left focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
-            >
-              {slot.selectedValues.length === 0
-                ? 'Seleccionar valores...'
-                : slot.selectedValues.length === values.length
-                  ? `Todos (${values.length})`
-                  : `${slot.selectedValues.length} de ${values.length} seleccionados`
-              }
-            </button>
-            {showValuesDropdown && (
-              <div className="absolute z-50 mt-1 w-full bg-white border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                <label className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer border-b border-border">
-                  <input
-                    type="checkbox"
-                    checked={values.length > 0 && values.length === slot.selectedValues.length}
-                    onChange={() => onToggleAll(slotIndex)}
-                    className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
-                  />
-                  <span className="text-xs font-medium text-text-muted">Seleccionar todos</span>
-                </label>
-                {values.map(value => (
-                  <label key={value} className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={slot.selectedValues.includes(value)}
-                      onChange={() => onToggleValue(slotIndex, value)}
-                      className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
-                    />
-                    <span className="text-sm text-text-primary">{value}</span>
-                  </label>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
   );
 };
 

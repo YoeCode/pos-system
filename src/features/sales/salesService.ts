@@ -1,28 +1,55 @@
 import { supabase } from '../../supabase/client';
-import type { Sale, OrderItem, PaymentMethod } from '../../types';
+import { getEffectiveUnitPrice } from '../pos/calculation';
+import type { Sale, OrderItem, PaymentMethod, ProductVariant } from '../../types';
+import { isManualProductId, MANUAL_PRODUCT_ID_PREFIX } from '../../utils/manualProduct';
 
 function isValidUuid(id: string | undefined | null): id is string {
   return !!id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 }
 
-function mapDbSale(row: any): Sale {
-  const items: OrderItem[] = (row.sale_items || []).map((si: any) => ({
-    product: {
-      id: si.product_id,
-      name: si.product_name,
-      sku: si.product_sku || '',
-      category: si.product_category || '',
-      subcategory: si.product_subcategory || undefined,
-      price: si.unit_price,
-      costPrice: 0,
-      stock: 0,
-      minStock: 0,
-      status: 'active',
-      publishedOnline: false,
-    },
-    quantity: si.quantity,
-    lineTotal: si.line_total,
-  }));
+export function mapDbSale(row: any): Sale {
+  const items: OrderItem[] = (row.sale_items || []).map((si: any, index: number) => {
+    // Synthesize the sold variant from the line snapshot. Only the
+    // snapshotted fields are real (id, sku, attributes); the snapshot
+    // stores the effective unit price on the line (product.price below),
+    // not the variant's own price override, so price stays null.
+    const selectedVariant: ProductVariant | undefined = si.variant_id
+      ? {
+          id: si.variant_id,
+          productId: si.product_id,
+          sku: si.variant_sku || '',
+          price: null,
+          costPrice: null,
+          stock: 0,
+          minStock: 0,
+          image: null,
+          attributes: si.variant_attributes || {},
+          status: 'active',
+        }
+      : undefined;
+
+    return {
+      product: {
+        // Manual lines persist product_id NULL: synthesize a line-unique,
+        // renderable id that stays recognizable as a manual product.
+        id: si.product_id ?? `${MANUAL_PRODUCT_ID_PREFIX}${si.id ?? index}`,
+        name: si.product_name,
+        sku: si.product_sku || '',
+        category: si.product_category || '',
+        subcategory: si.product_subcategory || undefined,
+        price: si.unit_price,
+        costPrice: 0,
+        stock: 0,
+        minStock: 0,
+        status: 'active',
+        publishedOnline: false,
+      },
+      quantity: si.quantity,
+      lineTotal: si.line_total,
+      selectedSize: si.selected_size || undefined,
+      selectedVariant,
+    };
+  });
 
   return {
     id: row.id,
@@ -93,22 +120,27 @@ export async function createSale(sale: Sale, tenantId: string): Promise<Sale | n
 
   if (saleError || !saleData) return null;
 
-  const saleItems = sale.order.items
-    .filter(item => isValidUuid(item.product.id))
-    .map(item => ({
-      sale_id: (saleData as any).id,
-      tenant_id: tenantId,
-      product_id: item.product.id,
-      product_name: item.product.name,
-      product_sku: item.product.sku,
-      product_category: item.product.category,
-      product_subcategory: item.product.subcategory ?? null,
-      quantity: item.quantity,
-      unit_price: item.product.price,
-      line_total: item.lineTotal,
-      selected_size: item.selectedSize || null,
-      variant_id: item.selectedVariant?.id || null,
-    }));
+  // Keep every line, including manual (non-catalog) products. Manual lines
+  // persist with product_id NULL — their synthetic id must never reach the
+  // FK column — while snapshot columns keep them renderable on tickets.
+  // unit_price is the effective price (variant override when present).
+  const saleItems = sale.order.items.map(item => ({
+    id: crypto.randomUUID(),
+    sale_id: (saleData as any).id,
+    tenant_id: tenantId,
+    product_id: isManualProductId(item.product.id) ? null : item.product.id,
+    product_name: item.product.name,
+    product_sku: item.product.sku,
+    product_category: item.product.category,
+    product_subcategory: item.product.subcategory ?? null,
+    quantity: item.quantity,
+    unit_price: getEffectiveUnitPrice(item),
+    line_total: item.lineTotal,
+    selected_size: item.selectedSize || null,
+    variant_id: item.selectedVariant?.id || null,
+    variant_sku: item.selectedVariant?.sku || null,
+    variant_attributes: item.selectedVariant?.attributes || null,
+  }));
 
   if (saleItems.length > 0) {
     await supabase.from('sale_items').insert(saleItems as any);

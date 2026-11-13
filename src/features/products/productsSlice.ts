@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import type { Product, ProductSize, ProductVariant, ProductAttribute, StockMovement } from '../../types';
+import type { Product, ProductVariant, ProductAttribute, StockMovement } from '../../types';
 import type { RootState } from '../../app/store';
 import {
   fetchProducts,
@@ -36,11 +36,11 @@ export interface ProductFormState {
   description: string;
   publishedOnline: boolean;
   status: Product['status'];
-  sizes: ProductSize[];
   hasSizes: boolean;
   sizeGroupId: string;
   hasVariants: boolean;
   variantAttributes: string[];
+  variants: Pick<ProductVariant, 'attributes' | 'stock' | 'minStock'>[];
 }
 
 export const createEmptyForm = (): ProductFormState => ({
@@ -57,11 +57,11 @@ export const createEmptyForm = (): ProductFormState => ({
   description: '',
   publishedOnline: false,
   status: 'draft',
-  sizes: [],
   hasSizes: false,
   sizeGroupId: '',
   hasVariants: false,
   variantAttributes: [],
+  variants: [],
 });
 
 interface ProductsState {
@@ -140,7 +140,8 @@ export const reduceStockAsync = createAsyncThunk(
     const tenantId = state.auth.user?.tenantId || '';
     const employeeId = state.auth.user?.id;
     const employeeName = state.auth.user?.name;
-    await reduceStock(productId, quantity, size, tenantId, variantId);
+    const ok = await reduceStock(productId, quantity, size, tenantId, variantId);
+    if (!ok) throw new Error('Failed to reduce stock');
     return { productId, quantity, size, variantId, employeeId, employeeName };
   }
 );
@@ -152,7 +153,8 @@ export const restoreStockAsync = createAsyncThunk(
     const tenantId = state.auth.user?.tenantId || '';
     const employeeId = state.auth.user?.id;
     const employeeName = state.auth.user?.name;
-    await restoreStock(productId, quantity, size, tenantId, undefined, variantId);
+    const ok = await restoreStock(productId, quantity, size, tenantId, undefined, variantId);
+    if (!ok) throw new Error('Failed to restore stock');
     return { productId, quantity, size, variantId, employeeId, employeeName };
   }
 );
@@ -372,12 +374,15 @@ const productsSlice = createSlice({
             variant.stock = Math.max(0, variant.stock - quantity);
           }
           product.stock = product.variants.reduce((sum, v) => sum + v.stock, 0);
-        } else if (size && product.sizes) {
-          const sizeEntry = product.sizes.find(s => s.size === size);
-          if (sizeEntry) {
-            sizeEntry.stock = Math.max(0, sizeEntry.stock - quantity);
+        } else if (size && product.variants) {
+          // Legacy sized line: route to its Talla variant (mirrors the service).
+          const tallaVariant = product.variants.find(v => (v.attributes || {})['Talla'] === size);
+          if (tallaVariant) {
+            tallaVariant.stock = Math.max(0, tallaVariant.stock - quantity);
+            product.stock = product.variants.reduce((sum, v) => sum + v.stock, 0);
+          } else {
+            product.stock = Math.max(0, product.stock - quantity);
           }
-          product.stock = product.sizes.reduce((sum, s) => sum + s.stock, 0);
         } else {
           product.stock = Math.max(0, product.stock - quantity);
         }
@@ -408,12 +413,15 @@ const productsSlice = createSlice({
             variant.stock += quantity;
           }
           product.stock = product.variants.reduce((sum, v) => sum + v.stock, 0);
-        } else if (size && product.sizes) {
-          const sizeEntry = product.sizes.find(s => s.size === size);
-          if (sizeEntry) {
-            sizeEntry.stock += quantity;
+        } else if (size && product.variants) {
+          // Legacy sized line: route to its Talla variant (mirrors the service).
+          const tallaVariant = product.variants.find(v => (v.attributes || {})['Talla'] === size);
+          if (tallaVariant) {
+            tallaVariant.stock += quantity;
+            product.stock = product.variants.reduce((sum, v) => sum + v.stock, 0);
+          } else {
+            product.stock += quantity;
           }
-          product.stock = product.sizes.reduce((sum, s) => sum + s.stock, 0);
         } else {
           product.stock += quantity;
         }
@@ -584,7 +592,6 @@ export interface StockAlertItem {
   stock: number;
   minStock: number;
   severity: 'critical' | 'warning';
-  sizes?: { size: string; stock: number; minStock: number }[];
   variants?: { id: string; attributes: Record<string, string>; stock: number; minStock: number }[];
 }
 
@@ -592,14 +599,10 @@ export interface StockAlertItem {
 // Both the low-stock alert selector and the Inventory tabs MUST use these
 // helpers so both views always agree on which products need attention.
 // Variant products are evaluated by AGGREGATE stock (sum across variants).
-// Sized products are evaluated by AGGREGATE stock (sum across sizes).
 
 export const getProductStock = (product: Product): number => {
   if (product.variants && product.variants.length > 0) {
     return product.variants.reduce((sum, v) => sum + v.stock, 0);
-  }
-  if (product.sizes && product.sizes.length > 0) {
-    return product.sizes.reduce((sum, s) => sum + s.stock, 0);
   }
   return product.stock;
 };
@@ -607,9 +610,6 @@ export const getProductStock = (product: Product): number => {
 export const getProductMinStock = (product: Product): number => {
   if (product.variants && product.variants.length > 0) {
     return product.variants.reduce((sum, v) => sum + (v.minStock || product.minStock), 0);
-  }
-  if (product.sizes && product.sizes.length > 0) {
-    return product.sizes.reduce((sum, s) => sum + (s.minStock || product.minStock), 0);
   }
   return product.minStock;
 };
@@ -636,7 +636,6 @@ export const selectLowStockAlerts = createSelector(
     if (!isOutOfStock(product) && !isLowStock(product)) return;
 
     const lowVariants = product.variants?.filter(v => v.stock <= (v.minStock || product.minStock)) ?? [];
-    const lowSizes = product.sizes?.filter(s => s.stock <= (s.minStock || product.minStock)) ?? [];
 
     alerts.push({
       productId: product.id,
@@ -647,9 +646,6 @@ export const selectLowStockAlerts = createSelector(
       severity: stock === 0 ? 'critical' : 'warning',
       ...(lowVariants.length > 0
         ? { variants: lowVariants.map(v => ({ id: v.id, attributes: v.attributes, stock: v.stock, minStock: v.minStock || product.minStock })) }
-        : {}),
-      ...(lowSizes.length > 0
-        ? { sizes: lowSizes.map(s => ({ size: s.size, stock: s.stock, minStock: s.minStock || product.minStock })) }
         : {}),
     });
   });

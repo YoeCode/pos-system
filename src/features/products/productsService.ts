@@ -1,5 +1,5 @@
 import { supabase } from '../../supabase/client';
-import type { Product, ProductSize, ProductAttribute, ProductVariant } from '../../types';
+import type { Product, ProductAttribute, ProductVariant } from '../../types';
 
 function slugify(str: string): string {
   return str
@@ -21,15 +21,6 @@ export async function nextSku(categoryName: string): Promise<string> {
 }
 
 function mapDbProduct(row: any): Product {
-  const sizes: ProductSize[] = (row.product_sizes || [])
-    .filter((s: any) => s.size !== null)
-    .map((s: any) => ({
-      size: s.size,
-      stock: s.stock,
-      minStock: s.min_stock,
-      sku: s.sku,
-    }));
-
   const variants: ProductVariant[] = (row.product_variants || [])
     .filter((v: any) => v.id !== null)
     .map((v: any) => ({
@@ -47,9 +38,7 @@ function mapDbProduct(row: any): Product {
 
   const totalStock = variants.length > 0
     ? variants.reduce((sum, v) => sum + v.stock, 0)
-    : sizes.length > 0
-      ? sizes.reduce((sum, s) => sum + s.stock, 0)
-      : row.stock;
+    : row.stock;
 
   return {
     id: row.id,
@@ -68,7 +57,6 @@ function mapDbProduct(row: any): Product {
     status: row.status,
     publishedOnline: row.published_online,
     version: row.version || undefined,
-    sizes: sizes.length > 0 ? sizes : undefined,
     sizeGroupId: row.size_group_id || undefined,
     hasVariants: row.has_variants || false,
     variantAttributes: row.variant_attributes || [],
@@ -79,7 +67,7 @@ function mapDbProduct(row: any): Product {
 export async function fetchProducts(tenantId: string): Promise<Product[]> {
   const { data, error } = await supabase
     .from('products')
-    .select('*, product_sizes(*), product_variants(*)')
+    .select('*, product_variants(*)')
     .eq('tenant_id', tenantId)
     .order('name');
 
@@ -126,19 +114,7 @@ export async function createProduct(product: Product, tenantId: string): Promise
 
   if (error || !data) return null;
 
-  if (product.sizes && product.sizes.length > 0) {
-    const sizesToInsert = product.sizes.map(s => ({
-      product_id: (data as any).id,
-      tenant_id: tenantId,
-      size: s.size,
-      stock: s.stock,
-      min_stock: s.minStock,
-      sku: s.sku || null,
-    }));
-    await supabase.from('product_sizes').insert(sizesToInsert as any);
-  }
-
-  return mapDbProduct({ ...data, product_sizes: product.sizes || [] });
+  return mapDbProduct(data);
 }
 
 export async function updateProduct(product: Product, tenantId: string): Promise<Product | null> {
@@ -171,27 +147,14 @@ export async function updateProduct(product: Product, tenantId: string): Promise
 
   if (error) return null;
 
-  await supabase.from('product_sizes').delete().eq('product_id', product.id).eq('tenant_id', tenantId);
-
-  if (product.sizes && product.sizes.length > 0) {
-    const sizesToInsert = product.sizes.map(s => ({
-      product_id: product.id,
-      tenant_id: tenantId,
-      size: s.size,
-      stock: s.stock,
-      min_stock: s.minStock,
-      sku: s.sku || null,
-    }));
-    await supabase.from('product_sizes').insert(sizesToInsert as any);
-  }
-
-  const { data } = await supabase
+  const { data, error: refetchError } = await supabase
     .from('products')
-    .select('*, product_sizes(*), product_variants(*)')
+    .select('*, product_variants(*)')
     .eq('id', product.id)
     .single();
 
-  return data ? mapDbProduct(data) : null;
+  if (refetchError || !data) return null;
+  return mapDbProduct(data);
 }
 
 export async function deleteProduct(id: string, tenantId: string): Promise<boolean> {
@@ -201,108 +164,47 @@ export async function deleteProduct(id: string, tenantId: string): Promise<boole
   return !error;
 }
 
+// Migration 022 converged every legacy per-size stock row into a {"Talla": size}
+// product_variants row. A legacy sale line that carries only a size (no
+// variant_id) must therefore resolve to that Talla variant to reduce/restore
+// stock in the row that now holds the units. Returns undefined when no Talla
+// variant matches (plain product or orphan mapping) so the caller falls back to
+// products.stock.
+// Stock mutations go through SECURITY DEFINER RPCs (migration 024) so they
+// work for every role - including cashiers at checkout - once RLS is enabled
+// on products/product_variants. The RPC owns the atomic write and the shape
+// routing (variant id / size -> Talla variant / plain product), and returns
+// false when the target row was not found. Failures propagate to the thunks.
 export async function reduceStock(productId: string, quantity: number, size?: string, tenantId?: string, variantId?: string): Promise<boolean> {
-  if (variantId) {
-    const { data: variantRow } = await (supabase as any)
-      .from('product_variants')
-      .select('stock')
-      .eq('id', variantId)
-      .single();
-
-    if (variantRow) {
-      const newStock = Math.max(0, variantRow.stock - quantity);
-      await (supabase as any)
-        .from('product_variants')
-        .update({ stock: newStock })
-        .eq('id', variantId);
-    }
-    return true;
+  const { data, error } = await (supabase as any).rpc('reduce_stock', {
+    p_product_id: productId,
+    p_variant_id: variantId ?? null,
+    p_size: size ?? null,
+    p_quantity: quantity,
+    p_tenant_id: tenantId || null,
+  });
+  if (error) {
+    console.error('[productsService] reduceStock rpc error:', error);
+    return false;
   }
-
-  if (size) {
-    const { data: sizeRow } = await supabase
-      .from('product_sizes')
-      .select('stock')
-      .eq('product_id', productId)
-      .eq('size', size)
-      .single();
-
-    if (sizeRow) {
-      const newStock = Math.max(0, sizeRow.stock - quantity);
-      await supabase
-        .from('product_sizes')
-        .update({ stock: newStock })
-        .eq('product_id', productId)
-        .eq('size', size);
-    }
-  } else {
-    const { data: prod } = await supabase
-      .from('products')
-      .select('stock')
-      .eq('id', productId)
-      .eq('tenant_id', tenantId || '')
-      .single();
-
-    if (prod) {
-      const newStock = Math.max(0, prod.stock - quantity);
-      await supabase.from('products').update({ stock: newStock }).eq('id', productId).eq('tenant_id', tenantId || '');
-    }
-  }
-  return true;
+  return data === true;
 }
 
 export async function restoreStock(productId: string, quantity: number, size?: string, tenantId?: string, costPrice?: number, variantId?: string): Promise<boolean> {
-  if (variantId) {
-    const { data: variantRow } = await (supabase as any)
-      .from('product_variants')
-      .select('stock')
-      .eq('id', variantId)
-      .single();
-
-    if (variantRow) {
-      const newStock = variantRow.stock + quantity;
-      await (supabase as any)
-        .from('product_variants')
-        .update({ stock: newStock })
-        .eq('id', variantId);
-    }
-    return true;
+  const { data, error } = await (supabase as any).rpc('restore_stock', {
+    p_product_id: productId,
+    p_variant_id: variantId ?? null,
+    p_size: size ?? null,
+    p_quantity: quantity,
+    p_tenant_id: tenantId || null,
+    // Only written on the plain products path (delivery-note restocks).
+    p_cost_price: costPrice ?? null,
+  });
+  if (error) {
+    console.error('[productsService] restoreStock rpc error:', error);
+    return false;
   }
-
-  if (size) {
-    const { data: sizeRow } = await supabase
-      .from('product_sizes')
-      .select('stock')
-      .eq('product_id', productId)
-      .eq('size', size)
-      .single();
-
-    if (sizeRow) {
-      const newStock = sizeRow.stock + quantity;
-      await supabase
-        .from('product_sizes')
-        .update({ stock: newStock })
-        .eq('product_id', productId)
-        .eq('size', size);
-    }
-  } else {
-    const { data: prod } = await supabase
-      .from('products')
-      .select('stock')
-      .eq('id', productId)
-      .eq('tenant_id', tenantId || '')
-      .single();
-
-    if (prod) {
-      const newStock = prod.stock + quantity;
-      const updateData: Record<string, any> = { stock: newStock };
-      if (costPrice !== undefined) {
-        updateData.cost_price = costPrice;
-      }
-      await supabase.from('products').update(updateData as any).eq('id', productId).eq('tenant_id', tenantId || '');
-    }
-  }
-  return true;
+  return data === true;
 }
 
 // --------------------------------------------
@@ -380,6 +282,20 @@ export async function fetchProductVariants(tenantId: string, productId: string):
     attributes: row.attributes || {},
     status: row.status,
   }));
+}
+
+// Every variant SKU in the tenant. Used to seed the SKU probe loop when
+// generating variant SKUs client-side; variant SKUs are unique per tenant, so
+// the full set is the only exact collision domain (a suffixed candidate of one
+// base can equal another base).
+export async function fetchVariantSkus(tenantId: string): Promise<string[]> {
+  const { data, error } = await (supabase as any)
+    .from('product_variants')
+    .select('sku')
+    .eq('tenant_id', tenantId);
+
+  if (error || !data) return [];
+  return (data as any[]).map(row => row.sku as string);
 }
 
 export async function createProductVariant(tenantId: string, variant: Omit<ProductVariant, 'id'>): Promise<ProductVariant | null> {

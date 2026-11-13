@@ -153,9 +153,7 @@ const ProductsTable: React.FC = () => {
         </thead>
         <tbody className="divide-y divide-border">
           {paginatedItems.map(product => {
-            const displayStock = product.sizes && product.sizes.length > 0
-              ? product.sizes.reduce((s, sz) => s + sz.stock, 0)
-              : product.stock;
+            const displayStock = product.stock;
 
             return (
             <tr
