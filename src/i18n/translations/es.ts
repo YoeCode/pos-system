@@ -31,6 +31,7 @@ export const es = {
     error: 'Error',
     collapse: 'Colapsar',
     expand: 'Expandir',
+    actions: 'Acciones',
   },
   auth: {
     login: 'Iniciar sesión',
@@ -165,6 +166,9 @@ export const es = {
       createVariant: 'Crear variante',
       updateVariant: 'Actualizar',
       updateSize: 'Actualizar',
+      updateStock: 'Actualizar',
+      stockUpdated: 'Stock actualizado correctamente',
+      stockUpdateError: 'Error al actualizar el stock',
       noVariants: 'No hay variantes definidas',
       status: 'Estado',
       active: 'Activo',

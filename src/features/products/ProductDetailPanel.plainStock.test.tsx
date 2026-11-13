@@ -100,21 +100,28 @@ beforeEach(() => {
 });
 
 describe('ProductDetailPanel — plain product stock editing', () => {
-  it('saves an edited stock value through updateProduct', async () => {
+  it('saves edited stock and min_stock through updateProduct from the unified stock editor', async () => {
     const user = userEvent.setup();
-    renderPanel(makeProduct({ stock: 12 }));
+    renderPanel(makeProduct({ stock: 12, minStock: 2 }));
 
-    await user.click(screen.getByRole('button', { name: 'Edit' }));
+    // Open the row menu (the panel header also has an "Edit" button, hence index 1).
+    await user.click(screen.getByRole('button', { name: 'Actions' }));
+    const editButtons = screen.getAllByRole('button', { name: 'Edit' });
+    await user.click(editButtons[editButtons.length - 1]);
 
-    const stockInput = screen.getByRole('spinbutton', { name: 'Stock Level' });
+    const stockInput = screen.getByRole('spinbutton', { name: 'Stock' });
     await user.clear(stockInput);
     await user.type(stockInput, '25');
 
-    await user.click(screen.getByRole('button', { name: 'Save' }));
+    const minStockInput = screen.getByRole('spinbutton', { name: 'Min. Stock' });
+    await user.clear(minStockInput);
+    await user.type(minStockInput, '4');
+
+    await user.click(screen.getByRole('button', { name: 'Update' }));
 
     await waitFor(() => expect(updateProductMock).toHaveBeenCalled());
     expect(updateProductMock).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'p1', stock: 25 }),
+      expect.objectContaining({ id: 'p1', stock: 25, minStock: 4 }),
       'test-tenant'
     );
   });
