@@ -426,6 +426,20 @@ export async function fetchProductVariants(tenantId: string, productId: string):
   }));
 }
 
+// Every variant SKU in the tenant. Used to seed the SKU probe loop when
+// generating variant SKUs client-side; variant SKUs are unique per tenant, so
+// the full set is the only exact collision domain (a suffixed candidate of one
+// base can equal another base).
+export async function fetchVariantSkus(tenantId: string): Promise<string[]> {
+  const { data, error } = await (supabase as any)
+    .from('product_variants')
+    .select('sku')
+    .eq('tenant_id', tenantId);
+
+  if (error || !data) return [];
+  return (data as any[]).map(row => row.sku as string);
+}
+
 export async function createProductVariant(tenantId: string, variant: Omit<ProductVariant, 'id'>): Promise<ProductVariant | null> {
   const insertData = {
     tenant_id: tenantId,
