@@ -32,9 +32,9 @@ Out of scope: per-dimension analytics, attribute normalization (Option C), RLS c
 - [ ] T0.5 Regression tests per fix (price round-trip, refund restore target, history read-back)
 
 ### Phase 1 — Data migration (sizes → variants)
-- [ ] T1.1 Migration 021: dedupe dual-row products (prefer `product_variants`), convert remaining `product_sizes` rows to `{"Talla": size}` variants, repair skipped stock, set `has_variants`/`variant_attributes`
-- [ ] T1.2 Idempotence + prod reconciliation notes (repair as applied if run manually)
-- [ ] T1.3 Migration tests/verification against local stack with seed data
+- [x] T1.1 Migration 021: dedupe dual-row products (prefer `product_variants`), convert remaining `product_sizes` rows to `{"Talla": size}` variants, repair skipped stock, set `has_variants`/`variant_attributes`
+- [x] T1.2 Idempotence + prod reconciliation notes (repair as applied if run manually)
+- [x] T1.3 Migration tests/verification against local stack with seed data
 
 ### Phase 2 — Unified UI
 - [ ] T2.1 One stock editor for all shapes (variant-style form: SKU, prices inherit, stock, min_stock, attributes); sizes products render as 1-dim variant tables
@@ -72,6 +72,15 @@ Per task: `npm run test:run`, `npm run build`, `npm run lint` (exit 0; known war
 ## Progress / verification evidence
 (Updated as tasks close.)
 
+- Phase 0 (T0.1–T0.5) merged to main via #43 — `fix(sales): la línea de venta refleja lo vendido (precio de variante, snapshots, devoluciones)`.
+- Phase 1 (T1.1–T1.3) closed on `feat/db-migrate-sizes-to-variants` with work-unit commit `feat(db): converge product sizes into variants` (migration 022 + seed alignment + this doc update together).
+  - **Numbering decision:** the plan drafted this migration as 021, but 020 is taken and 021 is reserved for a later phase adjustment, so it ships as **022** (`022_migrate_remaining_product_sizes_to_variants.sql`). T3.1's `DROP TABLE product_sizes` migration will be numbered after 022.
+  - **Stock-merge decision (dual rows):** **GREATEST(variant, size row)** for stock and min_stock. Migration 016 created the variant as a copy of the size row's stock and left the size row in place; every later write decremented/restored exactly one of the two rows, so both drifted apart from the same base S. SUM double-counts the shared base (overcount = S); GREATEST overcounts by at most the smaller drift and never drops units one of the rows still reports. min_stock keeps the higher low-stock threshold for the same reason. (Full rationale in the migration header.)
+  - **Collision-safe SKUs:** rows whose computed SKU (`COALESCE(ps.sku, p.sku || '-' || ps.size)`) collides under `UNIQUE(tenant_id, sku)` get `-1`, `-2`, … appended until free — no row is ever skipped (016's `ON CONFLICT (tenant_id, sku) DO NOTHING` silently dropped colliding rows and their stock).
+  - **Attribute upsert fix:** the per-tenant `Talla` entry in `product_attributes` is aggregated to exactly one row per tenant; 016's upsert emitted one candidate row per size and would abort with `ON CONFLICT DO UPDATE command cannot affect row a second time` for any tenant with more than one distinct size.
+  - **Seed alignment:** `product_sizes` inserts converted to `product_variants` `{"Talla": size}` rows (price/cost_price NULL = inherit parent), plus the flag/attribute statements 022 would otherwise provide — 022 runs before the seed on fresh resets and sees empty tables.
+  - **Prod reconciliation:** if 022 is ever applied by hand instead of via `supabase db push`, record it with `supabase migration repair --status applied 022_migrate_remaining_product_sizes_to_variants` (ledger doctrine).
+  - **Verification (local stack):** `supabase db reset` clean (migrations 000-022 + seed); post-reset `product_sizes` = 0 rows; the 5 ex-size products hold 23 Talla variants with stock sums 26 / 33 / 12 / 26 / 68 equal to `products.stock` (= `SUM(variant stock)` per product, maintained by `trg_update_variant_stock`); `product_attributes.Talla` = union of all 15 size names. Synthetic legacy-data run of the 022 body (dual row + explicit-SKU collision + generated-SKU collision + skipped row) converted every row with the expected GREATEST merges and `-1` suffixed SKUs; a second run was fully no-op (idempotent). `npm run test:run`: 102 passed / 0 failed. `npm run build`: ok. `npm run lint`: exit 0 (known ProductDetailPanel warning).
 - Phase 2 slice 2.2 (T2.2 + T2.3 + T2.4) closed on `feat/create-modal-variant-presets` with work-unit commit `feat(products): create modal is variant-native with dynamic attributes and safe SKUs`.
   - **Re-slice (disclosed to the maintainer):** T2.4 moved from slice 2.3 into this slice. With N-slot combinations the old 2-letter-prefix SKU generator multiplies silent SKU collisions (`createProductVariant` returns `null`, the UI added ghost variants with fake UUIDs); delivering dynamic slots before safe SKUs would ship a combinatorial ghost factory. SKU safety therefore lands with the slot work it protects.
   - **Chain strategy (maintainer choice): stacked-to-main.** PR order: `2.1 unified stock editor` (delivered) → `2.2 create-modal presets + dynamic attribute slots + collision-safe SKUs` 📍 (this) → `2.3 i18n/tests/doc cleanup`. This branch is independent of `feat/unified-stock-editor` (no shared files: the create modal, its subcomponents, and the variant SKU helpers vs. the stock editor); merge order 2.1 then 2.2, trivial doc conflict resolution expected.
