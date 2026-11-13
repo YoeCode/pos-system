@@ -52,33 +52,35 @@ ON CONFLICT (tenant_id, sku) DO UPDATE SET
   updated_at = NOW();
 
 -- --------------------------------------------
--- PRODUCT SIZES (lookup product IDs dynamically)
+-- PRODUCT VARIANTS - Talla (lookup product IDs dynamically)
+-- Sizes are one-dimension variants {"Talla": <size>} with price/cost_price
+-- NULL so the variant inherits the parent product (variant catalog refactor).
 -- --------------------------------------------
-INSERT INTO product_sizes (tenant_id, product_id, size, stock, min_stock, sku)
-SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, 'S', 15, 5, 'CB-001-BAS-S' FROM products WHERE sku = 'CB-001-BAS'
-UNION ALL SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, 'M', 8, 5, 'CB-001-BAS-M' FROM products WHERE sku = 'CB-001-BAS'
-UNION ALL SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, 'L', 3, 5, 'CB-001-BAS-L' FROM products WHERE sku = 'CB-001-BAS'
-UNION ALL SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, 'XL', 0, 5, 'CB-001-BAS-XL' FROM products WHERE sku = 'CB-001-BAS'
-UNION ALL SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, '80A', 5, 3, 'SUJ-EVY-80A' FROM products WHERE sku = 'SUJ-EVY-01'
-UNION ALL SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, '80B', 8, 3, 'SUJ-EVY-80B' FROM products WHERE sku = 'SUJ-EVY-01'
-UNION ALL SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, '85A', 12, 3, 'SUJ-EVY-85A' FROM products WHERE sku = 'SUJ-EVY-01'
-UNION ALL SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, '85B', 6, 3, 'SUJ-EVY-85B' FROM products WHERE sku = 'SUJ-EVY-01'
-UNION ALL SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, '90A', 2, 3, 'SUJ-EVY-90A' FROM products WHERE sku = 'SUJ-EVY-01'
-UNION ALL SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, '90B', 0, 3, 'SUJ-EVY-90B' FROM products WHERE sku = 'SUJ-EVY-01'
-UNION ALL SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, '38', 4, 3, 'PNT-CLS-38' FROM products WHERE sku = 'PNT-CLS-01'
-UNION ALL SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, '40', 6, 3, 'PNT-CLS-40' FROM products WHERE sku = 'PNT-CLS-01'
-UNION ALL SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, '42', 2, 3, 'PNT-CLS-42' FROM products WHERE sku = 'PNT-CLS-01'
-UNION ALL SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, '44', 0, 3, 'PNT-CLS-44' FROM products WHERE sku = 'PNT-CLS-01'
-UNION ALL SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, 'XS', 3, 2, 'VST-FLR-XS' FROM products WHERE sku = 'VST-FLR-01'
-UNION ALL SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, 'S', 7, 2, 'VST-FLR-S' FROM products WHERE sku = 'VST-FLR-01'
-UNION ALL SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, 'M', 10, 2, 'VST-FLR-M' FROM products WHERE sku = 'VST-FLR-01'
-UNION ALL SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, 'L', 5, 2, 'VST-FLR-L' FROM products WHERE sku = 'VST-FLR-01'
-UNION ALL SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, 'XL', 1, 2, 'VST-FLR-XL' FROM products WHERE sku = 'VST-FLR-01'
-UNION ALL SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, 'S', 20, 10, 'BRG-CTN-S' FROM products WHERE sku = 'BRG-CTN-01'
-UNION ALL SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, 'M', 25, 10, 'BRG-CTN-M' FROM products WHERE sku = 'BRG-CTN-01'
-UNION ALL SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, 'L', 15, 10, 'BRG-CTN-L' FROM products WHERE sku = 'BRG-CTN-01'
-UNION ALL SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, 'XL', 8, 10, 'BRG-CTN-XL' FROM products WHERE sku = 'BRG-CTN-01'
-ON CONFLICT (product_id, size) DO NOTHING;
+INSERT INTO product_variants (tenant_id, product_id, sku, stock, min_stock, attributes)
+SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, 'CB-001-BAS-S', 15, 5, jsonb_build_object('Talla', 'S') FROM products WHERE sku = 'CB-001-BAS'
+UNION ALL SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, 'CB-001-BAS-M', 8, 5, jsonb_build_object('Talla', 'M') FROM products WHERE sku = 'CB-001-BAS'
+UNION ALL SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, 'CB-001-BAS-L', 3, 5, jsonb_build_object('Talla', 'L') FROM products WHERE sku = 'CB-001-BAS'
+UNION ALL SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, 'CB-001-BAS-XL', 0, 5, jsonb_build_object('Talla', 'XL') FROM products WHERE sku = 'CB-001-BAS'
+UNION ALL SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, 'SUJ-EVY-80A', 5, 3, jsonb_build_object('Talla', '80A') FROM products WHERE sku = 'SUJ-EVY-01'
+UNION ALL SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, 'SUJ-EVY-80B', 8, 3, jsonb_build_object('Talla', '80B') FROM products WHERE sku = 'SUJ-EVY-01'
+UNION ALL SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, 'SUJ-EVY-85A', 12, 3, jsonb_build_object('Talla', '85A') FROM products WHERE sku = 'SUJ-EVY-01'
+UNION ALL SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, 'SUJ-EVY-85B', 6, 3, jsonb_build_object('Talla', '85B') FROM products WHERE sku = 'SUJ-EVY-01'
+UNION ALL SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, 'SUJ-EVY-90A', 2, 3, jsonb_build_object('Talla', '90A') FROM products WHERE sku = 'SUJ-EVY-01'
+UNION ALL SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, 'SUJ-EVY-90B', 0, 3, jsonb_build_object('Talla', '90B') FROM products WHERE sku = 'SUJ-EVY-01'
+UNION ALL SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, 'PNT-CLS-38', 4, 3, jsonb_build_object('Talla', '38') FROM products WHERE sku = 'PNT-CLS-01'
+UNION ALL SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, 'PNT-CLS-40', 6, 3, jsonb_build_object('Talla', '40') FROM products WHERE sku = 'PNT-CLS-01'
+UNION ALL SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, 'PNT-CLS-42', 2, 3, jsonb_build_object('Talla', '42') FROM products WHERE sku = 'PNT-CLS-01'
+UNION ALL SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, 'PNT-CLS-44', 0, 3, jsonb_build_object('Talla', '44') FROM products WHERE sku = 'PNT-CLS-01'
+UNION ALL SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, 'VST-FLR-XS', 3, 2, jsonb_build_object('Talla', 'XS') FROM products WHERE sku = 'VST-FLR-01'
+UNION ALL SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, 'VST-FLR-S', 7, 2, jsonb_build_object('Talla', 'S') FROM products WHERE sku = 'VST-FLR-01'
+UNION ALL SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, 'VST-FLR-M', 10, 2, jsonb_build_object('Talla', 'M') FROM products WHERE sku = 'VST-FLR-01'
+UNION ALL SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, 'VST-FLR-L', 5, 2, jsonb_build_object('Talla', 'L') FROM products WHERE sku = 'VST-FLR-01'
+UNION ALL SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, 'VST-FLR-XL', 1, 2, jsonb_build_object('Talla', 'XL') FROM products WHERE sku = 'VST-FLR-01'
+UNION ALL SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, 'BRG-CTN-S', 20, 10, jsonb_build_object('Talla', 'S') FROM products WHERE sku = 'BRG-CTN-01'
+UNION ALL SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, 'BRG-CTN-M', 25, 10, jsonb_build_object('Talla', 'M') FROM products WHERE sku = 'BRG-CTN-01'
+UNION ALL SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, 'BRG-CTN-L', 15, 10, jsonb_build_object('Talla', 'L') FROM products WHERE sku = 'BRG-CTN-01'
+UNION ALL SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, 'BRG-CTN-XL', 8, 10, jsonb_build_object('Talla', 'XL') FROM products WHERE sku = 'BRG-CTN-01'
+ON CONFLICT (product_id, attributes) DO NOTHING;
 
 -- --------------------------------------------
 -- CUSTOMERS
@@ -138,7 +140,7 @@ ON CONFLICT (id) DO NOTHING;
 -- --------------------------------------------
 -- Demo data (absorbed from fixes.sql)
 -- Product SKUs already exist above in the same tenant, so these
--- upserts are absorbed via (tenant_id, sku) and the sizes attach to
+-- upserts are absorbed via (tenant_id, sku) and the Talla variants attach to
 -- the seeded CB-001-BAS product by SKU lookup.
 -- --------------------------------------------
 INSERT INTO products (tenant_id, id, name, sku, category, brand, price, cost_price, stock, min_stock, description, status, published_online)
@@ -150,13 +152,49 @@ VALUES
   ('00000000-0000-0000-0000-000000000001', '55555555-5555-5555-5555-555555555555', 'Caramel Iced Latte', 'CL-002', 'Drinks', 'BeanHouse', 5.25, 1.80, 150, 20, 'Creamy caramel iced latte with oat milk option.', 'active', false)
 ON CONFLICT (tenant_id, sku) DO NOTHING;
 
-INSERT INTO product_sizes (tenant_id, product_id, size, stock, min_stock)
+INSERT INTO product_variants (tenant_id, product_id, sku, stock, min_stock, attributes)
 VALUES
-  ('00000000-0000-0000-0000-000000000001', (SELECT id FROM products WHERE sku = 'CB-001-BAS'), 'S', 15, 5),
-  ('00000000-0000-0000-0000-000000000001', (SELECT id FROM products WHERE sku = 'CB-001-BAS'), 'M', 8, 5),
-  ('00000000-0000-0000-0000-000000000001', (SELECT id FROM products WHERE sku = 'CB-001-BAS'), 'L', 3, 5),
-  ('00000000-0000-0000-0000-000000000001', (SELECT id FROM products WHERE sku = 'CB-001-BAS'), 'XL', 0, 5)
-ON CONFLICT (product_id, size) DO NOTHING;
+  ('00000000-0000-0000-0000-000000000001', (SELECT id FROM products WHERE sku = 'CB-001-BAS'), 'CB-001-BAS-S', 15, 5, jsonb_build_object('Talla', 'S')),
+  ('00000000-0000-0000-0000-000000000001', (SELECT id FROM products WHERE sku = 'CB-001-BAS'), 'CB-001-BAS-M', 8, 5, jsonb_build_object('Talla', 'M')),
+  ('00000000-0000-0000-0000-000000000001', (SELECT id FROM products WHERE sku = 'CB-001-BAS'), 'CB-001-BAS-L', 3, 5, jsonb_build_object('Talla', 'L')),
+  ('00000000-0000-0000-0000-000000000001', (SELECT id FROM products WHERE sku = 'CB-001-BAS'), 'CB-001-BAS-XL', 0, 5, jsonb_build_object('Talla', 'XL'))
+ON CONFLICT (product_id, attributes) DO NOTHING;
+
+-- --------------------------------------------
+-- Variant flags and "Talla" attribute for the demo data.
+-- Migration 022 runs BEFORE the seed on fresh environments (and therefore
+-- sees no size/variant rows at all), so this mirrors its flag and attribute
+-- statements to keep seeded environments consistent with migrated ones.
+-- --------------------------------------------
+INSERT INTO product_attributes (tenant_id, name, values)
+SELECT
+  pv.tenant_id,
+  'Talla',
+  ARRAY_AGG(DISTINCT pv.attributes->>'Talla' ORDER BY pv.attributes->>'Talla')
+FROM product_variants pv
+WHERE pv.attributes->>'Talla' IS NOT NULL
+GROUP BY pv.tenant_id
+ON CONFLICT (tenant_id, name) DO UPDATE
+SET values = ARRAY(
+  SELECT DISTINCT unnest(product_attributes.values || EXCLUDED.values)
+);
+
+UPDATE products p
+SET
+  has_variants = TRUE,
+  variant_attributes = CASE
+    WHEN 'Talla' = ANY(COALESCE(p.variant_attributes, '{}')) THEN p.variant_attributes
+    ELSE COALESCE(p.variant_attributes, '{}') || ARRAY['Talla']
+  END
+WHERE EXISTS (
+  SELECT 1 FROM product_variants pv
+  WHERE pv.product_id = p.id
+    AND pv.attributes->>'Talla' IS NOT NULL
+)
+  AND (
+    NOT p.has_variants
+    OR NOT ('Talla' = ANY(COALESCE(p.variant_attributes, '{}')))
+  );
 
 INSERT INTO customers (tenant_id, id, name, email, phone, loyalty_points, tier, total_spent)
 VALUES
