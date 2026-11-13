@@ -140,7 +140,8 @@ export const reduceStockAsync = createAsyncThunk(
     const tenantId = state.auth.user?.tenantId || '';
     const employeeId = state.auth.user?.id;
     const employeeName = state.auth.user?.name;
-    await reduceStock(productId, quantity, size, tenantId, variantId);
+    const ok = await reduceStock(productId, quantity, size, tenantId, variantId);
+    if (!ok) throw new Error('Failed to reduce stock');
     return { productId, quantity, size, variantId, employeeId, employeeName };
   }
 );
@@ -152,7 +153,8 @@ export const restoreStockAsync = createAsyncThunk(
     const tenantId = state.auth.user?.tenantId || '';
     const employeeId = state.auth.user?.id;
     const employeeName = state.auth.user?.name;
-    await restoreStock(productId, quantity, size, tenantId, undefined, variantId);
+    const ok = await restoreStock(productId, quantity, size, tenantId, undefined, variantId);
+    if (!ok) throw new Error('Failed to restore stock');
     return { productId, quantity, size, variantId, employeeId, employeeName };
   }
 );
