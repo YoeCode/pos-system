@@ -1,8 +1,9 @@
+-- =====================================================================
 -- Casa Lis POS — schema reference (simplified).
 --
 -- SCOPE NOTE (Phase 3 of the variant catalog refactor, migration 023):
 -- This file is a hand-maintained, SIMPLIFIED reference. The authoritative
--- schema is the migration ledger in supabase/migrations/ (000-023); when this
+-- schema is the migration ledger in supabase/migrations/ (000-024); when this
 -- file and the migrations disagree, the migrations win. The product-catalog
 -- domain below is refreshed to the post-023 reality:
 --   * products carries the variant columns (has_variants, variant_attributes)
@@ -11,9 +12,37 @@
 --     (one-dimension "Talla" size variants and N-dimension variants);
 --   * product_sizes no longer exists - it was dropped by migration 023 after
 --     022 converged every size row into a {"Talla": size} variant.
+--   * Stock mutations run through the SECURITY DEFINER RPCs
+--     reduce_stock()/restore_stock() (migration 024).
 -- Non-catalog domains (tenants, employees multi-tenant columns, settings,
 -- invitations, cash box, refunds) are simplified or omitted here and may lag
 -- the migrations. Foreign keys to the omitted tenants table are not shown.
+-- In particular, the RLS policies defined below (employees_select_active,
+-- products_manage, sales_select, ...) are simplified snapshots superseded by
+-- the tenant-scoped policies in migration 001 (employees_tenant_*,
+-- products_tenant_*, sales_tenant_*, ...); later migrations add tenant_id
+-- columns, more tables (tenants, invitations, categories, brands, sizes,
+-- size_groups, seasons, sku_counters, product_attributes, product_variants)
+-- and additional policies.
+--
+-- SECURITY POSTURE (as of migration 019, 2026-11-10):
+--   * RLS is ENABLED on every public table. Migration 019 enabled it on
+--     employees, products, sales and sale_items, whose *_tenant_* policies
+--     (migration 001) were previously inert because RLS was disabled on
+--     those four tables. product_sizes was still among the 20 public tables
+--     at that point; migration 023 has since dropped it.
+--   * Role grants: anon holds SELECT on invitations ONLY (pre-auth
+--     accept-invite display, rows gated by the RLS policy
+--     "invitations_select_by_token": status='pending' AND unexpired).
+--     All other anon privileges on public tables are revoked by
+--     migration 019. The `authenticated` role keeps standard Supabase
+--     grants; row access is enforced by the tenant-scoped RLS policies.
+--   * products.cost_price (margin data) is never publicly readable. A
+--     future public storefront must use a column-level grant or a view
+--     excluding cost_price, never a table-level SELECT for anon.
+--   * Test migration 019 against preview/staging before production: it
+--     changes access behavior for authenticated flows.
+-- =====================================================================
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
