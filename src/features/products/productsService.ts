@@ -170,93 +170,41 @@ export async function deleteProduct(id: string, tenantId: string): Promise<boole
 // stock in the row that now holds the units. Returns undefined when no Talla
 // variant matches (plain product or orphan mapping) so the caller falls back to
 // products.stock.
-async function resolveTallaVariantId(productId: string, size: string): Promise<string | undefined> {
-  const { data } = await (supabase as any)
-    .from('product_variants')
-    .select('id, attributes')
-    .eq('product_id', productId);
-  const match = ((data as any[]) || []).find(
-    (v: any) => ((v.attributes || {}) as Record<string, string>)['Talla'] === size
-  );
-  return match?.id;
-}
-
+// Stock mutations go through SECURITY DEFINER RPCs (migration 024) so they
+// work for every role - including cashiers at checkout - once RLS is enabled
+// on products/product_variants. The RPC owns the atomic write and the shape
+// routing (variant id / size -> Talla variant / plain product), and returns
+// false when the target row was not found. Failures propagate to the thunks.
 export async function reduceStock(productId: string, quantity: number, size?: string, tenantId?: string, variantId?: string): Promise<boolean> {
-  let targetVariantId = variantId;
-  if (!targetVariantId && size) {
-    targetVariantId = await resolveTallaVariantId(productId, size);
+  const { data, error } = await (supabase as any).rpc('reduce_stock', {
+    p_product_id: productId,
+    p_variant_id: variantId ?? null,
+    p_size: size ?? null,
+    p_quantity: quantity,
+    p_tenant_id: tenantId || null,
+  });
+  if (error) {
+    console.error('[productsService] reduceStock rpc error:', error);
+    return false;
   }
-
-  if (targetVariantId) {
-    const { data: variantRow } = await (supabase as any)
-      .from('product_variants')
-      .select('stock')
-      .eq('id', targetVariantId)
-      .single();
-
-    if (variantRow) {
-      const newStock = Math.max(0, variantRow.stock - quantity);
-      await (supabase as any)
-        .from('product_variants')
-        .update({ stock: newStock })
-        .eq('id', targetVariantId);
-    }
-    return true;
-  }
-
-  const { data: prod } = await supabase
-    .from('products')
-    .select('stock')
-    .eq('id', productId)
-    .eq('tenant_id', tenantId || '')
-    .single();
-
-  if (prod) {
-    const newStock = Math.max(0, prod.stock - quantity);
-    await supabase.from('products').update({ stock: newStock }).eq('id', productId).eq('tenant_id', tenantId || '');
-  }
-  return true;
+  return data === true;
 }
 
 export async function restoreStock(productId: string, quantity: number, size?: string, tenantId?: string, costPrice?: number, variantId?: string): Promise<boolean> {
-  let targetVariantId = variantId;
-  if (!targetVariantId && size) {
-    targetVariantId = await resolveTallaVariantId(productId, size);
+  const { data, error } = await (supabase as any).rpc('restore_stock', {
+    p_product_id: productId,
+    p_variant_id: variantId ?? null,
+    p_size: size ?? null,
+    p_quantity: quantity,
+    p_tenant_id: tenantId || null,
+    // Only written on the plain products path (delivery-note restocks).
+    p_cost_price: costPrice ?? null,
+  });
+  if (error) {
+    console.error('[productsService] restoreStock rpc error:', error);
+    return false;
   }
-
-  if (targetVariantId) {
-    const { data: variantRow } = await (supabase as any)
-      .from('product_variants')
-      .select('stock')
-      .eq('id', targetVariantId)
-      .single();
-
-    if (variantRow) {
-      const newStock = variantRow.stock + quantity;
-      await (supabase as any)
-        .from('product_variants')
-        .update({ stock: newStock })
-        .eq('id', targetVariantId);
-    }
-    return true;
-  }
-
-  const { data: prod } = await supabase
-    .from('products')
-    .select('stock')
-    .eq('id', productId)
-    .eq('tenant_id', tenantId || '')
-    .single();
-
-  if (prod) {
-    const newStock = prod.stock + quantity;
-    const updateData: Record<string, any> = { stock: newStock };
-    if (costPrice !== undefined) {
-      updateData.cost_price = costPrice;
-    }
-    await supabase.from('products').update(updateData as any).eq('id', productId).eq('tenant_id', tenantId || '');
-  }
-  return true;
+  return data === true;
 }
 
 // --------------------------------------------
