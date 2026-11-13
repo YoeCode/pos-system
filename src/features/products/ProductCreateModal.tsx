@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useLayoutEffect, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useLayoutEffect, useEffect, useMemo, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/store';
 import { createEmptyForm, addProduct, fetchProductAttributesAsync, type ProductFormState } from './productsSlice';
 import { nextSku, createProduct, createProductVariant, fetchVariantSkus } from './productsService';
@@ -111,24 +111,51 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
   }, [attributes]);
 
   // Regenerate combinations whenever the dimensions change, preserving the
-  // stock already typed for rows whose attributes match.
+  // stock already typed for rows whose attributes match. The mount run is
+  // skipped: the layout effect below seeds slots and combinations in the same
+  // commit, and a stale empty-state run here would wipe the seeded stock.
+  const didMountRef = useRef(false);
   useEffect(() => {
+    if (!didMountRef.current) {
+      didMountRef.current = true;
+      return;
+    }
     setVariantCombinations(prev => generateCombinations(attributeSlots, prev));
   }, [attributeSlots]);
 
   useLayoutEffect(() => {
     if (isOpen) {
       const normalized = normalizeInitialForm(initialForm, categories);
-      setForm(normalized);
-      // Duplicating a legacy sizes product seeds the Talla dimension; its
-      // per-size stock feeds the generated combinations.
-      const tallaValues = normalized.sizes.map(s => s.size).filter(Boolean);
-      const seededSlots = normalized.hasSizes ? [createTallaSlot(tallaValues)] : [];
+      // Duplicating a product seeds its stock shape: a variant product seeds
+      // its dimensions and per-variant stock; a legacy sizes product seeds the
+      // Talla dimension and its per-size stock.
+      const variantDims = normalized.variantAttributes.length > 0
+        ? normalized.variantAttributes
+        : [...new Set(normalized.variants.flatMap(v => Object.keys(v.attributes)))];
+      const hasVariantSeed = normalized.variants.length > 0 && variantDims.length > 0;
+      const seededSlots: AttributeSlot[] = hasVariantSeed
+        ? variantDims.map(dim =>
+            dim === TALLA_DIMENSION
+              ? createTallaSlot([...new Set(normalized.variants.map(v => v.attributes[dim]).filter(Boolean))])
+              : {
+                  id: crypto.randomUUID(),
+                  attributeName: dim,
+                  selectedValues: [...new Set(normalized.variants.map(v => v.attributes[dim]).filter(Boolean))],
+                }
+          )
+        : normalized.hasSizes
+          ? [createTallaSlot(normalized.sizes.map(s => s.size).filter(Boolean))]
+          : [];
+      const seededCombinations = hasVariantSeed
+        ? normalized.variants.map(v => ({ attributes: { ...v.attributes }, stock: v.stock, minStock: v.minStock }))
+        : normalized.sizes.map(s => ({ attributes: { [TALLA_DIMENSION]: s.size }, stock: s.stock, minStock: s.minStock ?? 0 }));
+      setForm({
+        ...normalized,
+        hasSizes: normalized.hasSizes || seededSlots.some(s => s.isTalla),
+        hasVariants: normalized.hasVariants || seededSlots.some(s => !s.isTalla),
+      });
       setAttributeSlots(seededSlots);
-      setVariantCombinations(generateCombinations(
-        seededSlots,
-        normalized.sizes.map(s => ({ attributes: { [TALLA_DIMENSION]: s.size }, stock: s.stock, minStock: s.minStock ?? 0 }))
-      ));
+      setVariantCombinations(generateCombinations(seededSlots, seededCombinations));
       setSubmitError(null);
       setCreationDone(false);
       dispatch(fetchProductAttributesAsync());
@@ -366,14 +393,16 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
 
       if (failedSkus.length > 0) {
         setSubmitError(
-          `El producto se creó, pero ${failedSkus.length} ${failedSkus.length === 1 ? 'variante no se pudo crear' : 'variantes no se pudieron crear'}: ${failedSkus.join(', ')}. Cierra y añádelas desde el panel del producto.`
+          (failedSkus.length === 1 ? t.products.variantCreateFailedOne : t.products.variantCreateFailedMany)
+            .replace('{{count}}', String(failedSkus.length))
+            .replace('{{skus}}', failedSkus.join(', '))
         );
         setCreationDone(true);
         return;
       }
       handleClose();
     } catch {
-      setSubmitError('No se pudo crear el producto. Inténtalo de nuevo.');
+      setSubmitError(t.products.createFailed);
     } finally {
       setIsSubmitting(false);
     }
@@ -402,8 +431,7 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
             <span>
-              Configura al menos una categoría, temporada y marca en{' '}
-              <strong>Ajustes → Gestión de Productos</strong> antes de crear productos.
+              {t.products.missingConfig}
             </span>
           </div>
         )}
@@ -413,7 +441,7 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
             {t.products.name} <span className="text-error">*</span>
           </label>
           <Input
-            placeholder="Enter product name"
+            placeholder={t.products.namePlaceholder}
             value={form.name}
             onChange={e => setForm(prev => ({ ...prev, name: e.target.value }))}
           />
@@ -422,7 +450,7 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">{t.products.description}</label>
           <textarea
-            placeholder="Brief product description"
+            placeholder={t.products.descriptionPlaceholder}
             value={form.description}
             onChange={e => setForm(prev => ({ ...prev, description: e.target.value }))}
             rows={3}
@@ -437,7 +465,7 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
             </label>
             {categories.length === 0 ? (
               <div className="w-full px-3 py-2.5 text-sm border border-amber-300 rounded-lg bg-amber-50 text-amber-700">
-                Configura categorías en Ajustes
+                {t.products.detail.configCategories}
               </div>
             ) : (
               <select
@@ -445,7 +473,7 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
                 onChange={e => setForm(prev => ({ ...prev, category: e.target.value, subcategory: '' }))}
                 className="w-full px-3 py-2.5 text-sm border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors bg-white"
               >
-                <option value="">Seleccionar categoría</option>
+                <option value="">{t.products.detail.selectCategory}</option>
                 {categories.map(cat => (
                   <option key={cat} value={cat}>{cat}</option>
                 ))}
@@ -453,14 +481,14 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
             )}
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Subcategoría</label>
+            <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">{t.products.detail.subcategory}</label>
             <select
               value={form.subcategory}
               disabled={!form.category || subcategories.length === 0}
               onChange={e => setForm(prev => ({ ...prev, subcategory: e.target.value }))}
               className="w-full px-3 py-2.5 text-sm border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors bg-white disabled:bg-gray-100 disabled:text-text-muted disabled:cursor-not-allowed"
             >
-              <option value="">Sin subcategoría</option>
+              <option value="">{t.products.detail.noSubcategory}</option>
               {subcategories.map(sub => (
                 <option key={sub} value={sub}>{sub}</option>
               ))}
@@ -471,11 +499,11 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">
-              Temporada <span className="text-error">*</span>
+              {t.products.detail.season} <span className="text-error">*</span>
             </label>
             {seasons.length === 0 ? (
               <div className="w-full px-3 py-2.5 text-sm border border-amber-300 rounded-lg bg-amber-50 text-amber-700">
-                Configura temporadas en Ajustes
+                {t.products.detail.configSeasons}
               </div>
             ) : (
               <select
@@ -483,7 +511,7 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
                 onChange={e => setForm(prev => ({ ...prev, season: e.target.value }))}
                 className="w-full px-3 py-2.5 text-sm border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors bg-white"
               >
-                <option value="">Seleccionar temporada</option>
+                <option value="">{t.products.detail.selectSeason}</option>
                 {seasons.map(season => (
                   <option key={season} value={season}>{season}</option>
                 ))}
@@ -492,11 +520,11 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">
-              Marca <span className="text-error">*</span>
+              {t.products.detail.brand} <span className="text-error">*</span>
             </label>
             {brands.length === 0 ? (
               <div className="w-full px-3 py-2.5 text-sm border border-amber-300 rounded-lg bg-amber-50 text-amber-700">
-                Configura marcas en Ajustes
+                {t.products.detail.configBrands}
               </div>
             ) : (
               <select
@@ -504,7 +532,7 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
                 onChange={e => setForm(prev => ({ ...prev, brand: e.target.value }))}
                 className="w-full px-3 py-2.5 text-sm border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors bg-white"
               >
-                <option value="">Seleccionar marca</option>
+                <option value="">{t.products.detail.selectBrand}</option>
                 {brands.map(brand => (
                   <option key={brand} value={brand}>{brand}</option>
                 ))}
@@ -518,7 +546,7 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
             {t.products.sku} <span className="text-error">*</span>
           </label>
           <Input
-            placeholder="e.g. PR-001"
+            placeholder={t.products.skuPlaceholder}
             value={form.sku}
             disabled={form.autoGenerateSku}
             onChange={e => setForm(prev => ({ ...prev, sku: e.target.value }))}
@@ -531,7 +559,7 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
               onChange={e => setForm(prev => ({ ...prev, autoGenerateSku: e.target.checked }))}
               className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
             />
-            <span className="text-sm font-medium text-text-primary">Autogenerar código</span>
+            <span className="text-sm font-medium text-text-primary">{t.products.autoGenerateSku}</span>
           </label>
         </div>
 
@@ -568,7 +596,7 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
               onChange={e => handleToggleVariants(e.target.checked)}
               className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
             />
-            <span className="text-sm font-medium text-text-primary">{t.settings.productHasVariants || 'Tiene variantes'}</span>
+            <span className="text-sm font-medium text-text-primary">{t.settings.productHasVariants}</span>
           </label>
           {form.hasVariants && (
             <div className="pl-6 flex flex-col gap-4">
@@ -592,7 +620,7 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
                 onClick={addAttributeSlot}
                 className="self-start text-xs text-primary hover:underline"
               >
-                + Añadir atributo
+                {t.products.attributes.add}
               </button>
             </div>
           )}
@@ -623,7 +651,7 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
                 onClick={handleSubmit}
                 disabled={!isFormValid || isSubmitting}
               >
-                {isSubmitting ? (t.common.saving || 'Guardando...') : t.common.add}
+                {isSubmitting ? t.common.saving : t.common.add}
               </Button>
             </>
           )}

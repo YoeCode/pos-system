@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useI18n } from '../../i18n/useI18n';
 
 export interface AttributeSlot {
   id: string;
@@ -32,6 +33,9 @@ const AttributeSlotSelector: React.FC<AttributeSlotSelectorProps> = ({
   const [showValuesDropdown, setShowValuesDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const values = attributeValuesMap[slot.attributeName] || [];
+  const t = useI18n();
+  const slotLabel = t.products.attributes.slotLabel.replace('{{index}}', String(slotIndex + 1));
+  const removeLabel = t.products.attributes.removeSlot.replace('{{index}}', String(slotIndex + 1));
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -47,14 +51,14 @@ const AttributeSlotSelector: React.FC<AttributeSlotSelectorProps> = ({
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
         <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">
-          Atributo {slotIndex + 1}
+          {slotLabel}
         </label>
         {onRemove && (
           <button
             type="button"
             onClick={() => onRemove(slotIndex)}
-            title="Quitar atributo"
-            aria-label={`Quitar atributo ${slotIndex + 1}`}
+            title={removeLabel}
+            aria-label={removeLabel}
             className="p-1 text-text-muted hover:text-error transition-colors"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -68,10 +72,10 @@ const AttributeSlotSelector: React.FC<AttributeSlotSelectorProps> = ({
         <select
           value={slot.attributeName}
           onChange={e => onUpdateAttribute(slotIndex, e.target.value)}
-          aria-label={`Atributo ${slotIndex + 1}`}
+          aria-label={slotLabel}
           className="flex-1 px-3 py-2 text-sm border border-border rounded-lg text-text-primary bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
         >
-          <option value="">Seleccionar atributo...</option>
+          <option value="">{t.products.attributes.selectAttribute}</option>
           {availableAttributes.map(attr => (
             <option key={attr.id} value={attr.name}>{attr.name}</option>
           ))}
@@ -86,10 +90,12 @@ const AttributeSlotSelector: React.FC<AttributeSlotSelectorProps> = ({
               className="w-full px-3 py-2 text-sm border border-border rounded-lg text-text-primary bg-white text-left focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
             >
               {slot.selectedValues.length === 0
-                ? 'Seleccionar valores...'
+                ? t.products.attributes.selectValues
                 : slot.selectedValues.length === values.length
-                  ? `Todos (${values.length})`
-                  : `${slot.selectedValues.length} de ${values.length} seleccionados`
+                  ? t.products.attributes.all.replace('{{count}}', String(values.length))
+                  : t.products.attributes.selected
+                      .replace('{{selected}}', String(slot.selectedValues.length))
+                      .replace('{{total}}', String(values.length))
               }
             </button>
             {showValuesDropdown && (
@@ -101,7 +107,7 @@ const AttributeSlotSelector: React.FC<AttributeSlotSelectorProps> = ({
                     onChange={() => onToggleAll(slotIndex)}
                     className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
                   />
-                  <span className="text-xs font-medium text-text-muted">Seleccionar todos</span>
+                  <span className="text-xs font-medium text-text-muted">{t.products.attributes.selectAll}</span>
                 </label>
                 {values.map(value => (
                   <label key={value} className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer">

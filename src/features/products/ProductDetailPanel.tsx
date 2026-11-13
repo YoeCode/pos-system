@@ -359,8 +359,11 @@ const ProductDetailPanel: React.FC<ProductDetailPanelProps> = ({ onDuplicate }) 
                     sizes: product.sizes ? product.sizes.map(s => ({ ...s })) : [],
                     hasSizes: !!(product.sizes && product.sizes.length > 0),
                     sizeGroupId: product.sizeGroupId || '',
-                    hasVariants: false,
-                    variantAttributes: [],
+                    hasVariants: !!product.hasVariants,
+                    variantAttributes: product.variantAttributes ? [...product.variantAttributes] : [],
+                    variants: product.variants
+                      ? product.variants.map(v => ({ attributes: { ...v.attributes }, stock: v.stock, minStock: v.minStock }))
+                      : [],
                   };
                   onDuplicate(dupForm);
                 }}

@@ -42,6 +42,7 @@ export interface ProductFormState {
   sizeGroupId: string;
   hasVariants: boolean;
   variantAttributes: string[];
+  variants: Pick<ProductVariant, 'attributes' | 'stock' | 'minStock'>[];
 }
 
 export const createEmptyForm = (): ProductFormState => ({
@@ -63,6 +64,7 @@ export const createEmptyForm = (): ProductFormState => ({
   sizeGroupId: '',
   hasVariants: false,
   variantAttributes: [],
+  variants: [],
 });
 
 interface ProductsState {
