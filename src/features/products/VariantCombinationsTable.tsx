@@ -1,4 +1,5 @@
 import React from 'react';
+import { useI18n } from '../../i18n/useI18n';
 
 export interface VariantCombination {
   attributes: Record<string, string>;
@@ -17,6 +18,7 @@ const VariantCombinationsTable: React.FC<VariantCombinationsTableProps> = ({
   dimensionNames,
   onChange,
 }) => {
+  const t = useI18n();
   if (combinations.length === 0) return null;
 
   const totalStock = combinations.reduce((sum, c) => sum + c.stock, 0);
@@ -25,7 +27,7 @@ const VariantCombinationsTable: React.FC<VariantCombinationsTableProps> = ({
     <div className="border border-border rounded-lg overflow-hidden">
       <div className="px-3 py-2 bg-gray-50 border-b border-border">
         <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">
-          Combinaciones ({combinations.length})
+          {t.products.combinations.title.replace('{{count}}', String(combinations.length))}
         </p>
       </div>
       <div className="max-h-60 overflow-y-auto">
@@ -38,10 +40,10 @@ const VariantCombinationsTable: React.FC<VariantCombinationsTableProps> = ({
                 </th>
               ))}
               <th className="px-3 py-2 text-right text-xs font-semibold text-text-muted uppercase w-20">
-                Stock
+                {t.products.stock}
               </th>
               <th className="px-3 py-2 text-right text-xs font-semibold text-text-muted uppercase w-20">
-                Min
+                {t.products.detail.min}
               </th>
             </tr>
           </thead>
@@ -80,7 +82,7 @@ const VariantCombinationsTable: React.FC<VariantCombinationsTableProps> = ({
       </div>
       <div className="px-3 py-2 bg-gray-50 border-t border-border">
         <p className="text-xs text-text-muted">
-          Stock total: {totalStock} unidades
+          {t.products.combinations.total.replace('{{count}}', String(totalStock))}
         </p>
       </div>
     </div>

@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import ProductCreateModal from './ProductCreateModal';
-import productsReducer from './productsSlice';
+import productsReducer, { createEmptyForm } from './productsSlice';
 import settingsReducer from '../settings/settingsSlice';
 import { I18nProvider } from '../../i18n/I18nProvider';
 import { createProduct, createProductVariant, fetchVariantSkus } from './productsService';
@@ -88,16 +88,16 @@ interface FillRequiredFieldsOptions {
 // (auto-generation toggled off), category, season and brand.
 async function fillRequiredFields(user: ReturnType<typeof userEvent.setup>, options: FillRequiredFieldsOptions) {
   await user.type(screen.getByPlaceholderText('Enter product name'), options.name);
-  await user.click(screen.getByRole('checkbox', { name: 'Autogenerar código' }));
+  await user.click(screen.getByRole('checkbox', { name: 'Auto-generate code' }));
   await user.type(screen.getByPlaceholderText('e.g. PR-001'), options.sku);
   await user.selectOptions(getSelectByLabel('Category'), options.category ?? 'Food');
-  await user.selectOptions(getSelectByLabel('Temporada'), options.season ?? 'Permanente');
-  await user.selectOptions(getSelectByLabel('Marca'), options.brand ?? 'Nestlé');
+  await user.selectOptions(getSelectByLabel('Season'), options.season ?? 'Permanente');
+  await user.selectOptions(getSelectByLabel('Brand'), options.brand ?? 'Nestlé');
 }
 
 // Adds manual sizes to the Talla dimension.
 async function addManualSizes(user: ReturnType<typeof userEvent.setup>, sizes: string[]) {
-  const sizeInput = screen.getByPlaceholderText('Talla');
+  const sizeInput = screen.getByPlaceholderText('Size');
   for (const size of sizes) {
     await user.type(sizeInput, size);
     await user.click(screen.getByRole('button', { name: '+ Add size' }));
@@ -111,7 +111,7 @@ async function pickSlotValues(user: ReturnType<typeof userEvent.setup>, slotLabe
   if (!container) throw new Error(`Slot container for "${slotLabel}" not found`);
   const valuesButton = within(container)
     .getAllByRole('button')
-    .find(b => /Seleccionar valores|seleccionados|Todos/.test(b.textContent ?? ''));
+    .find(b => /Select values|selected|All/.test(b.textContent ?? ''));
   if (!valuesButton) throw new Error(`Values button for "${slotLabel}" not found`);
   await user.click(valuesButton);
   for (const value of values) {
@@ -258,14 +258,14 @@ describe('ProductCreateModal', () => {
     renderModal(true, vi.fn(), store);
 
     await user.type(screen.getByPlaceholderText('Enter product name'), 'Category Item');
-    await user.click(screen.getByRole('checkbox', { name: 'Autogenerar código' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Auto-generate code' }));
     await user.type(screen.getByPlaceholderText('e.g. PR-001'), 'CI-400');
 
     const categorySelect = getSelectByLabel('Category');
     await user.selectOptions(categorySelect, 'Food');
 
-    await user.selectOptions(getSelectByLabel('Temporada'), 'Permanente');
-    await user.selectOptions(getSelectByLabel('Marca'), 'Nestlé');
+    await user.selectOptions(getSelectByLabel('Season'), 'Permanente');
+    await user.selectOptions(getSelectByLabel('Brand'), 'Nestlé');
 
     await user.click(screen.getByRole('button', { name: 'Add' }));
 
@@ -369,7 +369,7 @@ describe('ProductCreateModal variant-native creation', () => {
     await user.click(screen.getByRole('checkbox', { name: 'Size' }));
     await user.selectOptions(getSelectByLabel('Size Groups'), 'standard');
 
-    expect(screen.getByText('Combinaciones (6)')).toBeInTheDocument();
+    expect(screen.getByText('Combinations (6)')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Add' }));
 
@@ -389,14 +389,14 @@ describe('ProductCreateModal variant-native creation', () => {
     await user.click(screen.getByRole('checkbox', { name: 'Size' }));
     await addManualSizes(user, ['M', 'L']);
 
-    await user.click(screen.getByRole('button', { name: '+ Añadir atributo' }));
+    await user.click(screen.getByRole('button', { name: '+ Add attribute' }));
     await waitFor(() => {
       expect(screen.getByRole('option', { name: 'Color' })).toBeInTheDocument();
     });
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Atributo 2' }), 'Color');
-    await pickSlotValues(user, 'Atributo 2', ['Rojo', 'Rosado']);
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Attribute 2' }), 'Color');
+    await pickSlotValues(user, 'Attribute 2', ['Rojo', 'Rosado']);
 
-    expect(screen.getByText('Combinaciones (4)')).toBeInTheDocument();
+    expect(screen.getByText('Combinations (4)')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Add' }));
 
@@ -423,22 +423,22 @@ describe('ProductCreateModal variant-native creation', () => {
     await waitFor(() => {
       expect(screen.getByRole('option', { name: 'Color' })).toBeInTheDocument();
     });
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Atributo 1' }), 'Color');
-    await pickSlotValues(user, 'Atributo 1', ['Rojo', 'Rosado']);
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Attribute 1' }), 'Color');
+    await pickSlotValues(user, 'Attribute 1', ['Rojo', 'Rosado']);
 
-    await user.click(screen.getByRole('button', { name: '+ Añadir atributo' }));
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Atributo 2' }), 'Material');
-    await pickSlotValues(user, 'Atributo 2', ['Algodón', 'Poliéster']);
+    await user.click(screen.getByRole('button', { name: '+ Add attribute' }));
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Attribute 2' }), 'Material');
+    await pickSlotValues(user, 'Attribute 2', ['Algodón', 'Poliéster']);
 
-    await user.click(screen.getByRole('button', { name: '+ Añadir atributo' }));
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Atributo 3' }), 'Ajuste');
-    await pickSlotValues(user, 'Atributo 3', ['Regular', 'Slim']);
+    await user.click(screen.getByRole('button', { name: '+ Add attribute' }));
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Attribute 3' }), 'Ajuste');
+    await pickSlotValues(user, 'Attribute 3', ['Regular', 'Slim']);
 
-    expect(screen.getByText('Combinaciones (8)')).toBeInTheDocument();
+    expect(screen.getByText('Combinations (8)')).toBeInTheDocument();
 
     // Removing a slot drops its dimension from the cartesian product
-    await user.click(screen.getByRole('button', { name: 'Quitar atributo 3' }));
-    expect(screen.getByText('Combinaciones (4)')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Remove attribute 3' }));
+    expect(screen.getByText('Combinations (4)')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Add' }));
 
@@ -459,9 +459,9 @@ describe('ProductCreateModal variant-native creation', () => {
     await waitFor(() => {
       expect(screen.getByRole('option', { name: 'Color' })).toBeInTheDocument();
     });
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Atributo 1' }), 'Color');
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Attribute 1' }), 'Color');
     // "Rosado" and "Rosa" slug to the same "ROS" code
-    await pickSlotValues(user, 'Atributo 1', ['Rosado', 'Rosa']);
+    await pickSlotValues(user, 'Attribute 1', ['Rosado', 'Rosa']);
     await user.click(screen.getByRole('button', { name: 'Add' }));
 
     await waitFor(() => {
@@ -500,5 +500,41 @@ describe('ProductCreateModal variant-native creation', () => {
 
     // Creation is finished: the footer offers only closing the modal
     expect(screen.getByRole('button', { name: 'Close' })).toBeInTheDocument();
+  });
+
+  it('duplicates a variant product seeding dimensions and per-variant stock', async () => {
+    render(
+      <Provider store={createTestStore()}>
+        <I18nProvider>
+          <ProductCreateModal
+            isOpen
+            onClose={vi.fn()}
+            initialForm={{
+              ...createEmptyForm(),
+              name: 'Shirt (Copy)',
+              category: 'Food',
+              season: 'Permanente',
+              brand: 'Nestlé',
+              hasVariants: true,
+              variantAttributes: ['Color'],
+              variants: [
+                { attributes: { Color: 'Rojo' }, stock: 5, minStock: 1 },
+                { attributes: { Color: 'Rosado' }, stock: 3, minStock: 0 },
+              ],
+            }}
+          />
+        </I18nProvider>
+      </Provider>
+    );
+
+    // Dimensions are seeded: the Color slot is selected with its values
+    await waitFor(() => {
+      expect(screen.getByText('Combinations (2)')).toBeInTheDocument();
+    });
+    expect(screen.getByRole('combobox', { name: 'Attribute 1' })).toHaveValue('Color');
+
+    // Per-variant stock and min stock seed the generated combinations
+    const stockInputs = screen.getAllByRole('spinbutton');
+    expect(stockInputs.map(input => (input as HTMLInputElement).value)).toEqual(['5', '1', '3', '0']);
   });
 });

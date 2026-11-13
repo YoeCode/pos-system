@@ -34,13 +34,13 @@ const TallaDimensionEditor: React.FC<TallaDimensionEditorProps> = ({
   return (
     <div className="flex flex-col gap-2 pl-6">
       <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-semibold text-text-muted">{t.settings.sizeGroups || 'Size Group'}</label>
+        <label className="text-xs font-semibold text-text-muted">{t.settings.sizeGroups}</label>
         <select
           value={sizeGroupId}
           onChange={e => onApplyPreset(e.target.value)}
           className="w-full px-3 py-2.5 text-sm border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors bg-white"
         >
-          <option value="">{t.common.select || 'Select...'}</option>
+          <option value="">{t.common.select}</option>
           {sizeGroups.map(group => (
             <option key={group.id} value={group.id}>{group.name}</option>
           ))}
@@ -73,7 +73,7 @@ const TallaDimensionEditor: React.FC<TallaDimensionEditorProps> = ({
       <div className="flex items-center gap-2">
         <input
           type="text"
-          placeholder="Talla"
+          placeholder={t.inventory.size}
           value={draft}
           onChange={e => setDraft(e.target.value)}
           onKeyDown={e => {

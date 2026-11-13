@@ -25,11 +25,11 @@ Out of scope: per-dimension analytics, attribute normalization (Option C), RLS c
 
 ## Tasks (stable IDs)
 ### Phase 0 — Data integrity (make the data tell the truth) — branch `fix/sale-line-integrity`
-- [ ] T0.1 Variant price integrity: totals and persistence use `selectedVariant?.price ?? product.price` (Cart.tsx totals, POSPage subtotal, PaymentStep lineTotal, salesService unit_price)
-- [ ] T0.2 Sale line snapshots: write `variant_sku`/`variant_attributes` at sale insert
-- [ ] T0.3 History read path: `mapDbSale` maps `selected_size`/`variant_id` back onto `OrderItem` (fields already exist in types)
-- [ ] T0.4 Refunds restore to the right row: `RefundItem` gains `variantId`; RefundModal threads variantId/size from the sale line; line selection keyed by line identity, not `product.id`
-- [ ] T0.5 Regression tests per fix (price round-trip, refund restore target, history read-back)
+- [x] T0.1 Variant price integrity: totals and persistence use `selectedVariant?.price ?? product.price` (Cart.tsx totals, POSPage subtotal, PaymentStep lineTotal, salesService unit_price)
+- [x] T0.2 Sale line snapshots: write `variant_sku`/`variant_attributes` at sale insert
+- [x] T0.3 History read path: `mapDbSale` maps `selected_size`/`variant_id` back onto `OrderItem` (fields already exist in types)
+- [x] T0.4 Refunds restore to the right row: `RefundItem` gains `variantId`; RefundModal threads variantId/size from the sale line; line selection keyed by line identity, not `product.id`
+- [x] T0.5 Regression tests per fix (price round-trip, refund restore target, history read-back)
 
 ### Phase 1 — Data migration (sizes → variants)
 - [x] T1.1 Migration 021: dedupe dual-row products (prefer `product_variants`), convert remaining `product_sizes` rows to `{"Talla": size}` variants, repair skipped stock, set `has_variants`/`variant_attributes`
@@ -42,7 +42,7 @@ Out of scope: per-dimension analytics, attribute normalization (Option C), RLS c
 - [x] T2.3 Dynamic attribute slots (N, not 2) in create modal
 - [x] T2.4 Collision-safe variant SKU generation (no 2-letter prefix collisions)
 - [x] T2.5 min_stock configurable for plain products in the same editor (maintainer request)
-- [ ] T2.6 i18n keys updated (remove dead keys, add new); tests for the editor flows
+- [x] T2.6 i18n keys updated (remove dead keys, add new); tests for the editor flows
 
 ### Phase 3 — Cleanup
 - [ ] T3.1 Migration 022: drop `product_sizes` (after verifying zero rows / app references)
@@ -96,5 +96,15 @@ Per task: `npm run test:run`, `npm run build`, `npm run lint` (exit 0; known war
   - **Verification:** focused `npx vitest run src/features/products/ProductCreateModal.test.tsx`: 21 passed (15 existing kept + 6 new: Talla-variant creation, preset fill, Color × Talla, N-slot cartesian + slot removal, probe-loop SKUs, no-ghost failure reporting). `npm run test:run`: 108 passed / 0 failed (102 baseline + 6 new). `npm run build`: ok. `npm run lint`: exit 0 (known ProductDetailPanel warning). Review count 1182 changed lines (842 + 340) > 400 → `size:exception` recommended: the <300-line component constraint forces extracting the slot/combination subcomponents (moved code counts on both sides), T2.4 was re-sliced into this unit, and the only sub-400 splits would separate behavior from its tests or commit knowingly-buggy intermediate states.
   - **Follow-ups for slice 2.3 (i18n/tests/doc cleanup):** new UI labels added in the modal's existing literal-Spanish style (`+ Añadir atributo`, `Quitar atributo`, error banner texts) need en+es keys; duplicating variant-shaped products does not pre-fill dimensions (`ProductFormState` carries no variants); consider extracting the modal's base form fields to bring the modal under 300 lines.
 
+- Phase 2 slice 2.3 (T2.6 + Phase 2 close-out) closed on `chore/phase2-i18n-cleanup` (branched from the stacked parent `feat/create-modal-variant-presets`) with work-unit commit `chore(products): i18n completeness and duplicate-product parity for the catalog UI`.
+  - **Chain strategy (stacked-to-main):** PR order: `2.1 unified stock editor` (PR #47 pending) → `2.2 create-modal variant-native` (PR pending) → `2.3 i18n/tests/doc cleanup` 📍 (this, final). Both parents are unmerged branches; this slice stacks on 2.2 because T2.6 targets 2.2's files. Rebase/retarget on main after each parent merges.
+  - **i18n completeness:** every user-facing string in `ProductCreateModal.tsx`, `AttributeSlotSelector.tsx`, `VariantCombinationsTable.tsx` and `TallaDimensionEditor.tsx` now resolves through `useI18n` (en+es). New keys: `products.namePlaceholder`, `products.skuPlaceholder`, `products.descriptionPlaceholder`, `products.autoGenerateSku`, `products.missingConfig`, `products.createFailed`, `products.variantCreateFailedOne/Many`, `products.attributes.*` (slotLabel, removeSlot, add, selectAttribute, selectValues, all, selected, selectAll), `products.combinations.*` (title, total). The modal reuses existing `products.detail.*` form keys (selectCategory, configCategories, subcategory, noSubcategory, season, selectSeason, configSeasons, brand, selectBrand, configBrands) and `products.stock` / `products.detail.min` / `t.inventory.size`; stale `|| 'literal'` fallbacks were removed. `variantSku.ts` has no user-facing strings (verified). The missing-config banner lost its inline `<strong>` (single-translation-string rule).
+  - **Dead keys (grep-verified, both unmerged trees):** removed 14 unreferenced `products.*` keys (`editProduct`, `price`, `costPrice`, `minStock`, `image`, `deleteConfirm`, `detail.category`, `detail.totalStockBySize`, `detail.price`, `detail.inherited`, `detail.editVariant`, `detail.deleteVariant`, `detail.priceInherits`, `detail.unlockDescription`). The originally suspected leftovers are NOT dead yet: `detail.updateSize`, `detail.stockBySize`, `detail.size` are referenced by `SizesSection.tsx` (removed in T3.2) and `detail.addSize`/`detail.removeSize` are reused by `TallaDimensionEditor`; `detail.noSubcategory` and `detail.min` were dormant and are now reused by the modal/combinations table. ~105 dead keys remain in other domains (pos, customers, loyalty, settings, reports) — out of Phase 2 scope, listed as a follow-up.
+  - **Duplicate-product parity:** `ProductFormState` now carries `variants` (attributes/stock/minStock); `ProductDetailPanel` seeds `hasVariants`/`variantAttributes`/`variants` from the source product instead of hard-coding `false`/`[]`; the create modal seeds the dimension slots and per-variant stock from them the same way a sizes duplicate seeds Talla. Also fixed the combination-regeneration effect's mount run, which wiped seeded stock before re-render (visible when the modal mounts already open).
+  - **Verification:** focused `npx vitest run src/features/products/ProductCreateModal.test.tsx`: 22 passed (21 from slice 2.2 updated to i18n-resolved strings + 1 new duplicate-seeding test). `npm run test:run`: 109 passed / 0 failed (108 slice-2.2 baseline + 1 new). `npm run build`: ok. `npm run lint`: exit 0 (known ProductDetailPanel exhaustive-deps warning). Review count: see commit (`git diff --stat feat/create-modal-variant-presets..chore/phase2-i18n-cleanup`) — within the 400-line budget.
+  - **Phase 2 complete.** All of T2.1–T2.6 are delivered across the three stacked slices; merge order 2.1 (PR #47) → 2.2 → 2.3.
+
+- **Phase 3 readiness:** T3.1 (migration 022: drop `product_sizes` after verifying zero rows / app references), T3.2 (remove `SizesSection`/`SizeSelectorModal` and shape branches — then remove the surviving `detail.updateSize`/`detail.stockBySize`/`detail.size` keys; keep `detail.addSize`/`detail.removeSize` while `TallaDimensionEditor` uses them), T3.3 (seed to variant shape; AGENTS.md/product docs updated), T3.4 (full verification: suite, build, lint, staging checklist). Known follow-ups queued for Phase 3: extract the create modal's base form fields (reuse `ProductBasicFields`) to bring the modal under the 300-line rule; audit the ~105 dead translation keys in non-catalog domains.
+
 ## Next step
-Launch Phase 2 slice 2.3 (T2.6 i18n/tests/doc cleanup) on its own branch (stacked-to-main).
+Phase 2 is complete. Proceed to Phase 3 (cleanup) after the three stacked Phase 2 PRs merge to main in order.
