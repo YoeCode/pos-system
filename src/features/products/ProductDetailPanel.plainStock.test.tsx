@@ -33,7 +33,6 @@ vi.mock('./productsService', () => ({
   createProductVariant: vi.fn(),
   updateProductVariant: vi.fn(),
   deleteProductVariant: vi.fn(),
-  updateProductSize: vi.fn(),
 }));
 
 const updateProductMock = vi.mocked(updateProduct);
@@ -124,21 +123,5 @@ describe('ProductDetailPanel — plain product stock editing', () => {
       expect.objectContaining({ id: 'p1', stock: 25, minStock: 4 }),
       'test-tenant'
     );
-  });
-
-  it('keeps the aggregate stock read-only for size-based products', async () => {
-    const user = userEvent.setup();
-    renderPanel(makeProduct({
-      stock: 12,
-      sizes: [
-        { size: 'S', stock: 5, minStock: 1 },
-        { size: 'M', stock: 7, minStock: 1 },
-      ],
-    }));
-
-    await user.click(screen.getByRole('button', { name: 'Edit' }));
-
-    expect(screen.queryByRole('spinbutton', { name: 'Stock Level' })).not.toBeInTheDocument();
-    expect(screen.getByText('Stock by Size')).toBeInTheDocument();
   });
 });

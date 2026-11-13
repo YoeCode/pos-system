@@ -105,7 +105,6 @@ const InventoryPage: React.FC = () => {
           {categoryProducts.map(product => {
             const stock = getProductStock(product);
             const minStock = getProductMinStock(product);
-            const hasSizes = product.sizes && product.sizes.length > 0;
             return (
               <tr 
                 key={product.id} 
@@ -114,24 +113,6 @@ const InventoryPage: React.FC = () => {
               >
                 <td className="px-5 py-3">
                   <p className="text-body-md font-medium text-text-primary">{product.name}</p>
-                  {hasSizes && (
-                    <div className="flex gap-1 mt-1 flex-wrap">
-                      {product.sizes!.map(s => (
-                        <span 
-                          key={s.size}
-                          className={`text-body-sm px-1.5 py-0.5 rounded ${
-                            s.stock === 0 
-                              ? 'bg-red-100 text-red-700' 
-                              : s.stock <= (s.minStock || product.minStock) 
-                                ? 'bg-orange-100 text-orange-700'
-                                : 'bg-gray-100 text-text-muted'
-                          }`}
-                        >
-                          {s.size}: {s.stock}
-                        </span>
-                      ))}
-                    </div>
-                  )}
                 </td>
                 <td className="px-5 py-3 text-body-md text-right font-mono text-text-muted">{product.sku}</td>
                 <td className="px-5 py-3 text-right">
@@ -320,7 +301,6 @@ const InventoryPage: React.FC = () => {
                   {lowStockProducts.map(product => {
                     const stock = getProductStock(product);
                     const minStock = getProductMinStock(product);
-                    const hasSizes = product.sizes && product.sizes.length > 0;
                     return (
                       <tr 
                         key={product.id} 
@@ -329,16 +309,7 @@ const InventoryPage: React.FC = () => {
                       >
                         <td className="px-5 py-3">
                           <p className="text-body-md font-medium text-text-primary">{product.name}</p>
-                          {hasSizes && (
-                            <div className="flex gap-1 mt-1 flex-wrap">
-                              {product.sizes!.filter(s => s.stock <= (s.minStock || product.minStock) && s.stock > 0).map(s => (
-                                <span key={s.size} className="text-body-sm px-1.5 py-0.5 rounded bg-orange-100 text-orange-700">
-                                  {s.size}: {s.stock}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                          {!hasSizes && <p className="text-body-sm text-text-muted">{product.sku}</p>}
+                          <p className="text-body-sm text-text-muted">{product.sku}</p>
                         </td>
                         <td className="px-5 py-3 text-right">
                           <span className={`text-body-md font-mono font-bold ${stock <= minStock * 0.5 ? 'text-red-600' : 'text-orange-600'}`}>

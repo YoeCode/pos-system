@@ -4,7 +4,6 @@ import { useAppDispatch } from '../../app/store';
 import { addToCart } from './posSlice';
 import { useToast } from '../../components/useToast';
 import { useI18n } from '../../i18n/useI18n';
-import SizeSelectorModal from './SizeSelectorModal';
 import VariantSelectorModal from './VariantSelectorModal';
 
 interface ProductCardProps {
@@ -15,16 +14,14 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const dispatch = useAppDispatch();
   const { addToast } = useToast();
   const t = useI18n();
-  const [showSizeModal, setShowSizeModal] = useState(false);
   const [showVariantSelector, setShowVariantSelector] = useState(false);
 
-  const hasSizes = product.sizes && product.sizes.length > 0;
   const hasVariants = product.hasVariants && (product.variants?.length ?? 0) > 0;
   const totalVariantStock = hasVariants
     ? product.variants!.reduce((sum, v) => sum + v.stock, 0)
     : 0;
 
-  const isOutOfStock = !hasSizes && !hasVariants && product.stock === 0;
+  const isOutOfStock = !hasVariants && product.stock === 0;
   const isInactive = product.status !== 'active';
 
   const handleClick = () => {
@@ -38,12 +35,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         return;
       }
       setShowVariantSelector(true);
-    } else if (hasSizes) {
-      if (product.stock <= 0 && product.status !== 'draft') {
-        addToast(`${t.pos.outOfStockAdd}: ${product.name}`, 'error');
-        return;
-      }
-      setShowSizeModal(true);
     } else {
       if (product.stock <= 0 && product.status !== 'draft') {
         addToast(`${t.pos.outOfStockAdd}: ${product.name}`, 'error');
@@ -90,7 +81,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
               {t.pos.outOfStock || 'Sin stock'}
             </div>
           )}
-          {!isOutOfStock && !isInactive && !hasVariants && product.stock < 10 && !hasSizes && (
+          {!isOutOfStock && !isInactive && !hasVariants && product.stock < 10 && (
             <div className="absolute top-2 left-2 px-1.5 py-0.5 bg-warning/90 text-white text-xs font-semibold rounded">
               {t.pos.lowStock || 'Stock bajo'}
             </div>
@@ -103,11 +94,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           {hasVariants && !isInactive && (
             <div className="absolute top-2 left-2 px-1.5 py-0.5 bg-violet-600/90 text-white text-xs font-semibold rounded">
               Variantes
-            </div>
-          )}
-          {!hasVariants && hasSizes && !isInactive && (
-            <div className="absolute top-2 left-2 px-1.5 py-0.5 bg-blue-600/90 text-white text-xs font-semibold rounded">
-              {t.pos.sizes || 'Tallas'}
             </div>
           )}
         </div>
@@ -140,13 +126,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         </div>
       </div>
 
-      {hasSizes && (
-        <SizeSelectorModal
-          isOpen={showSizeModal}
-          onClose={() => setShowSizeModal(false)}
-          product={product}
-        />
-      )}
       {hasVariants && (
         <VariantSelectorModal
           isOpen={showVariantSelector}

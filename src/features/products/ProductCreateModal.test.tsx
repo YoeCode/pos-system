@@ -34,7 +34,6 @@ vi.mock('./productsService', () => ({
   updateProductVariant: vi.fn().mockResolvedValue(null),
   deleteProductVariant: vi.fn().mockResolvedValue(true),
   fetchVariantSkus: vi.fn().mockResolvedValue([]),
-  updateProductSize: vi.fn().mockResolvedValue(true),
 }));
 
 const defaultSettings = settingsReducer(undefined, { type: '@@INIT' });
@@ -333,7 +332,7 @@ describe('ProductCreateModal variant-native creation', () => {
     vi.clearAllMocks();
   });
 
-  it('creates size products as Talla variants and never writes product_sizes rows', async () => {
+  it('creates size products as a Talla variant dimension', async () => {
     const user = userEvent.setup();
     const store = createTestStore();
     renderModal(true, vi.fn(), store);
@@ -350,7 +349,6 @@ describe('ProductCreateModal variant-native creation', () => {
     const created = vi.mocked(createProduct).mock.calls[0][0];
     expect(created.hasVariants).toBe(true);
     expect(created.variantAttributes).toEqual(['Talla']);
-    expect(created.sizes).toBeUndefined();
 
     const variantCalls = vi.mocked(createProductVariant).mock.calls;
     expect(variantCalls.map(c => c[1].sku)).toEqual(['SP-100-M', 'SP-100-L']);

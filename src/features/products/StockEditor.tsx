@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import type { Product, ProductSize, ProductVariant, ProductAttribute } from '../../types';
+import type { Product, ProductVariant, ProductAttribute } from '../../types';
 import { useI18n } from '../../i18n/useI18n';
 import { usePermission } from '../../hooks/usePermission';
 import StockRowForm from './StockRowForm';
@@ -10,9 +10,6 @@ export interface StockEditorProps {
   isEditing: boolean;
   variantAttributes: string[];
   attributes: ProductAttribute[];
-  sizes: ProductSize[];
-  onSizeFieldChange: (index: number, field: 'stock' | 'minStock', value: number) => void;
-  onUpdateSize: (size: ProductSize) => Promise<void>;
   onUpdateStock: (stock: number, minStock: number) => Promise<void>;
   onAddVariant: (variant: Omit<ProductVariant, 'id'>) => Promise<void>;
   onUpdateVariant: (variant: ProductVariant) => Promise<void>;
@@ -25,17 +22,14 @@ export interface StockEditorProps {
  *
  * Persistence routes per backing shape:
  * - Plain products -> onUpdateStock (products.stock / products.min_stock)
- * - Legacy size rows -> onUpdateSize (product_sizes via updateProductSize)
- * - Variant rows -> VariantsSection callbacks (product_variants)
+ * - Variant rows (including one-dimension "Talla" size variants) ->
+ *   VariantsSection callbacks (product_variants)
  */
 const StockEditor: React.FC<StockEditorProps> = ({
   product,
   isEditing,
   variantAttributes,
   attributes,
-  sizes,
-  onSizeFieldChange,
-  onUpdateSize,
   onUpdateStock,
   onAddVariant,
   onUpdateVariant,
@@ -43,12 +37,10 @@ const StockEditor: React.FC<StockEditorProps> = ({
 }) => {
   const t = useI18n();
   const { hasPermission } = usePermission();
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingPlain, setEditingPlain] = useState(false);
   const [plainForm, setPlainForm] = useState({ stock: 0, minStock: 0 });
   const [openMenuKey, setOpenMenuKey] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-  const editOriginalRef = useRef<ProductSize | null>(null);
 
   const canEdit = hasPermission('product:edit');
 
@@ -63,34 +55,9 @@ const StockEditor: React.FC<StockEditorProps> = ({
   }, []);
 
   useEffect(() => {
-    setEditingIndex(null);
     setEditingPlain(false);
     setOpenMenuKey(null);
-    editOriginalRef.current = null;
   }, [product.id]);
-
-  const openSizeEdit = (index: number) => {
-    editOriginalRef.current = { ...sizes[index] };
-    setEditingIndex(index);
-    setOpenMenuKey(null);
-  };
-
-  const handleCancelSizeEdit = () => {
-    const original = editOriginalRef.current;
-    if (original && editingIndex !== null) {
-      onSizeFieldChange(editingIndex, 'stock', original.stock);
-      onSizeFieldChange(editingIndex, 'minStock', original.minStock ?? 0);
-    }
-    editOriginalRef.current = null;
-    setEditingIndex(null);
-  };
-
-  const handleUpdateSize = async () => {
-    if (editingIndex === null) return;
-    await onUpdateSize(sizes[editingIndex]);
-    editOriginalRef.current = null;
-    setEditingIndex(null);
-  };
 
   const openPlainEdit = () => {
     setPlainForm({ stock: product.stock, minStock: product.minStock ?? 0 });
@@ -151,43 +118,6 @@ const StockEditor: React.FC<StockEditorProps> = ({
         onUpdateVariant={onUpdateVariant}
         onDeleteVariant={onDeleteVariant}
       />
-    );
-  }
-
-  if (sizes.length > 0) {
-    const editingSize = editingIndex !== null ? sizes[editingIndex] : null;
-    return (
-      <div className="flex flex-col gap-2">
-        <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">{t.products.detail.stockBySize}</label>
-        {editingSize && editingIndex !== null ? (
-          <StockRowForm
-            title={`${t.products.detail.size}: ${editingSize.size}`}
-            values={{ stock: editingSize.stock, minStock: editingSize.minStock ?? 0 }}
-            onChange={(field, value) => onSizeFieldChange(editingIndex, field, value)}
-            onSubmit={handleUpdateSize}
-            onCancel={handleCancelSizeEdit}
-          />
-        ) : (
-          <div className="flex flex-col gap-1">
-            <div className="grid grid-cols-4 gap-2 px-2 text-xs font-semibold text-text-muted uppercase tracking-wider">
-              <span>{t.products.detail.size}</span>
-              <span>{t.products.stock}</span>
-              <span>{t.products.detail.minStock}</span>
-              <span aria-hidden="true"></span>
-            </div>
-            {sizes.map((s, idx) => (
-              <div key={s.size} className="grid grid-cols-4 gap-2 items-center px-2 py-2 rounded-lg border border-border bg-background text-sm">
-                <span className="inline-flex items-center w-fit max-w-full px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium truncate">{s.size}</span>
-                <span className={`font-mono text-xs font-semibold ${s.stock <= (s.minStock ?? 0) ? 'text-amber-600' : 'text-text-primary'}`}>
-                  {s.stock}
-                </span>
-                <span className="font-mono text-xs text-text-muted">{s.minStock ?? 0}</span>
-                {renderKebab(`size-${idx}`, () => openSizeEdit(idx))}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
     );
   }
 
