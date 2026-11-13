@@ -14,10 +14,8 @@ import StatusField from './StatusField';
 import PricingFields from './PricingFields';
 import ImageSection from './ImageSection';
 import PublishToggle from './PublishToggle';
-import StockSection from './StockSection';
-import SizesSection from './SizesSection';
+import StockEditor from './StockEditor';
 import ProductBasicFields from './ProductBasicFields';
-import VariantsSection from './VariantsSection';
 
 interface ProductDetailPanelProps {
   onDuplicate?: (form: ProductFormState) => void;
@@ -33,7 +31,6 @@ interface FormState {
   brand: string;
   price: number;
   costPrice: number;
-  stock: number;
   description: string;
   publishedOnline: boolean;
   status: Product['status'];
@@ -71,7 +68,6 @@ const ProductDetailPanel: React.FC<ProductDetailPanelProps> = ({ onDuplicate }) 
     brand: '',
     price: 0,
     costPrice: 0,
-    stock: 0,
     description: '',
     publishedOnline: false,
     status: 'active',
@@ -105,7 +101,6 @@ const ProductDetailPanel: React.FC<ProductDetailPanelProps> = ({ onDuplicate }) 
         brand: product.brand || '',
         price: product.price,
         costPrice: product.costPrice,
-        stock: product.stock,
         description: product.description || '',
         publishedOnline: product.publishedOnline,
         status: product.status,
@@ -142,7 +137,6 @@ const ProductDetailPanel: React.FC<ProductDetailPanelProps> = ({ onDuplicate }) 
       brand: form.brand || undefined,
       price: form.price,
       costPrice: form.costPrice,
-      stock: form.stock,
       description: form.description,
       publishedOnline: form.publishedOnline,
       status: form.status,
@@ -228,6 +222,16 @@ const ProductDetailPanel: React.FC<ProductDetailPanelProps> = ({ onDuplicate }) 
       addToast('Variante eliminada correctamente', 'success');
     } catch {
       addToast('Error al eliminar la variante', 'error');
+    }
+  };
+
+  const handleUpdateStock = async (stock: number, minStock: number) => {
+    if (!product) return;
+    try {
+      await dispatch(updateProductAsync({ ...product, stock, minStock })).unwrap();
+      addToast(t.products.detail.stockUpdated, 'success');
+    } catch {
+      addToast(t.products.detail.stockUpdateError, 'error');
     }
   };
 
@@ -319,10 +323,6 @@ const ProductDetailPanel: React.FC<ProductDetailPanelProps> = ({ onDuplicate }) 
   }, [isEditing, isSaving, showDeleteConfirm, showPinModal, hasPermission, handleSave, handleCancel, handleEdit]);
 
   if (!product) return null;
-
-  // Plain products own a single editable stock value; size/variant products
-  // derive their aggregate stock from their own per-row editors.
-  const isPlainProduct = !product.hasVariants && (!product.sizes || product.sizes.length === 0);
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden bg-white rounded-xl border border-border">
@@ -425,25 +425,15 @@ const ProductDetailPanel: React.FC<ProductDetailPanelProps> = ({ onDuplicate }) 
           onCostPriceChange={v => setForm(prev => ({ ...prev, costPrice: v }))}
         />
 
-        <StockSection
-          stock={isEditing && isPlainProduct ? form.stock : product.stock}
-          stockLabel={t.products.detail.stockLevel}
-          isEditing={isEditing && isPlainProduct}
-          onStockChange={v => setForm(prev => ({ ...prev, stock: v }))}
-        />
-
-        <SizesSection
-          product={product}
-          sizes={form.sizes}
-          onSizeFieldChange={handleSizeFieldChange}
-          onUpdateSize={handleUpdateSize}
-        />
-
-        <VariantsSection
+        <StockEditor
           product={product}
           isEditing={isEditing}
           variantAttributes={form.variantAttributes}
           attributes={attributes}
+          sizes={form.sizes}
+          onSizeFieldChange={handleSizeFieldChange}
+          onUpdateSize={handleUpdateSize}
+          onUpdateStock={handleUpdateStock}
           onAddVariant={handleAddVariant}
           onUpdateVariant={handleUpdateVariant}
           onDeleteVariant={handleDeleteVariant}

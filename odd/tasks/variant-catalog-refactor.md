@@ -37,11 +37,11 @@ Out of scope: per-dimension analytics, attribute normalization (Option C), RLS c
 - [ ] T1.3 Migration tests/verification against local stack with seed data
 
 ### Phase 2 — Unified UI
-- [ ] T2.1 One stock editor for all shapes (variant-style form: SKU, prices inherit, stock, min_stock, attributes); sizes products render as 1-dim variant tables
+- [x] T2.1 One stock editor for all shapes (variant-style form: SKU, prices inherit, stock, min_stock, attributes); sizes products render as 1-dim variant tables
 - [ ] T2.2 Size-group presets fill the `Talla` attribute slot in the create modal
 - [ ] T2.3 Dynamic attribute slots (N, not 2) in create modal
 - [ ] T2.4 Collision-safe variant SKU generation (no 2-letter prefix collisions)
-- [ ] T2.5 min_stock configurable for plain products in the same editor (maintainer request)
+- [x] T2.5 min_stock configurable for plain products in the same editor (maintainer request)
 - [ ] T2.6 i18n keys updated (remove dead keys, add new); tests for the editor flows
 
 ### Phase 3 — Cleanup
@@ -72,5 +72,11 @@ Per task: `npm run test:run`, `npm run build`, `npm run lint` (exit 0; known war
 ## Progress / verification evidence
 (Updated as tasks close.)
 
+- Phase 2 slice 2.1 (T2.1 + T2.5) closed on `feat/unified-stock-editor` with work-unit commit `feat(products): unified stock editor for all product shapes` (component + panel wiring + i18n + tests together).
+  - **Chain strategy (maintainer choice): stacked-to-main.** Phase 2 splits into three PRs targeting `main` in order: `2.1 unified stock editor` 📍 (this) → `2.2 create-modal presets + dynamic attribute slots` → `2.3 collision-safe SKUs + i18n/tests cleanup`. Prior dependency: PR #45 (migration 022, `feat/db-migrate-sizes-to-variants`) merges first; this slice works with or without 022 — the editor serves the pre-022 `product.sizes` shape and the variant shape through the same UX.
+  - **Unified editor:** `StockEditor.tsx` + `StockRowForm.tsx` replace `StockSection`/`SizesSection` (both removed). Per shape: plain = sku/stock/min_stock row → kebab → rich form (stock + min_stock, T2.5) → Cancelar/Actualizar → `updateProductAsync`; legacy sizes = 1-dim rows (size chip, amber low-stock) with the same form → `updateProductSize`/sizes-diff paths; variants = `VariantsSection` unchanged, rendered as the editor's variant mode (SKU / prices inherit / attributes / add / delete preserved).
+  - **Verification:** focused `npx vitest run StockEditor.test.tsx ProductDetailPanel.plainStock.test.tsx`: 11 passed. `npm run test:run`: 111 passed / 0 failed (102 baseline + 9 new). `npm run build`: ok. `npm run lint`: exit 0 (known ProductDetailPanel warning). Review count 889 changed lines (650 + 239) > 400 → `size:exception` recommended (no cohesive split fits; tests stay with behavior).
+  - **Base note:** this branch is based on `main` before PR #45; the Phase 0/1 evidence and checkbox ticks live on `feat/db-migrate-sizes-to-variants` and land with #45. Merge order: #45 first, then this slice (trivial doc conflict resolution expected).
+
 ## Next step
-Launch Phase 0 (T0.1–T0.5) on `fix/sale-line-integrity`.
+Launch Phase 2 slice 2.2 (T2.2 + T2.3 — create-modal presets + dynamic attribute slots) on its own branch (stacked-to-main).
