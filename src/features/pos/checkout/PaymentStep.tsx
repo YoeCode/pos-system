@@ -196,11 +196,6 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
             const attrs = Object.entries(variant.attributes).map(([k, v]) => `${k}: ${v}`).join(', ');
             lowStockItems.push(`${product.name} (${attrs})`);
           }
-        } else if (product.sizes && product.sizes.length > 0 && item.selectedSize) {
-          const sizeEntry = product.sizes.find(s => s.size === item.selectedSize);
-          if (sizeEntry && sizeEntry.minStock !== undefined && sizeEntry.stock - item.quantity <= sizeEntry.minStock) {
-            lowStockItems.push(`${product.name} (${item.selectedSize})`);
-          }
         } else if (product.stock - item.quantity <= product.minStock) {
           lowStockItems.push(product.name);
         }
@@ -215,9 +210,6 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
           if (item.selectedVariant) {
             const variant = product.variants?.find(v => v.id === item.selectedVariant!.id);
             return variant ? variant.stock - item.quantity === 0 : false;
-          } else if (product.sizes && item.selectedSize) {
-            const sizeEntry = product.sizes.find(s => s.size === item.selectedSize);
-            return sizeEntry ? sizeEntry.stock - item.quantity === 0 : false;
           }
           return product.stock - item.quantity === 0;
         }).length;

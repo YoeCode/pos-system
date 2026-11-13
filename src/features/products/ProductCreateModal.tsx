@@ -126,9 +126,9 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
   useLayoutEffect(() => {
     if (isOpen) {
       const normalized = normalizeInitialForm(initialForm, categories);
-      // Duplicating a product seeds its stock shape: a variant product seeds
-      // its dimensions and per-variant stock; a legacy sizes product seeds the
-      // Talla dimension and its per-size stock.
+      // Duplicating a product seeds its stock shape: a variant product (this
+      // includes one-dimension "Talla" size variants) seeds its dimensions and
+      // per-variant stock.
       const variantDims = normalized.variantAttributes.length > 0
         ? normalized.variantAttributes
         : [...new Set(normalized.variants.flatMap(v => Object.keys(v.attributes)))];
@@ -143,12 +143,10 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
                   selectedValues: [...new Set(normalized.variants.map(v => v.attributes[dim]).filter(Boolean))],
                 }
           )
-        : normalized.hasSizes
-          ? [createTallaSlot(normalized.sizes.map(s => s.size).filter(Boolean))]
-          : [];
+        : [];
       const seededCombinations = hasVariantSeed
         ? normalized.variants.map(v => ({ attributes: { ...v.attributes }, stock: v.stock, minStock: v.minStock }))
-        : normalized.sizes.map(s => ({ attributes: { [TALLA_DIMENSION]: s.size }, stock: s.stock, minStock: s.minStock ?? 0 }));
+        : [];
       setForm({
         ...normalized,
         hasSizes: normalized.hasSizes || seededSlots.some(s => s.isTalla),
@@ -224,7 +222,7 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
   }, []);
 
   // "Tallas" adds the Talla variant dimension (one more slot) instead of
-  // creating product_sizes rows. It can be combined with attribute slots.
+  // creating per-size rows. It can be combined with attribute slots.
   const handleToggleTallas = (checked: boolean) => {
     if (checked) {
       setForm(prev => ({ ...prev, hasSizes: true, hasVariants: true }));
@@ -338,9 +336,6 @@ const ProductCreateModal: React.FC<ProductCreateModalProps> = ({ isOpen, onClose
       description: form.description.trim() || undefined,
       status: form.status,
       publishedOnline: form.publishedOnline,
-      // Sizes are Talla-dimension variants now - the modal never writes
-      // product_sizes rows.
-      sizes: undefined,
       sizeGroupId: form.sizeGroupId || undefined,
       hasVariants: hasVariantDims,
       variantAttributes: variantAttrNames,

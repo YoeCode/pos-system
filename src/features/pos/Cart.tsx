@@ -81,15 +81,6 @@ const Cart: React.FC<CartProps> = ({ variant = 'sidebar', onClose }) => {
         addToast(`${t.pos.onlyUnitsLeft || 'Solo quedan'} ${variant.stock} ${t.pos.units || 'unidades'} (${attrDesc})`, 'warning');
         return;
       }
-    } else if (item.selectedSize) {
-      const hasSizes = product.sizes && product.sizes.length > 0;
-      if (hasSizes) {
-        const sizeEntry = product.sizes?.find(s => s.size === item.selectedSize);
-        if (sizeEntry && newQty > sizeEntry.stock) {
-          addToast(`${t.pos.onlyUnitsLeft || 'Solo quedan'} ${sizeEntry.stock} ${t.pos.units || 'unidades'} (${item.selectedSize})`, 'warning');
-          return;
-        }
-      }
     } else if (newQty > product.stock) {
       addToast(`${t.pos.onlyUnitsLeft || 'Solo quedan'} ${product.stock} ${t.pos.units || 'unidades'}`, 'warning');
       return;

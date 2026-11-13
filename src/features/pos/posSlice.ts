@@ -216,17 +216,17 @@ const posSlice = createSlice({
         saveWindowsToStorage({ windows: state.windows, activeWindowId: state.activeWindowId, nextWindowNumber: state.nextWindowNumber });
       }
     },
-    addToCart: (state, action: PayloadAction<{ product: Product; size?: string; variant?: ProductVariant }>) => {
-      const { product, size, variant } = action.payload;
+    addToCart: (state, action: PayloadAction<{ product: Product; variant?: ProductVariant }>) => {
+      const { product, variant } = action.payload;
       updateActiveWindow(state, (window) => {
         pushCartHistory(window);
         const existing = window.cart.find(
-          item => item.product.id === product.id && item.selectedSize === size && item.selectedVariant?.id === variant?.id
+          item => item.product.id === product.id && item.selectedVariant?.id === variant?.id
         );
         if (existing) {
           existing.quantity += 1;
         } else {
-          window.cart.push({ product, quantity: 1, lineId: crypto.randomUUID(), selectedSize: size, selectedVariant: variant });
+          window.cart.push({ product, quantity: 1, lineId: crypto.randomUUID(), selectedVariant: variant });
         }
       });
     },
@@ -246,8 +246,7 @@ const posSlice = createSlice({
           window.cart = window.cart.filter(i => i.lineId !== action.payload.lineId);
           return;
         }
-        const hasSizes = item.product.sizes && item.product.sizes.length > 0;
-        if (!hasSizes && newQty > item.product.stock) return;
+        if (newQty > item.product.stock) return;
         pushCartHistory(window);
         item.quantity = newQty;
       });

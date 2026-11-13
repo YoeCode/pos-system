@@ -82,18 +82,6 @@ const LowStockAlerts: React.FC = () => {
                     <p className="text-body-md font-medium text-text-primary">
                       {alert.productName}
                     </p>
-                    {alert.sizes && alert.sizes.length > 0 && (
-                      <div className="flex gap-1 mt-1 flex-wrap">
-                        {alert.sizes.map((s) => (
-                          <span
-                            key={s.size}
-                            className={`text-label-sm px-1.5 py-0.5 rounded ${s.stock === 0 ? 'bg-error-container text-error' : 'bg-warning-light text-warning'}`}
-                          >
-                            {s.size}: {s.stock}
-                          </span>
-                        ))}
-                      </div>
-                    )}
                   </div>
                   <div className="text-right">
                     <span

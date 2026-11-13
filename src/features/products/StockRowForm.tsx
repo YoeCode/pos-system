@@ -15,10 +15,9 @@ interface StockRowFormProps {
 }
 
 /**
- * Rich inline form card shared by every stock row (plain products and legacy
- * size rows). It mirrors the variant form UX: fields + Cancelar/Actualizar.
- * The row's persistence target is owned by the caller (updateProduct for
- * plain stock, updateProductSize for legacy size rows).
+ * Rich inline form card for a plain product stock row. It mirrors the variant
+ * form UX: fields + Cancelar/Actualizar. The row's persistence target is owned
+ * by the caller (updateProduct for plain stock).
  */
 const StockRowForm: React.FC<StockRowFormProps> = ({ title, values, onChange, onSubmit, onCancel }) => {
   const t = useI18n();

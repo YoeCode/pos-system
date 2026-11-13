@@ -391,51 +391,6 @@ export type Database = {
           },
         ]
       }
-      product_sizes: {
-        Row: {
-          id: string
-          min_stock: number
-          product_id: string
-          size: string
-          sku: string | null
-          stock: number
-          tenant_id: string
-        }
-        Insert: {
-          id?: string
-          min_stock?: number
-          product_id: string
-          size: string
-          sku?: string | null
-          stock?: number
-          tenant_id: string
-        }
-        Update: {
-          id?: string
-          min_stock?: number
-          product_id?: string
-          size?: string
-          sku?: string | null
-          stock?: number
-          tenant_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "product_sizes_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "product_sizes_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       product_variants: {
         Row: {
           attributes: Json

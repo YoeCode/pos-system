@@ -1,4 +1,3 @@
-import React, { useState } from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import type { Mock } from 'vitest';
 import { render, screen } from '@testing-library/react';
@@ -9,7 +8,7 @@ import StockEditor from './StockEditor';
 import type { StockEditorProps } from './StockEditor';
 import settingsReducer from '../settings/settingsSlice';
 import { I18nProvider } from '../../i18n/I18nProvider';
-import type { Product, ProductSize, ProductVariant } from '../../types';
+import type { Product, ProductVariant } from '../../types';
 
 vi.mock('../../supabase/client', () => ({
   supabase: { from: vi.fn() },
@@ -68,49 +67,14 @@ function makeVariant(overrides: Partial<ProductVariant> = {}): ProductVariant {
 }
 
 interface RenderedHandlers {
-  onSizeFieldChange: Mock<(index: number, field: 'stock' | 'minStock', value: number) => void>;
-  onUpdateSize: Mock<(size: ProductSize) => Promise<void>>;
   onUpdateStock: Mock<(stock: number, minStock: number) => Promise<void>>;
   onAddVariant: Mock<(variant: Omit<ProductVariant, 'id'>) => Promise<void>>;
   onUpdateVariant: Mock<(variant: ProductVariant) => Promise<void>>;
   onDeleteVariant: Mock<(variantId: string) => Promise<void>>;
 }
 
-/**
- * Stateful harness mirroring the panel: size edits buffer through
- * onSizeFieldChange (like FormState.sizes) before being committed.
- */
-const StockEditorHarness: React.FC<{
-  handlers: RenderedHandlers;
-  initialSizes: ProductSize[];
-  product: Product;
-  isEditing: boolean;
-  variantAttributes: StockEditorProps['variantAttributes'];
-  attributes: StockEditorProps['attributes'];
-}> = ({ handlers, initialSizes, ...props }) => {
-  const [sizes, setSizes] = useState<ProductSize[]>(initialSizes);
-  const onSizeFieldChange = (index: number, field: 'stock' | 'minStock', value: number) => {
-    handlers.onSizeFieldChange(index, field, value);
-    setSizes(prev => prev.map((s, i) => (i === index ? (field === 'stock' ? { ...s, stock: value } : { ...s, minStock: value }) : s)));
-  };
-  return (
-    <StockEditor
-      {...props}
-      sizes={sizes}
-      onSizeFieldChange={onSizeFieldChange}
-      onUpdateSize={handlers.onUpdateSize}
-      onUpdateStock={handlers.onUpdateStock}
-      onAddVariant={handlers.onAddVariant}
-      onUpdateVariant={handlers.onUpdateVariant}
-      onDeleteVariant={handlers.onDeleteVariant}
-    />
-  );
-};
-
 function renderEditor(props: Partial<StockEditorProps> = {}, role: 'admin' | 'cashier' = 'admin'): RenderedHandlers {
   const handlers: RenderedHandlers = {
-    onSizeFieldChange: vi.fn<(index: number, field: 'stock' | 'minStock', value: number) => void>(),
-    onUpdateSize: vi.fn<(size: ProductSize) => Promise<void>>(async () => {}),
     onUpdateStock: vi.fn<(stock: number, minStock: number) => Promise<void>>(async () => {}),
     onAddVariant: vi.fn<(variant: Omit<ProductVariant, 'id'>) => Promise<void>>(async () => {}),
     onUpdateVariant: vi.fn<(variant: ProductVariant) => Promise<void>>(async () => {}),
@@ -121,13 +85,15 @@ function renderEditor(props: Partial<StockEditorProps> = {}, role: 'admin' | 'ca
   render(
     <Provider store={store}>
       <I18nProvider>
-        <StockEditorHarness
-          handlers={handlers}
-          initialSizes={props.sizes ?? product.sizes ?? []}
+        <StockEditor
           product={product}
           isEditing={props.isEditing ?? false}
           variantAttributes={props.variantAttributes ?? []}
           attributes={props.attributes ?? []}
+          onUpdateStock={handlers.onUpdateStock}
+          onAddVariant={handlers.onAddVariant}
+          onUpdateVariant={handlers.onUpdateVariant}
+          onDeleteVariant={handlers.onDeleteVariant}
         />
       </I18nProvider>
     </Provider>
@@ -174,56 +140,6 @@ describe('StockEditor — plain products (stock + min_stock)', () => {
     renderEditor({ product: makeProduct() }, 'cashier');
     expect(screen.queryByRole('button', { name: 'Actions' })).not.toBeInTheDocument();
     expect(screen.getByText('—')).toBeInTheDocument();
-  });
-});
-
-describe('StockEditor — legacy size rows', () => {
-  const sizes: ProductSize[] = [
-    { size: 'S', stock: 5, minStock: 1 },
-    { size: 'M', stock: 7, minStock: 1 },
-  ];
-
-  it('edits a size row through the form and routes it to the size persistence path', async () => {
-    const user = userEvent.setup();
-    const handlers = renderEditor({ product: makeProduct({ sizes }), sizes });
-
-    const menus = screen.getAllByRole('button', { name: 'Actions' });
-    await user.click(menus[1]);
-    await user.click(screen.getByRole('button', { name: 'Edit' }));
-
-    expect(screen.getByText('Size: M')).toBeInTheDocument();
-
-    const stockInput = screen.getByRole('spinbutton', { name: 'Stock' });
-    await user.clear(stockInput);
-    await user.type(stockInput, '3');
-    await user.click(screen.getByRole('button', { name: 'Update' }));
-
-    expect(handlers.onSizeFieldChange).toHaveBeenCalledWith(1, 'stock', 3);
-    expect(handlers.onUpdateSize).toHaveBeenCalledWith({ size: 'M', stock: 3, minStock: 1 });
-  });
-
-  it('cancel restores the original row values without persisting', async () => {
-    const user = userEvent.setup();
-    const handlers = renderEditor({ product: makeProduct({ sizes }), sizes });
-
-    const menus = screen.getAllByRole('button', { name: 'Actions' });
-    await user.click(menus[1]);
-    await user.click(screen.getByRole('button', { name: 'Edit' }));
-
-    const stockInput = screen.getByRole('spinbutton', { name: 'Stock' });
-    await user.clear(stockInput);
-    await user.type(stockInput, '3');
-    await user.click(screen.getByRole('button', { name: 'Cancel' }));
-
-    expect(handlers.onSizeFieldChange).toHaveBeenCalledWith(1, 'stock', 7);
-    expect(handlers.onSizeFieldChange).toHaveBeenCalledWith(1, 'minStock', 1);
-    expect(handlers.onUpdateSize).not.toHaveBeenCalled();
-  });
-
-  it('keeps the amber low-stock cue on rows at or below min stock', () => {
-    const lowSizes: ProductSize[] = [{ size: 'S', stock: 0, minStock: 2 }];
-    renderEditor({ product: makeProduct({ sizes: lowSizes }), sizes: lowSizes });
-    expect(screen.getByText('0')).toHaveClass('text-amber-600');
   });
 });
 
