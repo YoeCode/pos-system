@@ -1,3 +1,20 @@
+-- Casa Lis POS — schema reference (simplified).
+--
+-- SCOPE NOTE (Phase 3 of the variant catalog refactor, migration 023):
+-- This file is a hand-maintained, SIMPLIFIED reference. The authoritative
+-- schema is the migration ledger in supabase/migrations/ (000-023); when this
+-- file and the migrations disagree, the migrations win. The product-catalog
+-- domain below is refreshed to the post-023 reality:
+--   * products carries the variant columns (has_variants, variant_attributes)
+--     and per-tenant identity;
+--   * product_variants and product_attributes are the single stock model
+--     (one-dimension "Talla" size variants and N-dimension variants);
+--   * product_sizes no longer exists - it was dropped by migration 023 after
+--     022 converged every size row into a {"Talla": size} variant.
+-- Non-catalog domains (tenants, employees multi-tenant columns, settings,
+-- invitations, cash box, refunds) are simplified or omitted here and may lag
+-- the migrations. Foreign keys to the omitted tenants table are not shown.
+
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TABLE employees (
@@ -17,9 +34,12 @@ CREATE TABLE employees (
 
 CREATE TABLE products (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  tenant_id UUID NOT NULL,
   name TEXT NOT NULL,
-  sku TEXT NOT NULL UNIQUE,
+  sku TEXT NOT NULL,
   category TEXT NOT NULL,
+  subcategory TEXT,
+  season TEXT,
   brand TEXT,
   price NUMERIC(10,2) NOT NULL DEFAULT 0,
   cost_price NUMERIC(10,2) NOT NULL DEFAULT 0,
@@ -31,19 +51,47 @@ CREATE TABLE products (
   image_url TEXT,
   version TEXT,
   size_group_id TEXT,
+  has_variants BOOLEAN NOT NULL DEFAULT FALSE,
+  variant_attributes TEXT[] DEFAULT '{}',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(tenant_id, sku)
 );
 
-CREATE TABLE product_sizes (
+-- One stock model: a variant is a concrete attribute combination
+-- (e.g. {"Talla": "M"} or {"Color": "Rojo", "Talla": "M"}) with its own SKU and
+-- stock. price/cost_price NULL = inherit from the parent product.
+CREATE TABLE product_variants (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  tenant_id UUID NOT NULL,
   product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
-  size TEXT NOT NULL,
-  sku TEXT,
+  sku TEXT NOT NULL,
+  price NUMERIC(10,2),
+  cost_price NUMERIC(10,2),
   stock INTEGER NOT NULL DEFAULT 0,
   min_stock INTEGER NOT NULL DEFAULT 0,
-  UNIQUE(product_id, size)
+  image_url TEXT,
+  attributes JSONB NOT NULL DEFAULT '{}',
+  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','inactive','draft')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(tenant_id, sku),
+  UNIQUE(product_id, attributes)
 );
+
+-- Available attributes per tenant (e.g. "Talla" -> ["S","M","L"], "Color" -> [...]).
+CREATE TABLE product_attributes (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  tenant_id UUID NOT NULL,
+  name TEXT NOT NULL,
+  values TEXT[] NOT NULL DEFAULT '{}',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(tenant_id, name)
+);
+
+-- NOTE: the legacy product_sizes table was dropped by migration 023 after
+-- migration 022 converged every size row into a {"Talla": size} product_variants
+-- row. Sizes are one-dimension variants now, not a separate table.
 
 CREATE TABLE customers (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -150,7 +198,10 @@ CREATE INDEX idx_sales_terminal_id ON sales(terminal_id);
 CREATE INDEX idx_sale_items_sale_id ON sale_items(sale_id);
 CREATE INDEX idx_products_category ON products(category);
 CREATE INDEX idx_products_status ON products(status);
-CREATE INDEX idx_product_sizes_product_id ON product_sizes(product_id);
+CREATE INDEX idx_variants_product ON product_variants(product_id);
+CREATE INDEX idx_variants_tenant ON product_variants(tenant_id);
+CREATE INDEX idx_variants_sku ON product_variants(tenant_id, sku);
+CREATE INDEX idx_product_attributes_tenant ON product_attributes(tenant_id);
 CREATE INDEX idx_customers_email ON customers(email);
 CREATE INDEX idx_cash_box_sessions_is_open ON cash_box_sessions(is_open);
 CREATE INDEX idx_employees_role ON employees(role);
@@ -158,7 +209,8 @@ CREATE INDEX idx_employees_active ON employees(active);
 
 ALTER TABLE employees ENABLE ROW LEVEL SECURITY;
 ALTER TABLE products ENABLE ROW LEVEL SECURITY;
-ALTER TABLE product_sizes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE product_variants ENABLE ROW LEVEL SECURITY;
+ALTER TABLE product_attributes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE sales ENABLE ROW LEVEL SECURITY;
 ALTER TABLE sale_items ENABLE ROW LEVEL SECURITY;
@@ -189,18 +241,43 @@ CREATE POLICY "products_manage" ON products
     )
   );
 
-CREATE POLICY "product_sizes_select" ON product_sizes
+CREATE POLICY "product_variants_select_tenant" ON product_variants
   FOR SELECT USING (
     EXISTS (
-      SELECT 1 FROM products p WHERE p.id = product_sizes.product_id AND p.status = 'active'
+      SELECT 1 FROM employees e
+      WHERE e.tenant_id = product_variants.tenant_id
+        AND e.user_id = auth.uid()
+        AND e.tenant_role IS NOT NULL
     )
   );
 
-CREATE POLICY "product_sizes_manage" ON product_sizes
+CREATE POLICY "product_variants_manage_tenant" ON product_variants
   FOR ALL USING (
     EXISTS (
       SELECT 1 FROM employees e
-      WHERE e.user_id = auth.uid() AND e.role IN ('manager', 'admin')
+      WHERE e.tenant_id = product_variants.tenant_id
+        AND e.user_id = auth.uid()
+        AND e.tenant_role IS NOT NULL
+    )
+  );
+
+CREATE POLICY "product_attributes_select_tenant" ON product_attributes
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM employees e
+      WHERE e.tenant_id = product_attributes.tenant_id
+        AND e.user_id = auth.uid()
+        AND e.tenant_role IS NOT NULL
+    )
+  );
+
+CREATE POLICY "product_attributes_manage_tenant" ON product_attributes
+  FOR ALL USING (
+    EXISTS (
+      SELECT 1 FROM employees e
+      WHERE e.tenant_id = product_attributes.tenant_id
+        AND e.user_id = auth.uid()
+        AND e.tenant_role IS NOT NULL
     )
   );
 
