@@ -5,7 +5,10 @@ import { reduceStock, restoreStock } from './productsService';
 // Stock mutations go through the SECURITY DEFINER RPCs added in migration
 // 024. These tests pin the RPC contract: the right function is called with
 // the right arguments per product shape (variant id / size / plain), and
-// failures are returned as false instead of being swallowed.
+// failures are returned as false instead of being swallowed. Manual (POS
+// non-catalog) product ids never reach the RPC: they have no stock rows and
+// their synthetic ids cannot cast to the uuid-typed parameters, so the
+// service keeps the historical no-op and returns true.
 vi.mock('../../supabase/client', () => ({
   supabase: { rpc: vi.fn() },
 }));
@@ -88,6 +91,26 @@ describe('reduceStock', () => {
     expect(ok).toBe(false);
     expect(rpc).toHaveBeenCalledWith('reduce_stock', expect.objectContaining({ p_tenant_id: null }));
   });
+
+  it('skips the RPC for manual POS product ids and returns true', async () => {
+    rpc.mockResolvedValue({ data: true, error: null });
+
+    const ok = await reduceStock('custom-1794655336027-9ky39v', 1, undefined, TENANT_ID);
+
+    expect(ok).toBe(true);
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it('still calls the RPC for real product ids after a manual line', async () => {
+    rpc.mockResolvedValue({ data: true, error: null });
+
+    await reduceStock('custom-1794655336027-9ky39v', 1, undefined, TENANT_ID);
+    const ok = await reduceStock(PRODUCT_ID, 1, undefined, TENANT_ID);
+
+    expect(ok).toBe(true);
+    expect(rpc).toHaveBeenCalledTimes(1);
+    expect(rpc).toHaveBeenCalledWith('reduce_stock', expect.objectContaining({ p_product_id: PRODUCT_ID }));
+  });
 });
 
 describe('restoreStock', () => {
@@ -150,5 +173,25 @@ describe('restoreStock', () => {
     rpc.mockResolvedValue({ data: false, error: null });
 
     await expect(restoreStock(PRODUCT_ID, 1, undefined, TENANT_ID)).resolves.toBe(false);
+  });
+
+  it('skips the RPC for manual POS product ids and returns true', async () => {
+    rpc.mockResolvedValue({ data: true, error: null });
+
+    const ok = await restoreStock('custom-1794655336027-9ky39v', 1, undefined, TENANT_ID);
+
+    expect(ok).toBe(true);
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it('still calls the RPC for real product ids after a manual line', async () => {
+    rpc.mockResolvedValue({ data: true, error: null });
+
+    await restoreStock('custom-1794655336027-9ky39v', 1, undefined, TENANT_ID);
+    const ok = await restoreStock(PRODUCT_ID, 1, undefined, TENANT_ID);
+
+    expect(ok).toBe(true);
+    expect(rpc).toHaveBeenCalledTimes(1);
+    expect(rpc).toHaveBeenCalledWith('restore_stock', expect.objectContaining({ p_product_id: PRODUCT_ID }));
   });
 });
