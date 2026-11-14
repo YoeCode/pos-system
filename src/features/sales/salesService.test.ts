@@ -504,3 +504,120 @@ describe('salesService — manual product lines', () => {
     expect(sale.order.items[1].product.name).toBe('Catalog Product');
   });
 });
+
+describe('createSale — idempotent recording (issue #56)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  // Row as the previous (already recorded) submit persisted it: its lines
+  // differ from the in-memory attempt so the test can prove the fetch path.
+  const dbSaleRow = {
+    id: SALES_ID,
+    order_number: '#1042',
+    subtotal: 20,
+    tax: 0,
+    total: 20,
+    discount: 0,
+    completed_at: '2026-11-09T10:00:00.000Z',
+    payment_method: 'cash',
+    amount_received: 50,
+    change: 30,
+    employee_id: null,
+    terminal_id: null,
+    customer_id: null,
+    loyalty_points_earned: 0,
+    loyalty_points_redeemed: 0,
+    refunded_amount: 0,
+    sale_items: [
+      {
+        product_id: CATALOG_ID,
+        product_name: 'Catalog Product',
+        product_sku: 'CAT-001',
+        product_category: 'Food',
+        product_subcategory: null,
+        quantity: 2,
+        unit_price: 10,
+        line_total: 20,
+        selected_size: null,
+        variant_id: null,
+        variant_sku: null,
+        variant_attributes: null,
+      },
+    ],
+  };
+
+  // Insert is attempted exactly once and answered with `insertError`; the
+  // select path serves the already-recorded row (or nothing).
+  function mockIdempotentFrom(
+    insertError: { code: string; message: string } | null,
+    existingRow: unknown | null = dbSaleRow,
+  ) {
+    const salesInserts: unknown[] = [];
+    const saleItemInserts: unknown[] = [];
+    const from = (table: string) => ({
+      insert: (rows: unknown) => {
+        (table === 'sales' ? salesInserts : saleItemInserts).push(rows);
+        return {
+          select: () => ({
+            single: async () => ({ data: insertError ? null : { id: SALES_ID }, error: insertError }),
+          }),
+        };
+      },
+      select: () => {
+        const query: Record<string, unknown> = {
+          eq: () => query,
+          maybeSingle: async () => ({ data: existingRow, error: null }),
+          single: async () => ({ data: existingRow, error: null }),
+        };
+        return query;
+      },
+    });
+    vi.mocked(supabase.from).mockImplementation(from as never);
+    return { salesInserts, saleItemInserts };
+  }
+
+  it('returns the already-recorded sale on a unique violation without inserting a second row', async () => {
+    const { salesInserts, saleItemInserts } = mockIdempotentFrom({
+      code: '23505',
+      message: 'duplicate key value violates unique constraint "sales_pkey"',
+    });
+
+    // The in-memory attempt carries different lines than the recorded row.
+    const attempt = buildSale([{ product: PRODUCT, quantity: 1, lineTotal: 10 }]);
+    const result = await createSale(attempt, 'tenant-1');
+
+    expect(result).not.toBeNull();
+    expect(result!.id).toBe(SALES_ID);
+    expect(result!.order.orderNumber).toBe('#1042');
+    // Fetched from the recorded row, not fabricated from the retry attempt.
+    expect(result!.order.items).toHaveLength(1);
+    expect(result!.order.items[0].product.name).toBe('Catalog Product');
+
+    // The rejected attempt is the ONLY insert: no second sales row and no
+    // duplicated sale_items.
+    expect(salesInserts).toHaveLength(1);
+    expect(saleItemInserts).toHaveLength(0);
+  });
+
+  it('returns the in-memory sale when the recorded row cannot be fetched', async () => {
+    mockIdempotentFrom(
+      { code: '23505', message: 'duplicate key value violates unique constraint "sales_pkey"' },
+      null,
+    );
+
+    const attempt = buildSale([{ product: PRODUCT, quantity: 1, lineTotal: 10 }]);
+    const result = await createSale(attempt, 'tenant-1');
+
+    expect(result).not.toBeNull();
+    expect(result!.id).toBe(SALES_ID);
+    expect(result!.order.items[0].product.name).toBe('T-Shirt');
+  });
+
+  it('propagates non-unique-violation insert errors instead of swallowing them', async () => {
+    mockIdempotentFrom({ code: '500', message: 'internal error' });
+
+    const attempt = buildSale([{ product: PRODUCT, quantity: 1, lineTotal: 10 }]);
+    await expect(createSale(attempt, 'tenant-1')).rejects.toMatchObject({ code: '500' });
+  });
+});
