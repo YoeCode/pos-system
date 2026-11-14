@@ -16,6 +16,7 @@ import { selectActiveEmployees } from '../../employees/employeesSlice';
 import { useToast } from '../../../components/useToast';
 import { useI18n } from '../../../i18n/useI18n';
 import { openCashDrawer } from '../../../utils/printerService';
+import RecordedSaleNotice from './RecordedSaleNotice';
 import type { CartItem, Order, PaymentMethod, Sale } from '../../../types';
 
 interface PaymentStepProps {
@@ -90,7 +91,18 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
   );
   const pointsDiscount = pointsToRedeem / 100;
   const totalBeforePoints = calcWithoutPoints.total;
+  const loyaltyPointsEarned = customerId ? Math.floor(total * pointsPerEuro) : 0;
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Issue #56 — idempotent recording. The attempt id is generated ONCE per
+  // mounted payment step (one checkout attempt) and reused across submit
+  // retries, so no retry can insert a second sale row: the DB rejects the
+  // duplicate id (23505) and createSale returns the already-recorded sale.
+  const [attemptId] = useState(() => crypto.randomUUID());
+  // Once the sale row exists, the pay action is retired for this attempt;
+  // later failures can only be resolved through the recorded-state actions.
+  const [recordedSaleId, setRecordedSaleId] = useState<string | null>(null);
+  const [stockReduced, setStockReduced] = useState(false);
+  const isRecorded = recordedSaleId !== null;
 
   const paymentMethods: { id: PaymentMethod; label: string; icon: React.ReactNode }[] = [
     {
@@ -130,8 +142,52 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
   const isValidUuid = (id: string | undefined | null): boolean =>
     !!id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
+  const reduceCartStock = async () => {
+    await Promise.all(cart.map(item =>
+      dispatch(reduceStockAsync({
+        productId: item.product.id,
+        quantity: item.quantity,
+        size: item.selectedSize,
+        variantId: item.selectedVariant?.id,
+      })).unwrap()
+    ));
+  };
+
+  const finalizeSale = (saleId: string, pointsEarned: number) => {
+    onComplete(saleId, pointsEarned);
+    if (paymentMethod === 'cash') {
+      openCashDrawer();
+    }
+    dispatch(startNewSale());
+  };
+
+  const toastStepError = (err: unknown) => {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.toLowerCase().includes('stock')) {
+      addToast(t.pos.stockInsufficient || 'Stock insuficiente: uno o más productos no tienen unidades disponibles', 'error');
+    } else if (msg.toLowerCase().includes('network') || msg.toLowerCase().includes('fetch')) {
+      addToast(t.pos.networkError || 'Error de conexión. Verifica tu red e inténtalo de nuevo.', 'error');
+    } else {
+      addToast(t.pos.saleError || 'Error al completar la venta. Inténtalo de nuevo.', 'error');
+    }
+  };
+
+  const handleRetryStock = async () => {
+    if (isSubmitting || !isRecorded) return;
+    setIsSubmitting(true);
+    try {
+      await reduceCartStock();
+      setStockReduced(true);
+      addToast(t.pos.retryStockSuccess || 'Stock actualizado', 'success');
+    } catch (err) {
+      toastStepError(err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleConfirm = async () => {
-    if (isSubmitting) return;
+    if (isSubmitting || isRecorded) return;
     setIsSubmitting(true);
 
     const parsedAmount = parseFloat(amountReceived);
@@ -153,8 +209,6 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
       createdAt: new Date().toISOString(),
     };
 
-    const loyaltyPointsEarned = customerId ? Math.floor(total * pointsPerEuro) : 0;
-
     const saleEmployeeId =
       (isValidUuid(currentEmployeeId) ? currentEmployeeId : null) ||
       (isValidUuid(currentUser?.id) ? currentUser?.id : null) ||
@@ -163,7 +217,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
         : null);
 
     const sale: Sale = {
-      id: crypto.randomUUID(),
+      id: attemptId,
       order,
       paymentMethod,
       amountReceived: isCash ? parsedAmount : null,
@@ -181,10 +235,11 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
 
     try {
       await dispatch(completeSaleAsync(sale)).unwrap();
+      // Sale recorded — retire the pay action before any post-recording step
+      // can fail (issue #56 state guard).
+      setRecordedSaleId(sale.id);
 
-      await Promise.all(cart.map(item =>
-        dispatch(reduceStockAsync({ productId: item.product.id, quantity: item.quantity, size: item.selectedSize, variantId: item.selectedVariant?.id })).unwrap()
-      ));
+      await reduceCartStock();
 
       const lowStockItems: string[] = [];
       cart.forEach(item => {
@@ -228,20 +283,9 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
         }
       }
 
-      onComplete(sale.id, loyaltyPointsEarned);
-      if (paymentMethod === 'cash') {
-        openCashDrawer();
-      }
-      dispatch(startNewSale());
+      finalizeSale(sale.id, loyaltyPointsEarned);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      if (msg.toLowerCase().includes('stock')) {
-        addToast(t.pos.stockInsufficient || 'Stock insuficiente: uno o más productos no tienen unidades disponibles', 'error');
-      } else if (msg.toLowerCase().includes('network') || msg.toLowerCase().includes('fetch')) {
-        addToast(t.pos.networkError || 'Error de conexión. Verifica tu red e inténtalo de nuevo.', 'error');
-      } else {
-        addToast(t.pos.saleError || 'Error al completar la venta. Inténtalo de nuevo.', 'error');
-      }
+      toastStepError(err);
     } finally {
       setIsSubmitting(false);
     }
@@ -386,23 +430,32 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
         </div>
       )}
 
-      <button
-        onClick={handleConfirm}
-        disabled={!canConfirm || isSubmitting}
-        className="w-full py-3.5 bg-primary hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold rounded-xl text-sm transition-all duration-150 active:scale-[0.98] flex items-center justify-center gap-2"
-      >
-        {isSubmitting ? (
-          <>
-            <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-            </svg>
-            {t.pos.processing}
-          </>
-        ) : (
-          t.pos.confirmPayment
-        )}
-      </button>
+      {isRecorded ? (
+        <RecordedSaleNotice
+          canRetryStock={!stockReduced}
+          busy={isSubmitting}
+          onRetryStock={handleRetryStock}
+          onFinish={() => finalizeSale(recordedSaleId, loyaltyPointsEarned)}
+        />
+      ) : (
+        <button
+          onClick={handleConfirm}
+          disabled={!canConfirm || isSubmitting}
+          className="w-full py-3.5 bg-primary hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold rounded-xl text-sm transition-all duration-150 active:scale-[0.98] flex items-center justify-center gap-2"
+        >
+          {isSubmitting ? (
+            <>
+              <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              {t.pos.processing}
+            </>
+          ) : (
+            t.pos.confirmPayment
+          )}
+        </button>
+      )}
     </div>
   );
 };

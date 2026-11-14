@@ -89,6 +89,22 @@ export async function fetchSales(tenantId: string): Promise<Sale[]> {
   return (data as any[]).map(mapDbSale);
 }
 
+// Issue #56 — idempotent sale recording. A checkout attempt carries a stable
+// client-generated sale id across retries; when the same attempt submits
+// again after a partial failure, the insert hits the sales primary key and
+// Postgres answers 23505. That is not an error: the sale is already recorded.
+async function fetchSaleById(saleId: string, tenantId: string): Promise<Sale | null> {
+  const { data, error } = await supabase
+    .from('sales')
+    .select('*, sale_items(*)')
+    .eq('id', saleId)
+    .eq('tenant_id', tenantId)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return mapDbSale(data);
+}
+
 export async function createSale(sale: Sale, tenantId: string): Promise<Sale | null> {
   const saleId = isValidUuid(sale.id) ? sale.id : crypto.randomUUID();
 
@@ -118,7 +134,18 @@ export async function createSale(sale: Sale, tenantId: string): Promise<Sale | n
     .select()
     .single();
 
-  if (saleError || !saleData) return null;
+  if (saleError) {
+    // 23505 = unique violation on the explicit sale id: this attempt was
+    // already recorded by a previous submit. Return the recorded sale instead
+    // of inserting a second row; never swallow unrelated DB errors.
+    if ((saleError as { code?: string }).code === '23505') {
+      const existing = await fetchSaleById(saleId, tenantId);
+      return existing ?? sale;
+    }
+    throw saleError;
+  }
+
+  if (!saleData) return null;
 
   // Keep every line, including manual (non-catalog) products. Manual lines
   // persist with product_id NULL — their synthetic id must never reach the
