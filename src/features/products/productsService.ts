@@ -1,5 +1,6 @@
 import { supabase } from '../../supabase/client';
 import type { Product, ProductAttribute, ProductVariant } from '../../types';
+import { isManualProductId } from '../../utils/manualProduct';
 
 function slugify(str: string): string {
   return str
@@ -175,7 +176,11 @@ export async function deleteProduct(id: string, tenantId: string): Promise<boole
 // on products/product_variants. The RPC owns the atomic write and the shape
 // routing (variant id / size -> Talla variant / plain product), and returns
 // false when the target row was not found. Failures propagate to the thunks.
+// Manual (non-catalog) POS products have no products/variants rows and their
+// synthetic ids cannot reach the uuid-typed RPC parameters, so stock ops on
+// them keep their historical no-op semantics and return true without a call.
 export async function reduceStock(productId: string, quantity: number, size?: string, tenantId?: string, variantId?: string): Promise<boolean> {
+  if (isManualProductId(productId)) return true;
   const { data, error } = await (supabase as any).rpc('reduce_stock', {
     p_product_id: productId,
     p_variant_id: variantId ?? null,
@@ -191,6 +196,7 @@ export async function reduceStock(productId: string, quantity: number, size?: st
 }
 
 export async function restoreStock(productId: string, quantity: number, size?: string, tenantId?: string, costPrice?: number, variantId?: string): Promise<boolean> {
+  if (isManualProductId(productId)) return true;
   const { data, error } = await (supabase as any).rpc('restore_stock', {
     p_product_id: productId,
     p_variant_id: variantId ?? null,
