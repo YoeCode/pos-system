@@ -3,7 +3,7 @@ import { calculateCart, getEffectiveUnitPrice } from '../pos/calculation';
 import { supabase } from '../../supabase/client';
 import type { CartItem, OrderItem, Product, ProductVariant, Sale } from '../../types';
 import { isManualProductId } from '../../utils/manualProduct';
-import { createSale, fetchSales, mapDbSale } from './salesService';
+import { createSale, fetchSales, getNextOrderNumber, mapDbSale } from './salesService';
 
 // Unified supabase mock: the default `from` behavior records insert calls
 // (manual-product suite), while the variant suites override `from` per test
@@ -619,5 +619,35 @@ describe('createSale — idempotent recording (issue #56)', () => {
 
     const attempt = buildSale([{ product: PRODUCT, quantity: 1, lineTotal: 10 }]);
     await expect(createSale(attempt, 'tenant-1')).rejects.toMatchObject({ code: '500' });
+  });
+});
+
+describe('getNextOrderNumber — fresh-install numbering', () => {
+  it('starts a fresh tenant at 1 when there are no sales yet', async () => {
+    vi.mocked(supabase.from).mockImplementation((() =>
+      createQueryMock({ data: null, error: null })) as never);
+
+    await expect(getNextOrderNumber('tenant-1')).resolves.toBe(1);
+  });
+
+  it('falls back to 1 when the query errors', async () => {
+    vi.mocked(supabase.from).mockImplementation((() =>
+      createQueryMock({ data: null, error: new Error('query failed') })) as never);
+
+    await expect(getNextOrderNumber('tenant-1')).resolves.toBe(1);
+  });
+
+  it('increments the highest recorded order number', async () => {
+    vi.mocked(supabase.from).mockImplementation((() =>
+      createQueryMock({ data: { order_number: 'ORD-0007' }, error: null })) as never);
+
+    await expect(getNextOrderNumber('tenant-1')).resolves.toBe(8);
+  });
+
+  it('parses zero-padded order numbers correctly', async () => {
+    vi.mocked(supabase.from).mockImplementation((() =>
+      createQueryMock({ data: { order_number: 'ORD-0001' }, error: null })) as never);
+
+    await expect(getNextOrderNumber('tenant-1')).resolves.toBe(2);
   });
 });

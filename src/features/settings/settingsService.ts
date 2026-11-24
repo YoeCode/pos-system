@@ -99,7 +99,7 @@ function mapDbSettings(row: DbSettings): TenantSettings {
       })),
       walkInCustomerLabel: pos.walk_in_customer_label ?? 'Walk-In Customer',
       orderNumberPrefix: pos.order_number_prefix ?? 'ORD-',
-      orderNumberSeed: pos.order_number_seed ?? 1042,
+      orderNumberSeed: pos.order_number_seed ?? 1,
       enableManualProduct: pos.enable_manual_product ?? true,
       multiTerminalMode: pos.multi_terminal_mode ?? false,
       enableAiDeliveryNote: pos.enable_ai_delivery_note ?? false,
@@ -121,7 +121,7 @@ function mapDbSettings(row: DbSettings): TenantSettings {
       },
       ticketSize: pos.ticket_size ?? '58mm',
       shifts: pos.shifts ?? ['Mañana 06:00-14:00', 'Tarde 14:00-22:00', 'Noche 22:00-06:00', 'Jornada completa 08:00-18:00'],
-      printerIp: pos.printer_ip ?? '192.168.1.108',
+      printerIp: pos.printer_ip ?? '',
       printerPort: pos.printer_port ?? 9100,
     },
     loyalty: {
