@@ -20,6 +20,11 @@ const paymentMethodOptions: { value: PaymentMethod; labelKey: 'cash' | 'card' | 
     { value: 'bizum', labelKey: 'bizum' },
   ];
 
+const isValidIpv4 = (value: string): boolean => {
+  const octets = value.split('.');
+  return octets.length === 4 && octets.every(o => /^\d{1,3}$/.test(o) && Number(o) <= 255);
+};
+
 const PosSettingsSection: React.FC = () => {
   const dispatch = useAppDispatch();
   const reduxPos = useAppSelector(selectPosSettings);
@@ -50,7 +55,7 @@ const PosSettingsSection: React.FC = () => {
   const [customHeader, setCustomHeader] = useState(reduxPos.ticketConfig?.customHeader || '');
   const [customFooter, setCustomFooter] = useState(reduxPos.ticketConfig?.customFooter || '');
   const [ticketSize, setTicketSize] = useState<'58mm' | '80mm'>(reduxPos.ticketSize || '58mm');
-  const [printerIp, setPrinterIp] = useState(reduxPos.printerIp || '192.168.1.108');
+  const [printerIp, setPrinterIp] = useState(reduxPos.printerIp || '');
   const [printerPort, setPrinterPort] = useState(String(reduxPos.printerPort || 9100));
   const [shifts, setShifts] = useState(reduxPos.shifts || []);
   const [newShift, setNewShift] = useState('');
@@ -78,7 +83,7 @@ const PosSettingsSection: React.FC = () => {
     setCustomHeader(reduxPos.ticketConfig?.customHeader || '');
     setCustomFooter(reduxPos.ticketConfig?.customFooter || '');
     setTicketSize(reduxPos.ticketSize || '58mm');
-    setPrinterIp(reduxPos.printerIp || '192.168.1.108');
+    setPrinterIp(reduxPos.printerIp || '');
     setPrinterPort(String(reduxPos.printerPort || 9100));
     setShifts(reduxPos.shifts || []);
   }, [reduxPos]);
@@ -107,7 +112,13 @@ const PosSettingsSection: React.FC = () => {
       ? 'Max refund days must be between 1 and 365'
       : undefined;
 
-  const hasErrors = !!seedError || !!maxWindowsError || !!pinThresholdError || !!maxDaysError;
+  const trimmedPrinterIp = printerIp.trim();
+  const printerIpError =
+    trimmedPrinterIp && !isValidIpv4(trimmedPrinterIp)
+      ? 'Printer IP must be a valid IPv4 address, or left empty if there is no printer'
+      : undefined;
+
+  const hasErrors = !!seedError || !!maxWindowsError || !!pinThresholdError || !!maxDaysError || !!printerIpError;
 
   const isDirty =
     defaultPaymentMethod !== reduxPos.defaultPaymentMethod ||
@@ -131,7 +142,7 @@ const PosSettingsSection: React.FC = () => {
     customHeader !== (reduxPos.ticketConfig?.customHeader || '') ||
     customFooter !== (reduxPos.ticketConfig?.customFooter || '') ||
     ticketSize !== (reduxPos.ticketSize || '58mm') ||
-    printerIp !== (reduxPos.printerIp || '192.168.1.108') ||
+    printerIp !== (reduxPos.printerIp || '') ||
     printerPort !== String(reduxPos.printerPort || 9100) ||
     JSON.stringify(shifts) !== JSON.stringify(reduxPos.shifts || []);
 
@@ -202,7 +213,7 @@ const PosSettingsSection: React.FC = () => {
         maxRefundDays: parsedMaxDays,
       },
       ticketSize,
-      printerIp: printerIp.trim() || '192.168.1.108',
+      printerIp: printerIp.trim(),
       printerPort: parseInt(printerPort, 10) || 9100,
       shifts,
       ticketConfig: {
@@ -235,7 +246,7 @@ const PosSettingsSection: React.FC = () => {
         defaultCategory: 'All Items',
         walkInCustomerLabel: 'Walk-In Customer',
         orderNumberPrefix: 'ORD-',
-        orderNumberSeed: 1042,
+        orderNumberSeed: 1,
         enableManualProduct: true,
         enableAiDeliveryNote: false,
         multiTerminalMode: false,
@@ -243,7 +254,7 @@ const PosSettingsSection: React.FC = () => {
         terminalId: undefined,
         refundSettings: { enabled: true, requirePin: true, pinThreshold: 50, maxRefundDays: 30 },
         ticketSize: '58mm',
-        printerIp: '192.168.1.108',
+        printerIp: '',
         printerPort: 9100,
         shifts: ['Mañana 06:00-14:00', 'Tarde 14:00-22:00', 'Noche 22:00-06:00', 'Jornada completa 08:00-18:00'],
         ticketConfig: { showLogo: false, showEmployee: true, showStoreName: true },
@@ -304,7 +315,7 @@ const PosSettingsSection: React.FC = () => {
           value={orderNumberSeed}
           onChange={e => setOrderNumberSeed(e.target.value)}
           error={seedError}
-          placeholder="1042"
+          placeholder="1"
         />
 
         <Input
@@ -458,7 +469,7 @@ const PosSettingsSection: React.FC = () => {
               maxLength={15}
               value={printerIp}
               onChange={e => setPrinterIp(e.target.value)}
-              placeholder="192.168.1.108"
+              error={printerIpError}
             />
             <Input
               label={t.settings.printerPort || 'Puerto'}

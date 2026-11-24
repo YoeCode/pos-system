@@ -185,8 +185,8 @@ export async function getNextOrderNumber(tenantId: string): Promise<number> {
     .limit(1)
     .maybeSingle();
 
-  if (error || !data) return 1042;
+  if (error || !data) return 1;
 
   const num = parseInt((data as any).order_number.replace(/^\D*/, ''), 10);
-  return isNaN(num) ? 1042 : num + 1;
+  return isNaN(num) ? 1 : num + 1;
 }

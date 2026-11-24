@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { useAppSelector } from '../../app/store';
 import { selectFilteredSales } from '../../features/dashboard/dashboardSlice';
 import MetricCard from '../../components/ui/MetricCard';
@@ -19,6 +20,20 @@ const DashboardPage = () => {
   const sales = useAppSelector(selectFilteredSales);
   const t = useI18n();
   const storeName = useAppSelector(selectStoreName);
+  const [isOnline, setIsOnline] = useState(() =>
+    typeof navigator === 'undefined' ? true : navigator.onLine
+  );
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const totalRevenue = sales.reduce((sum, s) => sum + s.order.total, 0);
   const totalTickets = sales.length;
@@ -42,9 +57,15 @@ const DashboardPage = () => {
             <h1 className="text-headline-lg text-text-primary">
               {t.dashboard.title}
             </h1>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-label-sm font-semibold bg-success-light text-success border border-success/20">
-              <span className="w-1.5 h-1.5 rounded-full bg-success" />
-              En línea
+            <span
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-label-sm font-semibold border ${
+                isOnline
+                  ? 'bg-success-light text-success border-success/20'
+                  : 'bg-warning-light text-warning border-warning/20'
+              }`}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-success' : 'bg-warning'}`} />
+              {isOnline ? 'En línea' : 'Sin conexión'}
             </span>
           </div>
           <p className="text-body-md text-text-muted mt-1 capitalize">

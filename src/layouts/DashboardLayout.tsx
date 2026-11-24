@@ -531,11 +531,13 @@ const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({
               </svg>
             </button>
 
-            {/* Terminal info (desktop) */}
-            <div className="hidden md:flex items-center gap-2 text-label-md bg-surface-container-low px-3 py-1.5 rounded-full border border-border">
-              <span className="w-2 h-2 rounded-full bg-success" />
-              <span className="text-text-muted">Terminal #01</span>
-            </div>
+            {/* Terminal info (desktop) — only when the employee has a real terminal */}
+            {user?.terminal && (
+              <div className="hidden md:flex items-center gap-2 text-label-md bg-surface-container-low px-3 py-1.5 rounded-full border border-border">
+                <span className="w-2 h-2 rounded-full bg-success" />
+                <span className="text-text-muted">Terminal {user.terminal}</span>
+              </div>
+            )}
 
             <div className="flex-1" />
 

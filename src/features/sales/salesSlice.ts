@@ -13,7 +13,7 @@ interface SalesState {
 
 const initialState: SalesState = {
   sales: [],
-  nextOrderNumber: 1042,
+  nextOrderNumber: 1,
   isLoading: false,
   error: null,
 };
@@ -41,7 +41,7 @@ export const loadNextOrderNumberAsync = createAsyncThunk(
   'sales/loadNextOrderNumberAsync',
   async (_, { getState }) => {
     const tenantId = (getState() as RootState).auth.user?.tenantId;
-    if (!tenantId) return 1042;
+    if (!tenantId) return 1;
     return getNextOrderNumber(tenantId);
   }
 );

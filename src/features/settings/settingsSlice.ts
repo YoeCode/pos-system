@@ -38,7 +38,7 @@ export const DEFAULT_TAX_RATE = 0.21;
 export const DEFAULT_TAX_NAME = 'Tax';
 export const DEFAULT_STORE_NAME = 'Casa Lis';
 export const DEFAULT_ORDER_PREFIX = 'ORD-';
-export const DEFAULT_ORDER_SEED = 1042;
+export const DEFAULT_ORDER_SEED = 1;
 export const DEFAULT_BRANDS = ['Nestlé', 'Coca-Cola', 'Pepsi', 'Mondelez', 'Kellogg\'s'];
 export const DEFAULT_SEASONS = ['Permanente'];
 export const DEFAULT_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
@@ -122,7 +122,7 @@ const defaultPosSettings: PosSettings = {
   },
   ticketSize: '58mm',
   shifts: ['Mañana 06:00-14:00', 'Tarde 14:00-22:00', 'Noche 22:00-06:00', 'Jornada completa 08:00-18:00'],
-  printerIp: '192.168.1.108',
+  printerIp: '',
   printerPort: 9100,
 };
 
@@ -825,7 +825,7 @@ export const selectRefundSettings = (state: RootState) => state.settings.pos.ref
 export const selectTicketSize = (state: RootState): '58mm' | '80mm' => state.settings.pos.ticketSize;
 
 export const selectFormattedOrderNumber = (state: RootState): string =>
-  `${state.settings.pos.orderNumberPrefix}${state.sales.nextOrderNumber}`;
+  `${state.settings.pos.orderNumberPrefix}${String(state.sales.nextOrderNumber).padStart(4, '0')}`;
 
 export const selectLanguage = (state: RootState): Language => state.settings.language.language;
 

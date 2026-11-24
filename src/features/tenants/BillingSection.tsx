@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getTenantInfo } from './tenantsService';
 import type { TenantInfo } from './tenantsService';
+import { useToast } from '../../components/useToast';
 
 interface BillingSectionProps {
   tenantId: string;
@@ -9,6 +10,11 @@ interface BillingSectionProps {
 export default function BillingSection({ tenantId }: BillingSectionProps) {
   const [tenant, setTenant] = useState<TenantInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { addToast } = useToast();
+
+  const handleBillingUnavailable = () => {
+    addToast('La facturación todavía no está disponible.', 'info');
+  };
 
   useEffect(() => {
     async function load() {
@@ -89,19 +95,19 @@ export default function BillingSection({ tenantId }: BillingSectionProps) {
       <div className="flex gap-3">
         {tenant.plan !== 'enterprise' && (
           <button
-            className="flex-1 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-white font-medium transition-colors"
-            onClick={() => {
-              alert('Stripe Checkout integration pending');
-            }}
+            className="flex-1 px-4 py-2.5 bg-emerald-600 opacity-50 cursor-not-allowed rounded-lg text-white font-medium transition-colors"
+            aria-disabled="true"
+            title="Facturación no disponible todavía"
+            onClick={handleBillingUnavailable}
           >
             {tenant.plan === 'free' ? 'Actualizar a Pro' : 'Actualizar a Enterprise'}
           </button>
         )}
         <button
-          className="px-4 py-2.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-white font-medium transition-colors"
-          onClick={() => {
-            alert('Stripe Customer Portal integration pending');
-          }}
+          className="px-4 py-2.5 bg-slate-700 opacity-50 cursor-not-allowed rounded-lg text-white font-medium transition-colors"
+          aria-disabled="true"
+          title="Facturación no disponible todavía"
+          onClick={handleBillingUnavailable}
         >
           Gestionar suscripción
         </button>
